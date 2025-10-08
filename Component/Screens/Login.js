@@ -10,12 +10,15 @@ import {
   PixelRatio,
   Platform,
   Alert,
+  SafeAreaView,
+  StatusBar,
 } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import LinearGradient from 'react-native-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from 'react-native-toast-message';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 
 const { width } = Dimensions.get('window');
@@ -28,6 +31,7 @@ const normalize = (size) => {
 };
 
 export default function Login() {
+  const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -63,7 +67,7 @@ export default function Login() {
     if (!valid) return;
 
     try {
-      const response = await fetch('http://13.203.67.227:3000/api/auth/login', {
+      const response = await fetch('http://43.204.167.118:3000/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -75,8 +79,12 @@ export default function Login() {
       if (response.ok) {
         const { token, player: user } = data;
         if (token && user) {
-          await AsyncStorage.setItem('authToken', token);
-          await AsyncStorage.setItem('userData', JSON.stringify(user));
+         await AsyncStorage.setItem('authToken', token);
+        await AsyncStorage.setItem('userData', JSON.stringify(user));
+        await AsyncStorage.setItem('fullLoginResponse', JSON.stringify(data));
+        console.log("user" , user.id)
+        console.log("authToken",token)
+        console.log("✅ Token and full response saved in AsyncStorage");
           navigation.navigate('BottomTab');
         } else {
           Alert.alert('Login Failed', 'Token or user data not received');
@@ -95,8 +103,10 @@ export default function Login() {
   };
 
   return (
-    <LinearGradient colors={['#0f162b', '#0f162b']} style={styles.container}>
-      <View style={styles.formContainer}>
+   
+      <SafeAreaView style={[styles.container,{paddingTop : insets.top}]}>
+      <StatusBar backgroundColor="#0f162b" barStyle="light-content"/>
+       <LinearGradient colors={['#0f162b', '#0f162b']} style={styles.formContainer}>
         <Text style={styles.title}>Login</Text>
         <Toast />
         <View style={[styles.inputContainer, emailError ? styles.errorBorder : null]}>
@@ -173,8 +183,10 @@ export default function Login() {
             Not a member? <Text style={styles.registerLink}>Register now</Text>
           </Text>
         </TouchableOpacity>
-      </View>
-    </LinearGradient>
+     
+     </LinearGradient>
+      </SafeAreaView>
+    
   );
 }
 
@@ -183,6 +195,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor:"#0f162b",
   },
   formContainer: {
     width: width > 500 ? 500 : width * 0.9,
@@ -240,7 +253,7 @@ const styles = StyleSheet.create({
   },
   loginButtonText: {
     color: 'white',
-    fontSize: normalize(16),
+    fontSize: normalize(18),
     fontWeight: 'bold',
   },
   dividerContainer: {

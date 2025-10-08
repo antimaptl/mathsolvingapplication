@@ -6,6 +6,8 @@ import {
   StyleSheet,
   Dimensions,
   PixelRatio,
+  SafeAreaView,
+  StatusBar,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -13,6 +15,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useSocket } from '../../Context/Socket';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width, height } = Dimensions.get('window');
 const scaleFont = (size) => size * PixelRatio.getFontScale();
@@ -38,6 +41,7 @@ const getMathSymbol = (word) => {
 
 const MultiPlayerGame = () => {
   const socket = useSocket();
+  const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const route = useRoute();
   const { currentQuestion } = route.params;
@@ -128,7 +132,8 @@ const MultiPlayerGame = () => {
 
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
+     <StatusBar backgroundColor="#0B1220" barStyle="light-content" />
       <View style={styles.topBar}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconButton}>
           <Icon name="chevron-back" size={scaleFont(18)} color="#000" />
@@ -178,7 +183,7 @@ const MultiPlayerGame = () => {
           </View>
         ))}
       </View>
-    </View>
+    </SafeAreaView>
   );
 };
 

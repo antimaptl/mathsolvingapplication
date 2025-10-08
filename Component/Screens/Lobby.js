@@ -7,7 +7,7 @@ import {
   Animated,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { Search, X, Users, Clock, Star } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import io from 'socket.io-client';
@@ -17,6 +17,8 @@ import { useSocket } from '../../Context/Socket';
 
 export default function Lobby() {
   const socket = useSocket();
+  const route = useRoute();
+  const { difficulty, digit, symbol, timer, qm } = route.params;
   const navigation = useNavigation();
   let playerId;
   const [isSearching, setIsSearching] = useState(false);
@@ -25,6 +27,7 @@ export default function Lobby() {
   const [estimatedWait, setEstimatedWait] = useState('2-3 min');
   const [userRating, setUserRating] = useState(1847);
   const [userName, setUserName] = useState("Player");
+  const [player, setPlayer] = useState();
 
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const rotateAnim = useRef(new Animated.Value(0)).current;
@@ -69,12 +72,14 @@ export default function Lobby() {
     };
   }, [socket]);
 
+
   useEffect(() => {
     const getUserData = async () => {
       const userData = await AsyncStorage.getItem('userData');
       if (userData) {
         const user = JSON.parse(userData);
         console.log('✅ User Info:', user);
+        setPlayer(user)
       }
     };
     getUserData();
@@ -135,8 +140,10 @@ export default function Lobby() {
           userId: userData.id,
           username: userData.username,
           email: userData.email,
-          rating: userData.pr?.pvp?.easy ?? 1000,
-          diff: 'easy'
+          rating: userData.pr?.pvp?.[difficulty] ?? 1000,
+          diff: difficulty,
+          timer: timer,
+          symbol: symbol,
         });
       } else {
         console.warn('User data not found or socket not ready');
@@ -191,7 +198,7 @@ export default function Lobby() {
         <View style={styles.playerCard}>
           <View style={styles.ratingSection}>
             <Star color="#ffd700" size={20} />
-            <Text style={styles.ratingText}>Rating: {userRating}</Text>
+            <Text style={styles.ratingText}>Rating:{player?.pr?.pvp[difficulty]}</Text>
           </View>
           <Text style={styles.playerName}>{userName}</Text>
         </View>
@@ -240,7 +247,7 @@ export default function Lobby() {
                 Looking for players with rating {userRating - 100} - {userRating + 100}
               </Text>
 
-              <View style={styles.searchStats}>
+              {/* <View style={styles.searchStats}>
                 <View style={styles.statItem}>
                   <Text style={styles.statValue}>{formatTime(searchTime)}</Text>
                   <Text style={styles.statLabel}>Search Time</Text>
@@ -250,7 +257,7 @@ export default function Lobby() {
                   <Text style={styles.statValue}>{playersInQueue}</Text>
                   <Text style={styles.statLabel}>In Queue</Text>
                 </View>
-              </View>
+              </View> */}
 
               <TouchableOpacity style={styles.cancelButton} onPress={handleCancelSearch}>
                 <Text style={styles.cancelButtonText}>Cancel Search</Text>

@@ -1,20 +1,27 @@
-import { StyleSheet, View, Image } from 'react-native'
-import React, { useEffect } from 'react'
+import React, { useEffect, useContext } from 'react';
+import { StyleSheet, View, Image, SafeAreaView, StatusBar } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import FastImage from 'react-native-fast-image';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { scaleWidth,scaleHeight } from '../Globalfile/Responsive';
+import { AuthContext } from '../Globalfile/AuthProvider';
 
+export default function Splash() {
+  const insets = useSafeAreaInsets();
+  const navigation = useNavigation();
+  const { setUser } = useContext(AuthContext);
 
-export default function ({ navigation }) {
   useEffect(() => {
     const checkAuth = async () => {
       try {
         const token = await AsyncStorage.getItem('authToken');
-        if (token) {
-         
+        const userData = await AsyncStorage.getItem('userData');
+
+        if (token && userData) {
+          // context me user data set kare
+          setUser(JSON.parse(userData));
           navigation.replace('BottomTab');
         } else {
-         
           navigation.replace('OnBoarding');
         }
       } catch (error) {
@@ -22,17 +29,21 @@ export default function ({ navigation }) {
         navigation.replace('Login');
       }
     };
-    setTimeout(checkAuth, 3000); 
-  }, [navigation]);
+
+    const timer = setTimeout(checkAuth, 3000); // 3 sec splash
+    return () => clearTimeout(timer);
+  }, [navigation, setUser]);
+
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
+      <StatusBar backgroundColor="#0f162b" barStyle="light-content" />
       <Image
-        source={require('../Screens/Image/logo.png')} // update path if different
-        style={styles.gif}
+        source={require('../Screens/Image/logo.png')}
+        style={styles.logo}
         resizeMode="contain"
       />
-    </View>
-  )
+    </SafeAreaView>
+  );
 }
 
 const styles = StyleSheet.create({
@@ -40,10 +51,10 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#0f162b', // match your splash background
+    backgroundColor: '#0f162b',
   },
-  gif: {
-    width: 300,
-    height: 300,
+  logo: {
+    width: scaleWidth(200), 
+    height: scaleHeight(200), 
   },
-})
+});

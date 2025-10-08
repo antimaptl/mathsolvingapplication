@@ -2,7 +2,7 @@
 import React, { createContext, useContext, useRef } from "react";
 import { io } from "socket.io-client";
 
-const SOCKET_URL = "http://13.203.67.227:3000/";
+const SOCKET_URL = "http://43.204.167.118:3000/";
 
 const SocketContext = createContext(null);
 

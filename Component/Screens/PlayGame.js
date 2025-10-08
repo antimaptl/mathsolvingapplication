@@ -1,5 +1,5 @@
-import { useNavigation } from '@react-navigation/native';
-import React, { useState } from 'react';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
     View,
     Text,
@@ -9,25 +9,65 @@ import {
     ScrollView,
     Image,
     PixelRatio,
+    StatusBar,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
+import Icon from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Sound from 'react-native-sound';
+import { playBackgroundMusic, stopBackgroundMusic } from '../Globalfile/playBackgroundMusic';
 
 const { width, height } = Dimensions.get('window');
 const scaleFont = (size) => size * PixelRatio.getFontScale();
 
 const PlayGame = ({ route }) => {
+    const insets = useSafeAreaInsets();
     const navigation = useNavigation();
     const { gametype } = route.params || {};
-
     const [selectedDifficulty, setSelectedDifficulty] = useState('easy');
-    const [selectedTimer, setSelectedTimer] = useState('30 sec');
+    const [selectedTimer, setSelectedTimer] = useState('1 Minute'); // default updated
     const [selectedSymbol, setSelectedSymbol] = useState('(+), (-), (x) and (/)');
+
+    // 🎵 Game Start Music
+    const gameMusicRef = useRef(null);
+    useEffect(() => {
+        gameMusicRef.current = new Sound('startgame.mp3', Sound.MAIN_BUNDLE, (error) => {
+            if (error) {
+                console.log('Failed to load game music', error);
+                return;
+            }
+            gameMusicRef.current.play(() => {
+                gameMusicRef.current.release();
+            });
+        });
+
+        return () => {
+            if (gameMusicRef.current) {
+                gameMusicRef.current.stop(() => {
+                    gameMusicRef.current.release();
+                });
+            }
+        };
+    }, []);
+
+    useFocusEffect(
+        useCallback(() => {
+            stopBackgroundMusic();
+            return () => {
+                // playBackgroundMusic();
+            };
+        }, [])
+    );
+
+    AsyncStorage.getItem('diff').then((diff) => {
+        setSelectedDifficulty(diff || 'easy');
+    });
 
     const renderOption = (label, selected, onPress) => (
         <TouchableOpacity onPress={onPress}>
             {selected ? (
-                <LinearGradient colors={["#595CFF", "#87AEE9"]} style={styles.selectedOptionButton}>
+                <LinearGradient colors={['#595CFF', '#87AEE9']} style={styles.selectedOptionButton}>
                     <Text style={styles.selectedOptionText}>{label}</Text>
                 </LinearGradient>
             ) : (
@@ -40,8 +80,9 @@ const PlayGame = ({ route }) => {
 
     const handlePlayPress = async () => {
         try {
-            let timerInSeconds = 30;
-            if (selectedTimer === '1 Minute') timerInSeconds = 60;
+            // ✅ Timer calculation updated
+            let timerInSeconds = 60;
+            if (selectedTimer === '2 Minute') timerInSeconds = 120;
             else if (selectedTimer === '3 Minute') timerInSeconds = 180;
 
             let symbolValue = 'sum,difference';
@@ -65,38 +106,19 @@ const PlayGame = ({ route }) => {
                 timer: timerInSeconds,
             };
 
-            console.log("🚀 Navigating to MathInputScreen with params:", params);
-            navigation.navigate(gametype === 'play' ? "MathInputScreen" : "Lobby", params);
+            console.log('🚀 Navigating to MathInputScreen with params:', params);
+            navigation.navigate(gametype === 'play' ? 'MathInputScreen' : 'Lobby', params);
         } catch (error) {
-            console.error("❌ Error during handlePlayPress:", error);
+            console.error('❌ Error during handlePlayPress:', error);
         }
     };
 
     return (
-        <ScrollView contentContainerStyle={styles.container}>
-            <View style={{ flexDirection: "row", gap: width * 0.025 }}>
-            <TouchableOpacity onPress={() => {
-                navigation.navigate("CommingSoon")
-            }}>
-                <Image style={styles.icon} source={require('../Screens/Image/funcation.png')} />
-                </TouchableOpacity>
-                <TouchableOpacity 
-                 onPress={() => {
-                navigation.navigate("CommingSoon")
-            }}>
-                <Image style={styles.icon} source={require('../Screens/Image/profile.png')} />
-                </TouchableOpacity>
-                <TouchableOpacity 
-                 onPress={() => {
-                navigation.navigate("CommingSoon")
-            }}>
-                <Image style={[styles.icon, { marginStart: width * 0.50 }]} source={require('../Screens/Image/Mic.png')} />
-                </TouchableOpacity>
-                <TouchableOpacity 
-                 onPress={() => {
-                navigation.navigate("CommingSoon")
-            }}>
-                <Image style={styles.icon} source={require('../Screens/Image/setting.png')} />
+        <ScrollView contentContainerStyle={[styles.container, { paddingTop: insets.top + 30 }]}>
+            <StatusBar backgroundColor="#0B1220" barStyle="light-content" />
+            <View style={{ flexDirection: 'row', gap: width * 0.025 }}>
+                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconButton}>
+                    <Icon name="chevron-back" size={scaleFont(18)} color="#000" />
                 </TouchableOpacity>
             </View>
 
@@ -105,16 +127,25 @@ const PlayGame = ({ route }) => {
             {/* Difficulty Section */}
             <Text style={styles.sectionTitle}>Select Difficulty</Text>
             <View style={styles.row}>
-                {renderOption('Easy', selectedDifficulty === 'easy', () => setSelectedDifficulty('easy'))}
-                {renderOption('Medium', selectedDifficulty === 'medium', () => setSelectedDifficulty('medium'))}
-                {renderOption('Hard', selectedDifficulty === 'hard', () => setSelectedDifficulty('hard'))}
+                {renderOption('Easy', selectedDifficulty === 'easy', async () => {
+                    await AsyncStorage.setItem('diff', 'easy');
+                    setSelectedDifficulty('easy');
+                })}
+                {renderOption('Medium', selectedDifficulty === 'medium', async () => {
+                    await AsyncStorage.setItem('diff', 'medium');
+                    setSelectedDifficulty('medium');
+                })}
+                {renderOption('Hard', selectedDifficulty === 'hard', async () => {
+                    await AsyncStorage.setItem('diff', 'hard');
+                    setSelectedDifficulty('hard');
+                })}
             </View>
 
             {/* Timer Section */}
             <Text style={styles.sectionTitle}>Timer</Text>
             <View style={styles.row}>
-                {renderOption('30 sec', selectedTimer === '30 sec', () => setSelectedTimer('30 sec'))}
                 {renderOption('1 Minute', selectedTimer === '1 Minute', () => setSelectedTimer('1 Minute'))}
+                {renderOption('2 Minute', selectedTimer === '2 Minute', () => setSelectedTimer('2 Minute'))}
                 {renderOption('3 Minute', selectedTimer === '3 Minute', () => setSelectedTimer('3 Minute'))}
             </View>
 
@@ -122,7 +153,11 @@ const PlayGame = ({ route }) => {
             <Text style={styles.sectionTitle}>Symbol</Text>
             <View style={styles.row1}>
                 {renderOption('(+) and (-)', selectedSymbol === '(+) and (-)', () => setSelectedSymbol('(+) and (-)'))}
-                {renderOption('(+), (-), (x) and (/)', selectedSymbol === '(+), (-), (x) and (/)', () => setSelectedSymbol('(+), (-), (x) and (/)'))}
+                {renderOption(
+                    '(+), (-), (x) and (/)',
+                    selectedSymbol === '(+), (-), (x) and (/)',
+                    () => setSelectedSymbol('(+) , (-), (x) and (/)'),
+                )}
             </View>
 
             {/* Play Button */}
@@ -142,6 +177,14 @@ const styles = StyleSheet.create({
         padding: width * 0.07,
         paddingBottom: height * 0.07,
     },
+    iconButton: {
+        width: width * 0.06,
+        height: width * 0.06,
+        backgroundColor: '#fff',
+        borderRadius: 8,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
     heading: {
         fontSize: scaleFont(33),
         color: '#fff',
@@ -149,7 +192,7 @@ const styles = StyleSheet.create({
         alignSelf: 'center',
         marginBottom: height * 0.04,
         marginTop: height * 0.05,
-        fontFamily: "jaro",
+        fontFamily: 'jaro',
     },
     sectionTitle: {
         fontSize: scaleFont(16),
@@ -162,7 +205,7 @@ const styles = StyleSheet.create({
         flexWrap: 'wrap',
         gap: width * 0.025,
         marginBottom: height * 0.015,
-        justifyContent: "space-between",
+        justifyContent: 'space-between',
     },
     row1: {
         flexDirection: 'row',
@@ -205,7 +248,7 @@ const styles = StyleSheet.create({
     },
     playButtonText: {
         color: '#fff',
-        fontSize: scaleFont(16),
+        fontSize: scaleFont(18),
         fontWeight: '700',
     },
     icon: {

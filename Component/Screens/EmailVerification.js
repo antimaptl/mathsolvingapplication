@@ -74,7 +74,7 @@ export default function EmailVerification() {
   console.log('🔶 Raw payload →', JSON.stringify(payload, null, 2));
 
   try {
-    const res = await fetch('http://13.203.67.227:3000/api/auth/signup', {
+    const res = await fetch('http://43.204.167.118:3000/api/auth/signup', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -186,7 +186,7 @@ const styles = StyleSheet.create({
   },
   verifyText: {
     color: 'white',
-    fontSize: normalize(16),
+    fontSize: normalize(18),
     fontWeight: 'bold',
   },
 });

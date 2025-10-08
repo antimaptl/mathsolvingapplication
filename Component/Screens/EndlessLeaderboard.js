@@ -8,6 +8,7 @@ import {
     TouchableOpacity,
     ScrollView,
     Image,
+    SafeAreaView,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
@@ -33,7 +34,7 @@ const EndlessLeaderboard = () => {
     const [selectedFilter, setSelectedFilter] = useState('Weekly');
 
     return (
-        <View style={styles.container}>
+        <SafeAreaView style={styles.container}>
             {/* Top bar */}
             <View style={styles.header}>
             <TouchableOpacity onPress={() => {
@@ -127,7 +128,7 @@ const EndlessLeaderboard = () => {
                     </View>
                 ))}
             </ScrollView>
-        </View>
+        </SafeAreaView>
     );
 };
 

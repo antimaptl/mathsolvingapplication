@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, Dimensions, ScrollView, StyleSheet, PixelRatio } from 'react-native'
+import { View, Text, TouchableOpacity, Dimensions, ScrollView, StyleSheet, PixelRatio, SafeAreaView } from 'react-native'
 import React from 'react'
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -55,7 +55,7 @@ const Dashboard = () => {
     ];
 
     return (
-        <View style={styles.container}>
+        <SafeAreaView style={styles.container}>
             <ScrollView contentContainerStyle={{ padding: scale(14) }}>
                 <View style={styles.header}>
                     <TouchableOpacity onPress={() => {
@@ -207,7 +207,7 @@ const Dashboard = () => {
                 </View>
 
             </ScrollView>
-        </View>
+        </SafeAreaView>
     )
 }
 

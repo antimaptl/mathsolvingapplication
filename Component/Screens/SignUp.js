@@ -63,7 +63,7 @@ export default function SignUp() {
     setErrors({});
 
     try {
-      const response = await fetch('http://13.203.67.227:3000/api/auth/verifymail', {
+      const response = await fetch('http://43.204.167.118:3000/api/auth/verifymail', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),

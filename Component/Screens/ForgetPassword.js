@@ -36,7 +36,7 @@ const ForgetPassword = ({ navigation }) => {
       setEmailError('');
     }
 
-    const apiUrl = 'http://13.203.67.227:3000/api/auth/sendForgotPassOtp';
+    const apiUrl = 'http://43.204.167.118:3000/api/auth/sendForgotPassOtp';
 
     try {
       const response = await fetch(apiUrl, {
@@ -90,7 +90,7 @@ const ForgetPassword = ({ navigation }) => {
 
     if (hasError) return;
 
-    const apiUrl = 'http://13.203.67.227:3000/api/auth/changePass';
+    const apiUrl = 'http://43.204.167.118:3000/api/auth/changePass';
 
     try {
       const response = await fetch(apiUrl, {

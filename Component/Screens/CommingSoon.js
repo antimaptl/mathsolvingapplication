@@ -2,12 +2,13 @@ import React from 'react';
 import { Image, StyleSheet, View, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const CommingSoon = () => {
   const navigation = useNavigation();
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       {/* Back Button with Icon */}
       <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
         <Ionicons name="arrow-back-circle" size={34} color="#fff" />
@@ -18,7 +19,7 @@ const CommingSoon = () => {
         style={styles.fullImage}
         source={require('../Screens/Image/comingsoonpng.jpg')}
       />
-    </View>
+    </SafeAreaView>
   );
 };
 

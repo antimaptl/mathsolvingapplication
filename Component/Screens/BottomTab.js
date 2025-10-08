@@ -6,16 +6,29 @@ import Home from './Home';
 import More from './More';
 import Learn from './Learn';
 import Puzzle from './Puzzle';
+import PlayGame from './PlayGame';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
 const { width, height } = Dimensions.get('window');
 
+const HomeStack = createNativeStackNavigator();
+
+// 1️⃣ Create stack with Home + PlayGame
+function HomeStackScreen() {
+  return (
+    <HomeStack.Navigator screenOptions={{ headerShown: false }}>
+      <HomeStack.Screen name="HomeMain" component={Home} />
+      <HomeStack.Screen name="PlayGame" component={PlayGame} />
+    </HomeStack.Navigator>
+  );
+}
+
 const BottomTab = () => {
   let lastBackPressTime = 0;
 
-    useEffect(() => {
+  useEffect(() => {
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
       // Let React Navigation handle the back button (default behavior)
       return false;
@@ -39,50 +52,60 @@ const BottomTab = () => {
   );
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#0B1220',}}>
-    <Tab.Navigator
-      initialRouteName="Home"
-      screenOptions={{
-        headerShown: false,
-        tabBarShowLabel: false,
-        tabBarStyle: { backgroundColor: '#1E293B', borderTopLeftRadius: 20,height:60,paddingTop:9,
-          borderTopRightRadius: 20,
-          borderTopWidth: 0,},
-      }}
-    >
-      <Tab.Screen
-        name="Home"
-        component={Home}
-        options={{
-          tabBarIcon: ({ focused }) =>
-            renderIcon(require('../Screens/Image/Home.png'), 'Home', focused),
+    <View style={{ flex: 1, backgroundColor: '#0B1220', }}>
+      <Tab.Navigator
+        initialRouteName="Home"
+        screenOptions={{
+          headerShown: false,
+          tabBarShowLabel: false,
+          tabBarStyle: {
+            backgroundColor: '#1E293B', borderTopLeftRadius: 20, height: 60, paddingTop: 9,
+            borderTopRightRadius: 20,
+            borderTopWidth: 0,
+          },
         }}
-      />
-      <Tab.Screen
-        name="Puzzle"
-        component={Puzzle}
-        options={{
-          tabBarIcon: ({ focused }) =>
-            renderIcon(require('../Screens/Image/PuzzleIcon.png'), 'Puzzle', focused),
-        }}
-      />
-      <Tab.Screen
-        name="Learn"
-        component={Learn}
-        options={{
-          tabBarIcon: ({ focused }) =>
-            renderIcon(require('../Screens/Image/Learn.png'), 'Learn', focused),
-        }}
-      />
-      <Tab.Screen
-        name="More"
-        component={More}
-        options={{
-          tabBarIcon: ({ focused }) =>
-            renderIcon(require('../Screens/Image/More.png'), 'More', focused),
-        }}
-      />
-    </Tab.Navigator>
+      >
+        {/* <Tab.Screen
+          name="Home"
+          component={Home}
+          options={{
+            tabBarIcon: ({ focused }) =>
+              renderIcon(require('../Screens/Image/Home.png'), 'Home', focused),
+          }}
+        /> */}
+        <Tab.Screen
+          name="Home"
+          component={HomeStackScreen}  // 👈 use stack here
+          options={{
+            tabBarIcon: ({ focused }) =>
+              renderIcon(require('../Screens/Image/Home.png'), 'Home', focused),
+          }}
+        />
+        <Tab.Screen
+          name="Puzzle"
+          component={Puzzle}
+          options={{
+            tabBarIcon: ({ focused }) =>
+              renderIcon(require('../Screens/Image/PuzzleIcon.png'), 'Puzzle', focused),
+          }}
+        />
+        <Tab.Screen
+          name="Learn"
+          component={Learn}
+          options={{
+            tabBarIcon: ({ focused }) =>
+              renderIcon(require('../Screens/Image/Learn.png'), 'Learn', focused),
+          }}
+        />
+        <Tab.Screen
+          name="More"
+          component={More}
+          options={{
+            tabBarIcon: ({ focused }) =>
+              renderIcon(require('../Screens/Image/More.png'), 'More', focused),
+          }}
+        />
+      </Tab.Navigator>
     </View>
   );
 };
