@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "899856448839",
+    "project_id": "mathletics-90cc3",
+    "storage_bucket": "mathletics-90cc3.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:899856448839:android:e101008e1da3e5dff9a062",
+        "android_client_info": {
+          "package_name": "com.mathsolvingapplication"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "899856448839-cv62jvchvtbmr91kq8pumindqn3cl9g2.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.mathsolvingapplication",
+            "certificate_hash": "3c52569c1b8f41a9d97ebd990593c718d47317a9"
+          }
+        },
+        {
+          "client_id": "899856448839-j630i19f4dg05blt9jd8f6co2ambcpf5.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBQNbR9LiR5qrSssCkvK7h8HFWaky7nqAo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "899856448839-j630i19f4dg05blt9jd8f6co2ambcpf5.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

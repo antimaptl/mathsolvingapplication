@@ -15,56 +15,54 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {useNavigation} from '@react-navigation/native';
+import {useIsFocused, useNavigation} from '@react-navigation/native';
 import Toast from 'react-native-toast-message';
+import messaging from '@react-native-firebase/messaging';
 
 const {width} = Dimensions.get('window');
 
 const AddUserScreen = () => {
   const navigation = useNavigation();
-
+const isFocused = useIsFocused();
   const [users, setUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [searchText, setSearchText] = useState('');
   const [loading, setLoading] = useState(false);
-  const [pendingRequests, setPendingRequests] = useState({}); 
   const [pendingCount, setPendingCount] = useState(0);
 
-  // 🔔 Fetch pending requests count
-  const fetchPendingCount = async () => {
+  // 🔔 Fetch pending requests count (only for this user)
+ const fetchPendingCount = async () => {
     try {
       const token = await AsyncStorage.getItem('authToken');
-      const response = await axios.get('http://43.204.167.118:3000/api/friend/friend-request', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setPendingCount(response.data.count);
+      const response = await axios.get(
+        'http://43.204.167.118:3000/api/friend/friend-request',
+        {
+          headers: {Authorization: `Bearer ${token}`},
+        },
+      );
+      setPendingCount(response.data.total);
     } catch (error) {
       console.log('❌ Error fetching pending count:', error.message);
     }
   };
-
-  useEffect(() => {
-    fetchPendingCount();
-  }, []);
-
-  // 📡 Fetch all users
+  // 📡 Fetch all users and remove accepted
   const fetchUsers = async () => {
     try {
       setLoading(true);
       const token = await AsyncStorage.getItem('authToken');
-      const response = await axios.post(
+      const response = await axios.get(
         'http://43.204.167.118:3000/api/friend/alluser-list',
-        {},
         {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
+          headers: {Authorization: `Bearer ${token}`},
         },
       );
+
       if (response.data.success) {
-        setUsers(response.data.users);
-        setFilteredUsers(response.data.users);
+        const filtered = response.data.users.filter(
+          u => u.friendshipStatus !== 'accepted',
+        );
+        setUsers(filtered);
+        setFilteredUsers(filtered);
       } else {
         console.log('API response:', response.data);
       }
@@ -82,15 +80,18 @@ const AddUserScreen = () => {
       const token = await AsyncStorage.getItem('authToken');
       const response = await axios.post(
         'http://43.204.167.118:3000/api/friend/search-user-list',
-        { searchText: text },
+        {searchText: text},
         {
           headers: {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
-        }
+        },
       );
-      setFilteredUsers(response.data.users);
+      const filtered = response.data.users.filter(
+        u => u.friendshipStatus !== 'accepted',
+      );
+      setFilteredUsers(filtered);
     } catch (error) {
       console.log('❌ Error searching users:', error.message);
     } finally {
@@ -124,19 +125,19 @@ const AddUserScreen = () => {
       );
 
       const data = await response.json();
-      console.log('Add Friend Response:', data);
 
-      if (
-        data.message?.toLowerCase().includes('already sent') ||
-        data.message?.toLowerCase().includes('recived friend request') ||
-        data.message?.toLowerCase().includes('request sent') ||
-        data.success
-      ) {
-        setPendingRequests(prev => ({...prev, [recipientId]: 'pending'}));
+      if (data.success) {
         Toast.show({
           type: 'success',
-          text1: data.message || 'Friend Request Sent',
+          text1: 'Friend Request Sent',
         });
+
+        // update friendshipStatus in local list
+        setFilteredUsers(prev =>
+          prev.map(u =>
+            u._id === recipientId ? {...u, friendshipStatus: 'pending'} : u,
+          ),
+        );
       } else {
         Toast.show({
           type: 'error',
@@ -154,23 +155,20 @@ const AddUserScreen = () => {
     }
   };
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
   // 🔍 Search input change
   const handleSearch = text => {
     setSearchText(text);
     if (text.trim() === '') {
       setFilteredUsers(users);
     } else {
-      fetchSearchedUsers(text); // ✅ call backend search
+      fetchSearchedUsers(text);
     }
   };
 
   // 🧩 Render User
   const renderItem = ({item}) => {
-    const isPending = pendingRequests[item._id] === 'pending';
+    const status = item.friendshipStatus;
+
     return (
       <View style={styles.friendRow}>
         <View style={styles.friendInfo}>
@@ -181,7 +179,7 @@ const AddUserScreen = () => {
           <Text style={styles.friendName}>{item.username}</Text>
         </View>
 
-        {isPending ? (
+        {status === 'pending' ? (
           <View style={[styles.addButton, {backgroundColor: '#64748B'}]}>
             <Text style={styles.addText}>Pending</Text>
           </View>
@@ -195,6 +193,42 @@ const AddUserScreen = () => {
       </View>
     );
   };
+
+  
+ useEffect(() => {
+    if (isFocused) {
+      fetchUsers();
+      fetchPendingCount();
+    }
+  }, [isFocused]);
+
+  // 🔔 FCM listener for real-time updates
+  useEffect(() => {
+    const unsubscribe = messaging().onMessage(async remoteMessage => {
+      const {data} = remoteMessage;
+      if (!data) return;
+
+      const userData = await AsyncStorage.getItem('fullLoginResponse');
+      const parsedData = userData ? JSON.parse(userData) : null;
+      const myUserId = parsedData?.player?.id;
+      if (!myUserId) return;
+
+      const {requester, recipient, type} = data;
+
+      if (type === 'FRIEND_ACCEPTED' || type === 'FRIEND_REJECTED') {
+        setFilteredUsers(prev =>
+          prev.filter(u => u._id !== requester && u._id !== recipient),
+        );
+        fetchPendingCount();
+      }
+
+      if (type === 'FRIEND_REQUEST' && recipient === myUserId) {
+        fetchPendingCount();
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
@@ -217,7 +251,7 @@ const AddUserScreen = () => {
             <Icon name="notifications-outline" size={22} color="#fff" />
           </TouchableOpacity>
           <View style={styles.badge}>
-            <Text style={styles.badgeText}>{pendingCount}</Text>
+            <Text style={styles.badgeText}>{pendingCount || 0}</Text>
           </View>
         </View>
       </View>
@@ -269,7 +303,7 @@ const AddUserScreen = () => {
 
           {/* 👯‍♂️ Friends List */}
           <Text style={styles.sectionTitle}>
-            Friends ({filteredUsers.length})
+            All Users ({filteredUsers.length})
           </Text>
           <FlatList
             data={filteredUsers}
@@ -306,8 +340,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#1E293B',
     borderRadius: 10,
     padding: 6,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   header: {
     color: '#fff',
@@ -327,25 +359,6 @@ const styles = StyleSheet.create({
     minWidth: 16,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  badgeText: {
-    color: '#fff',
-    fontSize: 10,
-    fontWeight: '700',
-  },
-  searchContainer: {
-    backgroundColor: '#1E293B',
-    borderRadius: 8,
-    marginBottom: 20,
-    justifyContent: 'flex-start',
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingStart: '3%',
-  },
-  searchInput: {
-    height: 45,
-    paddingHorizontal: 12,
-    color: '#fff',
   },
   fbIconCircle: {
     backgroundColor: '#1877F2',
@@ -393,6 +406,24 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '600',
     fontSize: 14,
+  },
+  badgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  searchContainer: {
+    backgroundColor: '#1E293B',
+    borderRadius: 8,
+    marginBottom: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingStart: '3%',
+  },
+  searchInput: {
+    height: 45,
+    paddingHorizontal: 12,
+    color: '#fff',
   },
   friendRow: {
     flexDirection: 'row',

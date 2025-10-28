@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -30,8 +30,10 @@ const normalize = (size) => {
     : Math.round(PixelRatio.roundToNearestPixel(newSize)) - 1;
 };
 
+
 export default function Login() {
   const insets = useSafeAreaInsets();
+  const passwordInputRef = useRef(null);
   const navigation = useNavigation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -116,6 +118,8 @@ export default function Login() {
             placeholder="Enter your Email"
             placeholderTextColor="#94A3B8"
             value={email}
+            returnKeyType='next'
+            onSubmitEditing={() => passwordInputRef.current.focus()}
             onChangeText={(text) => {
               setEmail(text);
               setEmailError('');
@@ -130,6 +134,7 @@ export default function Login() {
           <MaterialIcons name="lock" size={normalize(20)} color="#94A3B8" style={styles.inputIcon} />
           <TextInput
             style={styles.input}
+            ref={passwordInputRef}
             placeholder="Enter your Password"
             placeholderTextColor="#94A3B8"
             value={password}

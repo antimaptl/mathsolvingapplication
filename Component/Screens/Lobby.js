@@ -1,24 +1,18 @@
-import React, { useState, useEffect, useRef } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Animated,
-} from 'react-native';
+import React, {useState, useEffect, useRef} from 'react';
+import {View, Text, StyleSheet, TouchableOpacity, Animated} from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import { useNavigation, useRoute } from '@react-navigation/native';
-import { Search, X, Users, Clock, Star } from 'lucide-react-native';
+import {useNavigation, useRoute} from '@react-navigation/native';
+import {Search, X, Users, Clock, Star} from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import io from 'socket.io-client';
-import { useSocket } from '../../Context/Socket';
+import {useSocket} from '../../Context/Socket';
 
 // const SOCKET_SERVER_URL = 'http://192.168.1.10:3000/';
 
 export default function Lobby() {
   const socket = useSocket();
   const route = useRoute();
-  const { difficulty, digit, symbol, timer, qm } = route.params;
+  const {difficulty, digit, symbol, timer, qm} = route.params;
   const navigation = useNavigation();
   let playerId;
   const [isSearching, setIsSearching] = useState(false);
@@ -26,7 +20,7 @@ export default function Lobby() {
   const [playersInQueue, setPlayersInQueue] = useState(47);
   const [estimatedWait, setEstimatedWait] = useState('2-3 min');
   const [userRating, setUserRating] = useState(1847);
-  const [userName, setUserName] = useState("Player");
+  const [userName, setUserName] = useState('Player');
   const [player, setPlayer] = useState();
 
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -35,43 +29,50 @@ export default function Lobby() {
 
   const socketRef = useRef(null);
 
-  const storePlrId = async (playerId) => {
-    await AsyncStorage.setItem('playerId', playerId)
-  }
+  const storePlrId = async playerId => {
+    await AsyncStorage.setItem('playerId', playerId);
+  };
   useEffect(() => {
     // const socket = io(SOCKET_SERVER_URL);
     if (!socket) return;
     socketRef.current = socket;
 
-
-
     socket.on('connect', () => {
       console.log('🟢 Connected to socket server');
     });
 
-    socket.on('lobby-joined', (data) => { // ✅ Correct
+    socket.on('lobby-joined', data => {
+      // ✅ Correct
       storePlrId(data.player.id);
       console.log('📥 lobby-joined:', data);
     });
-    socket.on('match-found', ({ gameRoom, opponent, initialQuestionMeter }) => {
-      console.log("match Found Line 49")
 
-      console.log("2222222222222222222222" + gameRoom.id, opponent, initialQuestionMeter)
-    })
+    socket.on('potential-opponents', data => {
+      console.log('🔥 potential-opponents:', data);
+    });
 
-    socket.on('game-started', ({ gameState, currentQuestion }) => {
-      navigation.navigate('MultiPlayerGame', { currentQuestion }
+    socket.on('match-found', ({gameRoom, opponent, initialQuestionMeter}) => {
+      console.log('match Found Line 49');
+
+      console.log(
+        '2222222222222222222222' + gameRoom.id,
+        opponent,
+        initialQuestionMeter,
       );
-      console.log(gameState, currentQuestion)
-    })
+    });
+
+    socket.on('game-started', ({gameState, currentQuestion}) => {
+      navigation.navigate('MultiPlayerGame', {currentQuestion});
+      console.log(gameState, currentQuestion);
+    });
 
     return () => {
       socket.disconnect();
       socket.off('connect');
       socket.off('lobby-joined');
+      socket.off('potential-opponents');
     };
   }, [socket]);
-
 
   useEffect(() => {
     const getUserData = async () => {
@@ -79,7 +80,7 @@ export default function Lobby() {
       if (userData) {
         const user = JSON.parse(userData);
         console.log('✅ User Info:', user);
-        setPlayer(user)
+        setPlayer(user);
       }
     };
     getUserData();
@@ -98,7 +99,7 @@ export default function Lobby() {
             duration: 1000,
             useNativeDriver: true,
           }),
-        ])
+        ]),
       );
 
       const rotateAnimation = Animated.loop(
@@ -106,14 +107,14 @@ export default function Lobby() {
           toValue: 1,
           duration: 2000,
           useNativeDriver: true,
-        })
+        }),
       );
 
       pulseAnimation.start();
       rotateAnimation.start();
 
       const timer = setInterval(() => {
-        setSearchTime((prev) => prev + 1);
+        setSearchTime(prev => prev + 1);
       }, 1000);
 
       return () => {
@@ -134,7 +135,7 @@ export default function Lobby() {
     try {
       const storedUserData = await AsyncStorage.getItem('userData');
       const userData = storedUserData ? JSON.parse(storedUserData) : null;
-      console.log("===================%%%%%%%%%", userData);
+      console.log('===================%%%%%%%%%', userData);
       if (socketRef.current && socketRef.current.connected) {
         socketRef.current.emit('join-lobby', {
           userId: userData.id,
@@ -174,7 +175,7 @@ export default function Lobby() {
     }).start();
   };
 
-  const formatTime = (seconds) => {
+  const formatTime = seconds => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
@@ -194,11 +195,14 @@ export default function Lobby() {
         </TouchableOpacity>
       </View>
 
-      <Animated.View style={[styles.content, { transform: [{ scale: scaleAnim }] }]}>
+      <Animated.View
+        style={[styles.content, {transform: [{scale: scaleAnim}]}]}>
         <View style={styles.playerCard}>
           <View style={styles.ratingSection}>
             <Star color="#ffd700" size={20} />
-            <Text style={styles.ratingText}>Rating:{player?.pr?.pvp[difficulty]}</Text>
+            <Text style={styles.ratingText}>
+              Rating:{player?.pr?.pvp[difficulty]}
+            </Text>
           </View>
           <Text style={styles.playerName}>{userName}</Text>
         </View>
@@ -217,15 +221,21 @@ export default function Lobby() {
               <View style={styles.queueInfo}>
                 <View style={styles.infoRow}>
                   <Users color="#90caf9" size={16} />
-                  <Text style={styles.infoText}>{playersInQueue} players in queue</Text>
+                  <Text style={styles.infoText}>
+                    {playersInQueue} players in queue
+                  </Text>
                 </View>
                 <View style={styles.infoRow}>
                   <Clock color="#90caf9" size={16} />
-                  <Text style={styles.infoText}>Est. wait: {estimatedWait}</Text>
+                  <Text style={styles.infoText}>
+                    Est. wait: {estimatedWait}
+                  </Text>
                 </View>
               </View>
 
-              <TouchableOpacity style={styles.searchButton} onPress={handleStartSearch}>
+              <TouchableOpacity
+                style={styles.searchButton}
+                onPress={handleStartSearch}>
                 <Text style={styles.searchButtonText}>Find Match</Text>
               </TouchableOpacity>
             </View>
@@ -235,16 +245,16 @@ export default function Lobby() {
                 style={[
                   styles.searchIconContainer,
                   {
-                    transform: [{ scale: pulseAnim }, { rotate: spin }],
+                    transform: [{scale: pulseAnim}, {rotate: spin}],
                   },
-                ]}
-              >
+                ]}>
                 <Search color="#90caf9" size={48} />
               </Animated.View>
 
               <Text style={styles.searchingTitle}>Searching for Match...</Text>
               <Text style={styles.searchingSubtitle}>
-                Looking for players with rating {userRating - 100} - {userRating + 100}
+                Looking for players with rating {userRating - 100} -{' '}
+                {userRating + 100}
               </Text>
 
               {/* <View style={styles.searchStats}>
@@ -259,7 +269,9 @@ export default function Lobby() {
                 </View>
               </View> */}
 
-              <TouchableOpacity style={styles.cancelButton} onPress={handleCancelSearch}>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={handleCancelSearch}>
                 <Text style={styles.cancelButtonText}>Cancel Search</Text>
               </TouchableOpacity>
             </View>
@@ -271,7 +283,7 @@ export default function Lobby() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  container: {flex: 1},
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -322,7 +334,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.1)',
     alignItems: 'center',
   },
-  readyState: { alignItems: 'center' },
+  readyState: {alignItems: 'center'},
   iconContainer: {
     backgroundColor: 'rgba(144, 202, 249, 0.1)',
     borderRadius: 40,
@@ -364,7 +376,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
     borderRadius: 25,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: {width: 0, height: 4},
     shadowOpacity: 0.3,
     shadowRadius: 6,
     elevation: 8,
@@ -374,7 +386,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
   },
-  searchingState: { alignItems: 'center' },
+  searchingState: {alignItems: 'center'},
   searchIconContainer: {
     backgroundColor: 'rgba(144, 202, 249, 0.1)',
     borderRadius: 40,
@@ -403,7 +415,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
   },
-  statItem: { alignItems: 'center', flex: 1 },
+  statItem: {alignItems: 'center', flex: 1},
   statValue: {
     fontSize: 20,
     fontWeight: 'bold',

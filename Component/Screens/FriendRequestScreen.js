@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,50 +7,45 @@ import {
   FlatList,
   ActivityIndicator,
   Image,
-  Modal,
-  Animated,
+  Dimensions,
+  PixelRatio,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
+import Toast from 'react-native-toast-message';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+const scaleFont = (size) => {
+  const scale = SCREEN_WIDTH / 375;
+  const newSize = size * scale;
+  return Math.round(PixelRatio.roundToNearestPixel(newSize));
+};
 
 const FriendRequestScreen = () => {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [modalText, setModalText] = useState('');
-  const [modalType, setModalType] = useState('success'); // success | error
   const navigation = useNavigation();
-  const fadeAnim = useState(new Animated.Value(0))[0];
+  const fetchCalled = useRef(false); // prevent double fetch
 
-  // 🔹 Fade animation for modal
-  const showModal = (type, text) => {
-    setModalType(type);
-    setModalText(text);
-    setModalVisible(true);
-
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
-
-    // Auto close in 2 sec
-    setTimeout(() => {
-      Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }).start(() => setModalVisible(false));
-    }, 2000);
-  };
-
-  // 🔹 Fetch requests
+  // 🔹 Fetch friend requests
   const fetchFriendRequests = async () => {
     try {
       setLoading(true);
+      console.log('🌍 Calling API:', 'http://43.204.167.118:3000/api/friend/friend-request');
+
       const token = await AsyncStorage.getItem('authToken');
+      if (!token) {
+        Toast.show({
+          type: 'error',
+          text1: 'Authentication Error',
+          text2: 'Please log in again.',
+        });
+        return;
+      }
+
       const response = await axios.get(
         'http://43.204.167.118:3000/api/friend/friend-request',
         {
@@ -63,74 +58,113 @@ const FriendRequestScreen = () => {
 
       if (response.data.success) {
         setRequests(response.data.requests || []);
+      } else if (response.data.message === 'No friend requests received') {
+        setRequests([]);
+        Toast.show({
+          type: 'info',
+          text1: 'No friend requests yet',
+        });
       } else {
-        showModal('error', 'Failed to load requests');
+        Toast.show({
+          type: 'error',
+          text1: 'Failed to load friend requests',
+          text2: response.data.message || 'Something went wrong',
+        });
       }
+
     } catch (error) {
       console.log('Error fetching friend requests:', error);
-      showModal('error', 'Error fetching requests');
+      Toast.show({
+        type: 'error',
+        text1: 'Network Error',
+        text2: 'Unable to fetch friend requests. Please try again later.',
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  // 🔹 Accept / Reject request
+  // 🔹 Accept or reject a request
   const handleAction = async (requesterId, recipientId, actionType) => {
     try {
       const token = await AsyncStorage.getItem('authToken');
+      if (!token) return;
+
       const url =
         actionType === 'accepted'
           ? 'http://43.204.167.118:3000/api/friend/accept-friend'
           : 'http://43.204.167.118:3000/api/friend/reject-friend';
 
-      const response = await axios.post(
-        url,
-        {
-          requester: requesterId,
-          recipient: recipientId,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        }
+      // Disable double click
+      setRequests((prev) =>
+        prev.map((req) =>
+          req.requester._id === requesterId
+            ? { ...req, processing: true }
+            : req
+        )
       );
 
-      console.log('Response:', response.data);
+      const response = await axios.post(
+        url,
+        { requester: requesterId, recipient: recipientId },
+        { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
+      );
 
       if (response.data.success) {
-        // Success popup
-        showModal(
-          'success',
-          actionType === 'accepted'
-            ? 'Friend request accepted 🎉'
-            : 'Friend request rejected ❌'
-        );
+        Toast.show({
+          type: 'success',
+          text1:
+            actionType === 'accepted'
+              ? 'Friend request accepted 🎉'
+              : 'Friend request rejected ❌',
+        });
 
-        // Remove from list
+        // Remove request locally
         setRequests((prev) =>
           prev.filter(
-            (req) =>
-              req.requester._id !== requesterId &&
-              req.recipient !== recipientId
+            (req) => req.requester._id !== requesterId
           )
         );
       } else {
-        showModal('error', response.data.message || 'Failed to update request');
+        if (!response.data.message?.includes('Exactly one of topic')) { // skip FCM warning
+          Toast.show({
+            type: 'error',
+            text1: response.data.message || 'Failed to update request',
+          });
+        }
+        // Reset processing flag
+        setRequests((prev) =>
+          prev.map((req) =>
+            req.requester._id === requesterId
+              ? { ...req, processing: false }
+              : req
+          )
+        );
       }
     } catch (error) {
+      const msg = error.response?.data?.message;
+      if (!msg?.includes('Exactly one of topic')) { // skip FCM warning
+        Toast.show({
+          type: 'error',
+          text1: msg || 'Something went wrong, please try again.',
+        });
+      }
       console.log('Error handling request:', error.response?.data || error.message);
-      showModal(
-        'error',
-        error.response?.data?.message ||
-          'Something went wrong, please try again.'
+      setRequests((prev) =>
+        prev.map((req) =>
+          req.requester._id === requesterId
+            ? { ...req, processing: false }
+            : req
+        )
       );
     }
   };
 
   useEffect(() => {
-    fetchFriendRequests();
+    if (!fetchCalled.current) {
+      fetchCalled.current = true;
+      fetchFriendRequests();
+    }
   }, []);
 
   const renderItem = ({ item }) => (
@@ -149,17 +183,23 @@ const FriendRequestScreen = () => {
       <View style={styles.actions}>
         <TouchableOpacity
           style={[styles.btn, { backgroundColor: '#22C55E' }]}
+          disabled={item.processing}
           onPress={() =>
             handleAction(item.requester._id, item.recipient, 'accepted')
           }>
-          <Text style={styles.btnText}>Accept</Text>
+          <Text style={styles.btnText}>
+            {item.processing ? 'Processing...' : 'Accept'}
+          </Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.btn, { backgroundColor: '#EF4444' }]}
+          disabled={item.processing}
           onPress={() =>
             handleAction(item.requester._id, item.recipient, 'rejected')
           }>
-          <Text style={styles.btnText}>Reject</Text>
+          <Text style={styles.btnText}>
+            {item.processing ? 'Processing...' : 'Reject'}
+          </Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -187,28 +227,6 @@ const FriendRequestScreen = () => {
           }
         />
       )}
-
-      {/* 🔹 Custom Popup Modal */}
-      <Modal transparent visible={modalVisible} animationType="none">
-        <View style={styles.modalOverlay}>
-          <Animated.View
-            style={[
-              styles.modalContainer,
-              {
-                backgroundColor:
-                  modalType === 'success' ? '#22C55E' : '#EF4444',
-                opacity: fadeAnim,
-              },
-            ]}>
-            <Icon
-              name={modalType === 'success' ? 'checkmark-circle' : 'close-circle'}
-              size={40}
-              color="#fff"
-            />
-            <Text style={styles.modalText}>{modalText}</Text>
-          </Animated.View>
-        </View>
-      </Modal>
     </View>
   );
 };
@@ -233,7 +251,7 @@ const styles = StyleSheet.create({
   },
   header: {
     color: '#fff',
-    fontSize: 18,
+    fontSize: scaleFont(18),
     fontWeight: '700',
   },
   card: {
@@ -247,19 +265,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   avatar: {
-    width: 45,
-    height: 45,
-    borderRadius: 25,
+    width: SCREEN_WIDTH * 0.12,
+    height: SCREEN_WIDTH * 0.12,
+    borderRadius: (SCREEN_WIDTH * 0.12) / 2,
     marginRight: 12,
   },
   name: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: scaleFont(16),
     fontWeight: '600',
   },
   subText: {
     color: '#94A3B8',
-    fontSize: 13,
+    fontSize: scaleFont(13),
   },
   actions: {
     flexDirection: 'row',
@@ -270,39 +288,19 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingVertical: 8,
     paddingHorizontal: 20,
+    minWidth: SCREEN_WIDTH * 0.3,
+    alignItems: 'center',
   },
   btnText: {
     color: '#fff',
     fontWeight: '600',
+    fontSize: scaleFont(14),
   },
   emptyText: {
     color: '#94A3B8',
     textAlign: 'center',
     marginTop: 40,
-  },
-  modalOverlay: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.3)',
-  },
-  modalContainer: {
-    width: 250,
-    borderRadius: 15,
-    paddingVertical: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.4,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 10,
-  },
-  modalText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-    textAlign: 'center',
-    marginTop: 8,
+    fontSize: scaleFont(16),
   },
 });
 
