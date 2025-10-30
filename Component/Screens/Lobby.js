@@ -67,8 +67,8 @@ export default function Lobby() {
     });
 
     return () => {
-      socket.disconnect();
-      socket.off('connect');
+      // socket.disconnect();
+      // socket.off('connect');
       socket.off('lobby-joined');
       socket.off('potential-opponents');
     };

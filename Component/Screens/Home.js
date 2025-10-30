@@ -53,7 +53,7 @@ const Home = () => {
           <TouchableOpacity onPress={() => navigation.navigate('CommingSoon')}>
             <Image source={require('../Screens/Image/funcation.png')} style={styles.gridIcon} />
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
+          <TouchableOpacity onPress={() => navigation.navigate('ProfileScreen')}>
             <Image source={require('../Screens/Image/profile.png')} style={styles.gridIcon} />
           </TouchableOpacity>
         </View>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   View,
   Text,
@@ -14,13 +14,15 @@ import {
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Toast from 'react-native-toast-message';
-import { useNavigation } from '@react-navigation/native';
+import {useNavigation} from '@react-navigation/native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import DateTimePicker from "@react-native-community/datetimepicker";
+import DateTimePicker from '@react-native-community/datetimepicker';
+import Geolocation from 'react-native-geolocation-service';
+import {check, request, PERMISSIONS, RESULTS} from 'react-native-permissions';
 
-const { width } = Dimensions.get('window');
+const {width} = Dimensions.get('window');
 const scale = width / 375;
-const normalize = (size) => Math.round(scale * size);
+const normalize = size => Math.round(scale * size);
 
 export default function SignUp() {
   const navigation = useNavigation();
@@ -28,76 +30,167 @@ export default function SignUp() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [country, setCountry] = useState('');
+  const [countryFlag, setCountryFlag] = useState('');
   const [dateOfBirth, setDateOfBirth] = useState('');
-  const [location, setLocation] = useState('');
   const [otp, setotp] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [gender, setGender] = useState(''); // Gender state
-  const [showGenderOptions, setShowGenderOptions] = useState(false); // Toggle gender options visibility
-
+  const [gender, setGender] = useState('');
+  const [showGenderOptions, setShowGenderOptions] = useState(false);
   const [errors, setErrors] = useState({});
 
-  const validateEmail = (email) => {
+  useEffect(() => {
+    getUserLocation();
+  }, []);
+
+  const getUserLocation = async () => {
+    try {
+      const permission = await request(
+        Platform.OS === 'android'
+          ? PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION
+          : PERMISSIONS.IOS.LOCATION_WHEN_IN_USE,
+      );
+
+      if (permission === RESULTS.GRANTED) {
+        Geolocation.getCurrentPosition(
+          async position => {
+            const {latitude, longitude} = position.coords;
+            const response = await fetch(
+              `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`,
+            );
+            const data = await response.json();
+
+            if (data) {
+              const city = data.city || data.locality || '';
+              const countryName = data.countryName || '';
+              const countryCode = data.countryCode || ''; // example: "IN"
+              const flag = getFlagEmoji(countryCode);
+
+              const locationText =
+                city && countryName ? `${city}, ${countryName}` : countryName;
+              setCountry(locationText);
+              setCountryFlag(flag);
+            }
+          },
+          error => {
+            console.log(error);
+            Toast.show({
+              type: 'error',
+              text1: 'Location Error',
+              text2: 'Unable to fetch your location automatically',
+            });
+          },
+          {enableHighAccuracy: true, timeout: 15000, maximumAge: 10000},
+        );
+      } else {
+        Toast.show({
+          type: 'info',
+          text1: 'Permission Denied',
+          text2: 'Please enable location access in settings',
+        });
+      }
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  const getFlagEmoji = countryCode => {
+    if (!countryCode) return '';
+    return countryCode
+      .toUpperCase()
+      .replace(/./g, char => String.fromCodePoint(127397 + char.charCodeAt(0)));
+  };
+
+  const validateEmail = email => {
     const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return regex.test(email);
   };
 
   const handleSignUp = async () => {
     let tempErrors = {};
+
+    // ✅ Only these three fields required
     if (!username.trim()) tempErrors.username = 'This field is required';
     if (!email.trim()) tempErrors.email = 'This field is required';
-    else if (!validateEmail(email)) tempErrors.email = 'Please enter a valid email';
+    else if (!validateEmail(email))
+      tempErrors.email = 'Please enter a valid email';
     if (!password.trim()) tempErrors.password = 'This field is required';
-    if (!country.trim()) tempErrors.country = 'This field is required';
-    if (!dateOfBirth.trim()) tempErrors.dateOfBirth = 'This field is required';
-    if (!gender.trim()) tempErrors.gender = 'This field is required';
+
+    // ✅ Country, Gender, DOB are optional now
 
     if (Object.keys(tempErrors).length > 0) {
       setErrors(tempErrors);
-      Toast.show({ type: 'error', text1: 'Form Error', text2: 'Please fix the errors above' });
+      Toast.show({
+        type: 'error',
+        text1: 'Form Error',
+        text2: 'Please fill required fields',
+      });
       return;
     }
 
     setErrors({});
 
     try {
-      const response = await fetch('http://43.204.167.118:3000/api/auth/verifymail', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-      });
+      const response = await fetch(
+        'http://43.204.167.118:3000/api/auth/verifymail',
+        {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({email}),
+        },
+      );
 
       const data = await response.json();
       if (data.success === true) {
-        
-        Toast.show({ type: 'success', text1: 'OTP Sent', text2: `OTP sent to ${email}` });
+        Toast.show({
+          type: 'success',
+          text1: 'OTP Sent',
+          text2: `OTP sent to ${email}`,
+        });
         navigation.navigate('EmailVerification', {
-          userData: { username, email, password, country, dateOfBirth, gender },
+          userData: {
+            username,
+            email,
+            password,
+            country,
+            countryFlag,
+            dateOfBirth,
+            gender,
+          },
         });
       } else {
-        Toast.show({ type: 'error', text1: 'Failed', text2: data.message || 'Something went wrong!' });
+        Toast.show({
+          type: 'error',
+          text1: 'Failed',
+          text2: data.message || 'Something went wrong!',
+        });
       }
     } catch (error) {
-      Toast.show({ type: 'error', text1: 'Network Error', text2: 'Please try again later.' });
+      Toast.show({
+        type: 'error',
+        text1: 'Network Error',
+        text2: 'Please try again later.',
+      });
     }
   };
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1 }}
+      style={{flex: 1}}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={normalize(20)}
-    >
+      keyboardVerticalOffset={normalize(20)}>
       <LinearGradient colors={['#0f162b', '#0f162b']} style={styles.container}>
-        <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
+        <ScrollView
+          contentContainerStyle={styles.scrollContainer}
+          keyboardShouldPersistTaps="handled">
           <View style={styles.formContainer}>
             <Text style={styles.title}>Register</Text>
 
+            {/* <Text style={{color:"red",opacity:1, fontWeight:"bold",start:"2%"}}>*</Text> */}
             <InputField
               icon={require('../Screens/Image/gender.png')}
-              placeholder="Username"
+              placeholder="Username *"
               value={username}
               onChangeText={setUserName}
               error={errors.username}
@@ -105,18 +198,27 @@ export default function SignUp() {
 
             <InputField
               icon={require('../Screens/Image/face.png')}
-              placeholder="Email"
+              placeholder="Email *"
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
               error={errors.email}
             />
 
-            <View style={[styles.inputContainer, errors.password && styles.errorBorder]}>
-              <MaterialIcons name="lock" size={normalize(20)} color="#94A3B8" style={styles.inputIcon} />
+            <View
+              style={[
+                styles.inputContainer,
+                errors.password && styles.errorBorder,
+              ]}>
+              <MaterialIcons
+                name="lock"
+                size={normalize(20)}
+                color="#94A3B8"
+                style={styles.inputIcon}
+              />
               <TextInput
                 style={styles.input}
-                placeholder="Enter your Password"
+                placeholder="Enter your Password *"
                 placeholderTextColor="#94A3B8"
                 value={password}
                 onChangeText={setPassword}
@@ -130,27 +232,58 @@ export default function SignUp() {
                 />
               </TouchableOpacity>
             </View>
-            {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
+            {errors.password && (
+              <Text style={styles.errorText}>{errors.password}</Text>
+            )}
 
-            <InputField
-              icon={require('../Screens/Image/location.png')}
-              placeholder="Country"
-              value={country}
-              onChangeText={setCountry}
-              error={errors.country}
-            />
+            <View style={styles.inputContainer}>
+              <Image
+                style={styles.inputIcon}
+                source={require('../Screens/Image/location.png')}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="City, Country"
+                placeholderTextColor="#94A3B8"
+                value={country}
+                onChangeText={setCountry}
+              />
+              {countryFlag ? (
+                <Text style={{fontSize: normalize(20), marginLeft: 8}}>
+                  {countryFlag}
+                </Text>
+              ) : null}
+            </View>
 
-            <View style={[styles.dropdownContainer, errors.gender && styles.errorBorder]}>
+            <View
+              style={[
+                styles.dropdownContainer,
+                errors.gender && styles.errorBorder,
+              ]}>
               <TouchableOpacity
                 style={styles.dropdownButton}
-                onPress={() => setShowGenderOptions(!showGenderOptions)}
-              >
+                onPress={() => setShowGenderOptions(!showGenderOptions)}>
                 <View style={styles.dropdownTextContainer}>
-                  <MaterialIcons name="person" size={normalize(24)} color="#94A3B8" style={styles.genderIcon} />
-                  <Text style={[styles.input1, { color: gender ? 'white' : '#94A3B8' }]}>{gender || 'Select Gender'}</Text>
+                  <MaterialIcons
+                    name="person"
+                    size={normalize(24)}
+                    color="#94A3B8"
+                    style={styles.genderIcon}
+                  />
+                  <Text
+                    style={[
+                      styles.input1,
+                      {color: gender ? 'white' : '#94A3B8'},
+                    ]}>
+                    {gender || 'Select Gender'}
+                  </Text>
                 </View>
                 <MaterialIcons
-                  name={showGenderOptions ? 'keyboard-arrow-up' : 'keyboard-arrow-down'}
+                  name={
+                    showGenderOptions
+                      ? 'keyboard-arrow-up'
+                      : 'keyboard-arrow-down'
+                  }
                   size={normalize(24)}
                   color="#94A3B8"
                   style={styles.dropdownIcon}
@@ -158,23 +291,41 @@ export default function SignUp() {
               </TouchableOpacity>
               {showGenderOptions && (
                 <View style={styles.dropdownOptions}>
-                  {['Male', 'Female', 'Other'].map((option) => (
-                    <TouchableOpacity key={option} onPress={() => { setGender(option); setShowGenderOptions(false); }}>
+                  {['Male', 'Female', 'Other'].map(option => (
+                    <TouchableOpacity
+                      key={option}
+                      onPress={() => {
+                        setGender(option);
+                        setShowGenderOptions(false);
+                      }}>
                       <Text style={styles.dropdownOptionText}>{option}</Text>
                     </TouchableOpacity>
                   ))}
                 </View>
               )}
             </View>
-            {errors.gender && <Text style={styles.errorText}>{errors.gender}</Text>}
 
             <TouchableOpacity onPress={() => setShowDatePicker(true)}>
-              <View style={[styles.inputContainer, errors.dateOfBirth && styles.errorBorder]}>
-                <MaterialIcons name="calendar-month" size={normalize(20)} color="#94A3B8" style={styles.inputIcon} />
-                <Text style={[styles.input, { paddingVertical: normalize(10), color: dateOfBirth ? 'white' : '#94A3B8' }]}> {dateOfBirth || 'Date of Birth'}</Text>
+              <View style={[styles.inputContainer]}>
+                <MaterialIcons
+                  name="calendar-month"
+                  size={normalize(20)}
+                  color="#94A3B8"
+                  style={styles.inputIcon}
+                />
+                <Text
+                  style={[
+                    styles.input,
+                    {
+                      paddingVertical: normalize(10),
+                      color: dateOfBirth ? 'white' : '#94A3B8',
+                    },
+                  ]}>
+                  {' '}
+                  {dateOfBirth || 'Date of Birth'}
+                </Text>
               </View>
             </TouchableOpacity>
-            {errors.dateOfBirth && <Text style={styles.errorText}>{errors.dateOfBirth}</Text>}
 
             {showDatePicker && (
               <DateTimePicker
@@ -208,22 +359,32 @@ export default function SignUp() {
               <TouchableOpacity
                 style={styles.socialButton}
                 onPress={() =>
-                  Toast.show({ type: 'info', text1: 'Google login coming soon' })
+                  Toast.show({type: 'info', text1: 'Google login coming soon'})
                 }>
-                <Image style={styles.socialIcon} source={require('../Screens/Image/google.png')} />
+                <Image
+                  style={styles.socialIcon}
+                  source={require('../Screens/Image/google.png')}
+                />
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.socialButton}
                 onPress={() =>
-                  Toast.show({ type: 'info', text1: 'Google login coming soon' })
+                  Toast.show({
+                    type: 'info',
+                    text1: 'Facebook login coming soon',
+                  })
                 }>
-                <Image style={styles.socialIcon} source={require('../Screens/Image/facebook.png')} />
+                <Image
+                  style={styles.socialIcon}
+                  source={require('../Screens/Image/facebook.png')}
+                />
               </TouchableOpacity>
             </View>
 
             <TouchableOpacity onPress={() => navigation.navigate('Login')}>
               <Text style={styles.registerText}>
-                Already a member? <Text style={styles.registerLink}>Login here</Text>
+                Already a member?{' '}
+                <Text style={styles.registerLink}>Login here</Text>
               </Text>
             </TouchableOpacity>
           </View>
@@ -234,11 +395,15 @@ export default function SignUp() {
 }
 
 // Input Field with Image Icon
-const InputField = ({ icon, error, ...props }) => (
+const InputField = ({icon, error, ...props}) => (
   <>
     <View style={[styles.inputContainer, error && styles.errorBorder]}>
       <Image style={styles.inputIcon} source={icon} />
-      <TextInput style={styles.input} placeholderTextColor="#94A3B8" {...props} />
+      <TextInput
+        style={styles.input}
+        placeholderTextColor="#94A3B8"
+        {...props}
+      />
     </View>
     {error && <Text style={styles.errorText}>{error}</Text>}
   </>
@@ -285,14 +450,6 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: normalize(16),
   },
-  // input1: {
-  //   flex: 1,
-  //   height: normalize(40),
-  //   color: '#94A3B8',
-  //   fontSize: normalize(16),
-  //   top: 5,
-  //   start: 5
-  // },
   loginButton: {
     backgroundColor: '#FB923C',
     borderRadius: 50,
@@ -325,7 +482,6 @@ const styles = StyleSheet.create({
   socialContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginBottom: normalize(0),
   },
   socialButton: {
     width: normalize(40),
@@ -360,14 +516,14 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: normalize(12),
     paddingHorizontal: normalize(15),
-    alignItems: 'center', // Aligns text and icon vertically
+    alignItems: 'center',
   },
   dropdownTextContainer: {
     flexDirection: 'row',
-    alignItems: 'center', // Aligns icon and text in a row
+    alignItems: 'center',
   },
   genderIcon: {
-    marginRight: normalize(10), // Space between icon and text
+    marginRight: normalize(10),
   },
   input1: {
     color: '#94A3B8',

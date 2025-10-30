@@ -4,7 +4,6 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AppState } from 'react-native';
-
 import SignUp from './Component/Screens/SignUp';
 import SkipScreen from './Component/Screens/SkipScreen';
 import BottomTab from './Component/Screens/BottomTab';
@@ -48,6 +47,7 @@ import ProfileScreen from './Component/Screens/ProfileScreen';
 import { ThemeProvider } from './Component/Globalfile/ThemeContext';
 import ThemeSelectorScreen from './Component/Screens/ThemeSelectorScreen';
 import { KeyboardProvider } from './Component/Globalfile/KeyboardContext';
+
 
 const Stack = createNativeStackNavigator();
 

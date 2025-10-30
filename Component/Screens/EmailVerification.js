@@ -49,6 +49,7 @@ export default function EmailVerification() {
     !userData.gender?.trim() ||
     !userData.dateOfBirth?.toString().trim() ||
     !userData.country?.trim() ||
+    !userData.countryFlag ||
     !userEnteredOtp
   ) {
     Toast.show({
@@ -66,6 +67,8 @@ export default function EmailVerification() {
     password:    userData.password.trim(),
     gender:      userData.gender.trim().toLowerCase(),
     country:     userData.country.trim(),
+    countryFlag: userData.countryFlag, 
+
     // <-- Preserve the YYYY-MM-DD string exactly
     dateOfBirth: String(userData.dateOfBirth).trim(),
     otp:         userEnteredOtp,

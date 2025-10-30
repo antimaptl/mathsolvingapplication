@@ -10,6 +10,7 @@ import {
   ScrollView,
   Dimensions,
   ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
@@ -23,15 +24,26 @@ const {width} = Dimensions.get('window');
 
 const AddUserScreen = () => {
   const navigation = useNavigation();
-const isFocused = useIsFocused();
+  const isFocused = useIsFocused();
+  const [refreshing, setRefreshing] = useState(false);
   const [users, setUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [searchText, setSearchText] = useState('');
   const [loading, setLoading] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
 
+
+  const onRefresh = () => {
+    setRefreshing(true);
+
+    fetchPendingCount();
+    fetchUsers();
+    setTimeout(() => {
+      setRefreshing(false);
+    }, 2000);
+  };
   // 🔔 Fetch pending requests count (only for this user)
- const fetchPendingCount = async () => {
+  const fetchPendingCount = async () => {
     try {
       const token = await AsyncStorage.getItem('authToken');
       const response = await axios.get(
@@ -194,8 +206,7 @@ const isFocused = useIsFocused();
     );
   };
 
-  
- useEffect(() => {
+  useEffect(() => {
     if (isFocused) {
       fetchUsers();
       fetchPendingCount();
@@ -231,7 +242,7 @@ const isFocused = useIsFocused();
   }, []);
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <View style={styles.container}>
       {/* 🔙 Header */}
       <View style={styles.headerRow}>
         <View style={styles.leftHeader}>
@@ -305,16 +316,24 @@ const isFocused = useIsFocused();
           <Text style={styles.sectionTitle}>
             All Users ({filteredUsers.length})
           </Text>
-          <FlatList
-            data={filteredUsers}
-            keyExtractor={item => item._id}
-            renderItem={renderItem}
-            scrollEnabled={false}
-            contentContainerStyle={{paddingBottom: 30}}
-          />
+          <ScrollView
+           horizontal={false}
+            vertical={true}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+            }
+           showsVerticalScrollIndicator={false}>
+            <FlatList
+              data={filteredUsers}
+              keyExtractor={item => item._id}
+              renderItem={renderItem}
+              scrollEnabled={false}
+              contentContainerStyle={{paddingBottom: 30}}
+            />
+          </ScrollView>
         </>
       )}
-    </ScrollView>
+    </View>
   );
 };
 

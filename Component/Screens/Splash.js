@@ -36,7 +36,7 @@ export default function SplashScreen() {
 
   return (
     <SafeAreaView
-      style={[styles.safeArea, { paddingTop: insets.top }]}
+      style={[styles.safeArea,]}
     >
       {/* ✅ If the current theme has gradient use it */}
       {theme.backgroundGradient ? (

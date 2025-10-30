@@ -10,6 +10,7 @@ export const themes = {
     backgroundGradient: ['#0B1220', '#0B1220'],
     text: '#FFFFFF',
     primary: '#FB923C',
+    cardBackground : '#1E293B',
     buttonGradient: ['#595CFF', '#87AEE9'],
   },
   blue: {
@@ -17,6 +18,7 @@ export const themes = {
     backgroundGradient: ['#0A192F', '#112D4E', '#1B4F72'], 
     text: '#E3F2FD', 
     primary: '#00BFFF', 
+    cardBackground : '#1E293B',
     buttonGradient: ['#0D47A1', '#1976D2'],
   },
   purple: {
@@ -24,6 +26,7 @@ export const themes = {
     backgroundGradient: ['#2E003E', '#3D0075', '#6A00B5'],
     text: '#FFFFFF',
     primary: '#F5B3FF',
+    cardBackground : '#1E293B',
     buttonGradient: ['#3D0075', '#6A00B5'],
   },
   teal: {
@@ -31,6 +34,7 @@ export const themes = {
     backgroundGradient: ['#012E40', '#026773', '#3CA6A6'],
     text: '#FFFFFF',
     primary: '#F7DC6F',
+    cardBackground : '#1E293B',
     buttonGradient: ['#026773', '#3CA6A6'],
   },
   pink: {
@@ -38,6 +42,7 @@ export const themes = {
     backgroundGradient: ['#33001b', '#ff0084'],
     text: '#FFFFFF',
     primary: '#FFC0CB',
+    cardBackground : '#1E293B',
     buttonGradient: ['#FF0084', '#00cccc'],
   },
 };

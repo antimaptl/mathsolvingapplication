@@ -198,7 +198,8 @@ const MathInputScreen = () => {
       if (!response.ok) throw new Error(`Status: ${response.status}`);
       const data = await response.json();
       const q = data.question;
-      setQuestion(`${q.input1} ${getMathSymbol(q.symbol)} ${q.input2}`);
+      console.log("mmmmmmmmmmmmmmmmmmmm" , q);
+      setQuestion(`${String(q.input1)} ${getMathSymbol(q.symbol)} ${String(q.input2)}`);
       setCorrectAnswer(String(q.answer));
       playEffect('beep', isSoundOnRef.current);
       beepPlayingRef.current = true;

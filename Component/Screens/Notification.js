@@ -39,10 +39,11 @@ const Notification = () => {
   };
 
   const sendTokenToServer = async fcmToken => {
+    console.log('Sending FCM token to server:', fcmToken);
     try {
       const token = await AsyncStorage.getItem('authToken');
       if (!token) return;
-      await axios.patch(
+      const res = await axios.patch(
         'http://43.204.167.118:3000/api/auth/save-fcmToken',
         { fcmToken },
         {
@@ -50,8 +51,9 @@ const Notification = () => {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
-        }
+        },
       );
+      console.log('FCM token sent to server:', res)
     } catch (e) {
       console.log('Send token error:', e);
     }
