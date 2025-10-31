@@ -12,33 +12,43 @@ import {
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import { useNavigation } from '@react-navigation/native';
+import {useNavigation} from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import LinearGradient from 'react-native-linear-gradient';
-import { useTheme } from '../Globalfile/ThemeContext'; // ✅ import ThemeContext
+import {useTheme} from '../Globalfile/ThemeContext'; // ✅ import ThemeContext
 
-const { width, height } = Dimensions.get('window');
+const {width, height} = Dimensions.get('window');
 const scale = size => (width / 375) * size;
 const scaleFont = size => size * PixelRatio.getFontScale();
 
 const menuItems = [
-  { icon: 'notifications-on', label: 'NOTIFICATION', route: 'CommingSoon', lib: 'MaterialIcons' },
-  { icon: 'person-circle-outline', label: 'PROFILE', route: 'ProfileScreen' },
-  { icon: 'person-add-outline', label: 'FRIENDS', route: 'AddUserScreen' },
-  { icon: 'time-outline', label: 'HISTORY', route: 'CommingSoon' },
-  { icon: 'stats-chart-outline', label: 'STATS', route: 'CommingSoon' },
-  { icon: 'trophy-outline', label: 'ACHIEVEMENTS', route: 'CommingSoon' },
-  { icon: 'bar-chart-outline', label: 'LEADERBOARD', route: 'CommingSoon' },
-  { icon: 'settings', label: 'SETTINGS', route: 'CommingSoon' },
-  { icon: 'color-palette-outline', label: 'THEME', route: 'ThemeSelectorScreen' },
-  { icon: 'volume-medium-outline', label: 'SOUND', route: 'CommingSoon' },
-  { icon: 'language', label: 'LANGUAGE', route: 'CommingSoon' },
-  { icon: 'support-agent', label: 'SUPPORT', route: 'CommingSoon', lib: 'MaterialIcons' },
+  {
+    icon: 'notifications-on',
+    label: 'NOTIFICATION',
+    route: 'CommingSoon',
+    lib: 'MaterialIcons',
+  },
+  {icon: 'person-circle-outline', label: 'PROFILE', route: 'ProfileScreen'},
+  {icon: 'person-add-outline', label: 'FRIENDS', route: 'AddUserScreen'},
+  {icon: 'time-outline', label: 'HISTORY', route: 'CommingSoon'},
+  {icon: 'stats-chart-outline', label: 'STATS', route: 'CommingSoon'},
+  {icon: 'trophy-outline', label: 'ACHIEVEMENTS', route: 'CommingSoon'},
+  {icon: 'bar-chart-outline', label: 'LEADERBOARD', route: 'CommingSoon'},
+  {icon: 'settings', label: 'SETTINGS', route: 'CommingSoon'},
+  {icon: 'color-palette-outline', label: 'THEME', route: 'ThemeSelectorScreen'},
+  {icon: 'volume-medium-outline', label: 'SOUND', route: 'CommingSoon'},
+  {icon: 'language', label: 'LANGUAGE', route: 'CommingSoon'},
+  {
+    icon: 'support-agent',
+    label: 'SUPPORT',
+    route: 'CommingSoon',
+    lib: 'MaterialIcons',
+  },
 ];
 
 const More = () => {
   const navigation = useNavigation();
-  const { theme } = useTheme(); // ✅ Get theme
+  const {theme} = useTheme(); // ✅ Get theme
 
   const handleLogout = async () => {
     await AsyncStorage.clear();
@@ -55,21 +65,43 @@ const More = () => {
       />
       <View style={styles.topBar}>
         <TouchableOpacity onPress={() => navigation.navigate('Home')}>
-          <Ionicons name="arrow-back" size={scale(24)} color={theme.text || '#808080'} />
+          <Ionicons
+            name="arrow-back"
+            size={scale(24)}
+            color={theme.text || '#808080'}
+          />
         </TouchableOpacity>
-        <Text style={[styles.menuTitle, { color: theme.text || '#fff' }]}>More</Text>
+        <Text style={[styles.menuTitle, {color: theme.text || '#fff'}]}>
+          More
+        </Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.menuList}>
         {menuItems.map((item, index) => {
-          const IconComp = item.lib === 'MaterialIcons' ? MaterialIcons : Ionicons;
+          const IconComp =
+            item.lib === 'MaterialIcons' ? MaterialIcons : Ionicons;
           return (
             <TouchableOpacity
               key={index}
               style={styles.menuItem}
-              onPress={() => navigation.navigate(item.route)}>
-              <IconComp name={item.icon} size={scale(20)} color={theme.text || '#fff'} style={styles.icon} />
-              <Text style={[styles.menuText, { color: theme.text || '#fff' }]}>{item.label}</Text>
+              onPress={() => {
+                if (item.route === 'ThemeSelectorScreen') {
+                  navigation.navigate('ThemeSelectorScreen', {
+                    from: 'settings',
+                  });
+                } else {
+                  navigation.navigate(item.route);
+                }
+              }}>
+              <IconComp
+                name={item.icon}
+                size={scale(20)}
+                color={theme.text || '#fff'}
+                style={styles.icon}
+              />
+              <Text style={[styles.menuText, {color: theme.text || '#fff'}]}>
+                {item.label}
+              </Text>
             </TouchableOpacity>
           );
         })}
@@ -77,11 +109,11 @@ const More = () => {
 
       {/* ✅ Themed Logout Button */}
       <LinearGradient
-        colors={
-           [theme.primary || '#FB923C', theme.primary || '#FF7F50']
-        }
+        colors={[theme.primary || '#FB923C', theme.primary || '#FF7F50']}
         style={styles.logoutButton}>
-        <TouchableOpacity onPress={handleLogout} style={{ width: '100%', alignItems: 'center' }}>
+        <TouchableOpacity
+          onPress={handleLogout}
+          style={{width: '100%', alignItems: 'center'}}>
           <Text style={styles.logoutText}>Logout</Text>
         </TouchableOpacity>
       </LinearGradient>
@@ -89,11 +121,11 @@ const More = () => {
   );
 
   return theme.backgroundGradient ? (
-    <LinearGradient colors={theme.backgroundGradient} style={{ flex: 1 }}>
+    <LinearGradient colors={theme.backgroundGradient} style={{flex: 1}}>
       <Content />
     </LinearGradient>
   ) : (
-    <View style={{ flex: 1, backgroundColor: '#0F172A' }}>
+    <View style={{flex: 1, backgroundColor: '#0F172A'}}>
       <Content />
     </View>
   );

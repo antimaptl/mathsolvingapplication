@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,10 +7,12 @@ import {
   Image,
   Dimensions,
   SafeAreaView,
-  StatusBar, 
+  StatusBar,
 } from 'react-native';
 import Swiper from 'react-native-swiper';
+import LinearGradient from 'react-native-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTheme } from '../Globalfile/ThemeContext'; // ✅ Import theme
 
 const { width, height } = Dimensions.get('window');
 const RF = (size) => (size * width) / 375;
@@ -42,12 +44,13 @@ const OnBoarding = ({ navigation }) => {
   const swiperRef = useRef(null);
   const [index, setIndex] = useState(0);
   const insets = useSafeAreaInsets();
+  const { theme } = useTheme(); // ✅ Get theme
 
   const handleButtonPress = () => {
     if (index < slides.length - 1) {
       swiperRef.current.scrollBy(1);
     } else {
-      navigation.navigate('Login');
+      navigation.navigate('AuthLandingScreen');
     }
   };
 
@@ -64,24 +67,17 @@ const OnBoarding = ({ navigation }) => {
     }
   };
 
-  const getTitleStyle = (id) => {
-    switch (id) {
-      case 1:
-        return styles.titleStyleOne;
-      case 2:
-        return styles.titleStyleTwo;
-      case 3:
-        return styles.titleStyleThree;
-      default:
-        return {};
-    }
-  };
-
   return (
-    <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
-      {/* ✅ Add this line */}
-      <StatusBar backgroundColor="#0f162b" barStyle="light-content" />
+    <LinearGradient
+      colors={theme.backgroundGradient || ['#0f162b', '#0f162b']}
+      style={[styles.container, { paddingTop: insets.top }]}
+    >
+      <StatusBar
+        backgroundColor={theme.statusBarColor || '#0f162b'}
+        barStyle={theme.statusBarStyle || 'light-content'}
+      />
 
+      {/* Swiper Section */}
       <Swiper
         ref={swiperRef}
         loop={false}
@@ -95,12 +91,17 @@ const OnBoarding = ({ navigation }) => {
               style={[styles.image, getImageStyle(slide.id)]}
               resizeMode="contain"
             />
-            <Text style={[styles.title, getTitleStyle(slide.id)]}>{slide.title}</Text>
-            <Text style={styles.description}>{slide.description}</Text>
+            <Text style={[styles.title, { color: theme.textPrimary || '#fff' }]}>
+              {slide.title}
+            </Text>
+            <Text style={[styles.description, { color: theme.textSecondary || '#94A3B8' }]}>
+              {slide.description}
+            </Text>
           </View>
         ))}
       </Swiper>
 
+      {/* Pagination Dots */}
       <View style={styles.paginationContainer}>
         {slides.map((_, i) => (
           <View
@@ -109,85 +110,64 @@ const OnBoarding = ({ navigation }) => {
               styles.dotStyle,
               {
                 backgroundColor: dotColors[i],
-                width: index === i ? RF(25) : RF(4),
+                opacity: index === i ? 1 : 0.4,
+                width: index === i ? RF(20) : RF(5),
               },
             ]}
           />
         ))}
       </View>
 
-      <TouchableOpacity style={styles.button} onPress={handleButtonPress}>
+      {/* Continue / Next Button */}
+      <TouchableOpacity
+        style={[
+          styles.button,
+          { backgroundColor: theme.primary || '#FB923C' },
+        ]}
+        onPress={handleButtonPress}
+      >
         <Text style={styles.buttonText}>{slides[index].buttonText}</Text>
       </TouchableOpacity>
-    </SafeAreaView>
+    </LinearGradient>
   );
 };
+
+export default OnBoarding;
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0f162b',
   },
   slide: {
     flex: 1,
     alignItems: 'center',
+    justifyContent: 'center',
     paddingHorizontal: RF(20),
   },
   image: {
-    width: width * 0.4,
+    width: width * 0.5,
     height: height * 0.25,
     marginTop: RF(25),
   },
   imageStyleOne: {
     borderRadius: 10,
   },
-  imageStyleTwo: {
-    // borderWidth: 2,
-    // borderColor: 'blue',
-  },
   imageStyleThree: {
     width: width * 0.7,
-    height: height * 0.30,
+    height: height * 0.3,
   },
   title: {
     fontSize: RF(24),
     fontWeight: '700',
-    marginBottom: RF(15),
-  },
-  titleStyleOne: {
-    color: '#fff',
-  },
-  titleStyleTwo: {
-    color: '#fff',
-  },
-  titleStyleThree: {
-    color: '#fff',
+    marginTop: RF(20),
+    textAlign: 'center',
   },
   description: {
-    fontSize: RF(16),
-    color: '#94A3B8',
+    fontSize: RF(15),
     textAlign: 'center',
-    paddingHorizontal: RF(40),
+    paddingHorizontal: RF(35),
     lineHeight: RF(22),
-    height: RF(66),
-    justifyContent: 'center',
-  },
-  button: {
-    position: 'absolute',
-    width: width * 0.75,
-    height: RF(40),
-    left: width * 0.15,
-    top: height * 0.87,
-    backgroundColor: '#FB923C',
-    borderRadius: RF(50),
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 5,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: RF(18),
-    fontWeight: 'bold',
+    marginTop: RF(10),
   },
   paginationContainer: {
     position: 'absolute',
@@ -197,10 +177,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   dotStyle: {
-    height: RF(4),
-    borderRadius: RF(3),
-    marginHorizontal: RF(2),
+    height: RF(5),
+    borderRadius: RF(5),
+    marginHorizontal: RF(3),
+  },
+  button: {
+    position: 'absolute',
+    width: width * 0.75,
+    height: RF(45),
+    left: width * 0.125,
+    bottom: height * 0.08,
+    borderRadius: RF(50),
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 5,
+    shadowColor: '#FB923C',
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: RF(18),
+    fontWeight: 'bold',
   },
 });
-
-export default OnBoarding;

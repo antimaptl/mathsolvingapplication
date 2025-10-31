@@ -1,6 +1,7 @@
 import { StyleSheet } from 'react-native';
 import React, { useEffect, useRef } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
+
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AppState } from 'react-native';
@@ -47,6 +48,15 @@ import ProfileScreen from './Component/Screens/ProfileScreen';
 import { ThemeProvider } from './Component/Globalfile/ThemeContext';
 import ThemeSelectorScreen from './Component/Screens/ThemeSelectorScreen';
 import { KeyboardProvider } from './Component/Globalfile/KeyboardContext';
+import LanguageSelectionScreen from './Component/Screens/LanguageSelectionScreen';
+import { I18nextProvider } from 'react-i18next';
+import i18n from './Component/Globalfile/localization/i18n';
+import LanguageConfirmationScreen from './Component/Screens/LanguageConfirmationScreen';
+import AuthLandingScreen from './Component/Screens/AuthLandingScreen';
+import NotificationPermissionScreen from './Component/Screens/NotificationPermissionScreen';
+import ChooseThemeIntroScreen from './Component/Screens/ChooseThemeIntroScreen';
+import AddFriendScreen from './Component/Screens/AddFriendScreen';
+import WelcomeScreen from './Component/Screens/WelcomeScreen';
 
 
 const Stack = createNativeStackNavigator();
@@ -96,6 +106,7 @@ const App = () => {
   }, []);
 
   return (
+   <I18nextProvider>
     <ThemeProvider>
       <KeyboardProvider>
         <AuthProvider>
@@ -105,12 +116,17 @@ const App = () => {
               <Stack.Navigator screenOptions={{ headerShown: false }}>
                 <Stack.Screen name="Splash" component={Splash} />
                 <Stack.Screen name="OnBoarding" component={OnBoarding} />
+                 <Stack.Screen name="AuthLandingScreen" component={AuthLandingScreen} />
                 <Stack.Screen name="Login" component={Login} />
                 <Stack.Screen name="SignUp" component={SignUp} />
                 <Stack.Screen name="SkipScreen" component={SkipScreen} />
+                <Stack.Screen name="ChooseThemeIntroScreen" component={ChooseThemeIntroScreen} />
                 <Stack.Screen name="BottomTab" component={BottomTab} />
+                <Stack.Screen name="WelcomeScreen" component={WelcomeScreen} />
                 <Stack.Screen name="PlayGame" component={PlayGame} />
                 <Stack.Screen name="Home" component={Home} />
+                <Stack.Screen name="NotificationPermissionScreen" component={NotificationPermissionScreen} />
+                 <Stack.Screen name="AddFriendScreen" component={AddFriendScreen} />
                 <Stack.Screen name="ProfileScreen" component={ProfileScreen} />
                 <Stack.Screen name="ThemeSelectorScreen" component={ThemeSelectorScreen} />
                 <Stack.Screen name="MathInputScreen" component={MathInputScreen} />
@@ -139,6 +155,8 @@ const App = () => {
                 <Stack.Screen name="ForgetPassword" component={ForgetPassword} />
                 <Stack.Screen name="More" component={More} />
                 <Stack.Screen name="FriendRequestScreen" component={FriendRequestScreen} />
+                 <Stack.Screen name="LanguageSelectionScreen" component={LanguageSelectionScreen} />
+                 <Stack.Screen name="LanguageConfirmationScreen" component={LanguageConfirmationScreen} />
               </Stack.Navigator>
             </NavigationContainer>
             <Toast />
@@ -146,6 +164,7 @@ const App = () => {
         </AuthProvider>
       </KeyboardProvider>
     </ThemeProvider>
+    </I18nextProvider>
   );
 };
 

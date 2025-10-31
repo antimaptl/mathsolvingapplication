@@ -24,7 +24,7 @@ export default function SplashScreen() {
         if (token) {
           navigation.replace('BottomTab');
         } else {
-          navigation.replace('OnBoarding');
+          navigation.replace('LanguageSelectionScreen');
         }
       } catch (error) {
         console.log('Error checking auth:', error);

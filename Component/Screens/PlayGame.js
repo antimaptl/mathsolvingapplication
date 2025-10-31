@@ -103,7 +103,7 @@ const PlayGame = ({route}) => {
       };
 
       navigation.navigate(
-        gametype === 'play' ? 'MathInputScreen' : 'Lobby',
+        gametype === 'PRACTICE' ? 'MathInputScreen' : 'Lobby',
         params,
       );
     } catch (error) {

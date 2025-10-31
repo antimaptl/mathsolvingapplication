@@ -87,23 +87,23 @@ const Home = () => {
 
       {/* 🎮 Center Buttons with theme color */}
       <TouchableOpacity
-        onPress={() => navigation.navigate('PlayGame', { gametype: 'play' })}
+        onPress={() => navigation.navigate('PlayGame', { gametype: 'PRACTICE' })}
         style={[
           styles.newButton1,
           { backgroundColor: theme.primary || '#FB923C' },
         ]}>
         <Image source={require('../Screens/Image/pluse.png')} style={styles.ticketIcon} />
-        <Text style={styles.newText}>Play</Text>
+        <Text style={styles.newText}>PRACTICE</Text>
       </TouchableOpacity>
 
       <TouchableOpacity
-        onPress={() => navigation.navigate('PlayGame', { gametype: 'playOnline' })}
+        onPress={() => navigation.navigate('PlayGame', { gametype: 'PLAY' })}
         style={[
           styles.newButton,
           { backgroundColor: theme.primary || '#FB923C' },
         ]}>
         <Image source={require('../Screens/Image/pluse.png')} style={styles.ticketIcon} />
-        <Text style={styles.newText}>Play Online</Text>
+        <Text style={styles.newText}>PLAY</Text>
       </TouchableOpacity>
     </View>
   );

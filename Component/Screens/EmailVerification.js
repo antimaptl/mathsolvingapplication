@@ -11,6 +11,7 @@ import {
   Platform,
 } from 'react-native';
 import Toast from 'react-native-toast-message'; // ✅ Toast import
+import Icon from 'react-native-vector-icons/Ionicons';
 
 const { width } = Dimensions.get('window');
 const scale = width / 375;
@@ -48,8 +49,8 @@ export default function EmailVerification() {
     !userData.password?.trim() ||
     !userData.gender?.trim() ||
     !userData.dateOfBirth?.toString().trim() ||
-    !userData.country?.trim() ||
-    !userData.countryFlag ||
+    // !userData.country?.trim() ||
+    // !userData.countryFlag ||
     !userEnteredOtp
   ) {
     Toast.show({
@@ -66,8 +67,8 @@ export default function EmailVerification() {
     email:       userData.email,
     password:    userData.password.trim(),
     gender:      userData.gender.trim().toLowerCase(),
-    country:     userData.country.trim(),
-    countryFlag: userData.countryFlag, 
+    // country:     userData.country.trim(),
+    // countryFlag: userData.countryFlag, 
 
     // <-- Preserve the YYYY-MM-DD string exactly
     dateOfBirth: String(userData.dateOfBirth).trim(),
@@ -106,7 +107,7 @@ export default function EmailVerification() {
       text1: 'Success',
       text2: 'Registration successful!',
     });
-    navigation.navigate('Login');
+    navigation.navigate('NotificationPermissionScreen');
   } catch (err) {
     console.error('❌ Signup error:', err);
     Toast.show({
@@ -122,6 +123,13 @@ export default function EmailVerification() {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
+    {/* 🔙 Back Button */}
+      <TouchableOpacity
+        style={styles.backButton}
+        onPress={() => navigation.goBack()}
+      >
+        <Icon name="chevron-back" size={28} color="white" />
+      </TouchableOpacity>
       <Text style={styles.title}>Verify Email</Text>
 
       <View style={styles.otpContainer}>
@@ -157,6 +165,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: normalize(20),
+  },
+  backButton: {
+    position: 'absolute',
+    top: normalize(50),
+    left: normalize(20),
   },
   title: {
     fontSize: normalize(24),

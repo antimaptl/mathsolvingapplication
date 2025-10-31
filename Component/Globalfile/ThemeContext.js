@@ -41,9 +41,9 @@ export const themes = {
     name: 'Pink Sunset',
     backgroundGradient: ['#33001b', '#ff0084'],
     text: '#FFFFFF',
-    primary: '#FFC0CB',
+    primary: '#ff6bb5',
     cardBackground : '#1E293B',
-    buttonGradient: ['#FF0084', '#00cccc'],
+    buttonGradient: ['#c62d7cff', '#ae3e62ff'],
   },
 };
 

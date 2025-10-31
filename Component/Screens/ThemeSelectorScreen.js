@@ -13,7 +13,7 @@ import {
 import LinearGradient from 'react-native-linear-gradient';
 import {useTheme, themes} from '../Globalfile/ThemeContext';
 import KeyboardSelector from '../Screens/KeyboardSelector';
-import {useNavigation} from '@react-navigation/native';
+import {useNavigation, useRoute} from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 
 const {width} = Dimensions.get('window');
@@ -23,19 +23,28 @@ const normalize = size =>
 
 const ThemeSelectorScreen = () => {
   const navigation = useNavigation();
+  const route = useRoute();
+  const from = route.params?.from || 'settings'; // default settings
   const {theme, changeTheme} = useTheme();
-  const [selectedTab, setSelectedTab] = useState('colors'); // colors / keyboard
+  const [selectedTab, setSelectedTab] = useState('colors');
+
+  const handleNext = () => {
+    navigation.replace('AddFriendScreen');
+  };
 
   return (
     <LinearGradient colors={theme.backgroundGradient} style={styles.container}>
-      <View style={{alignItems: 'center', marginBottom: 20, flexDirection: 'row',}}>
-        <TouchableOpacity
-        style={{position: 'absolute',end: "50%",bottom: 20,}}
-          onPress={() => {
-            navigation.goBack();
-          }}>
-          <Icon name="arrow-back" size={normalize(25)} color="#808080" />
-        </TouchableOpacity>
+      {/* Header */}
+      <View
+        style={{alignItems: 'center', marginBottom: 20, flexDirection: 'row'}}>
+        {/*  Show Back Button only if NOT from onboarding */}
+        {from !== 'onboarding' && (
+          <TouchableOpacity
+            style={{position: 'absolute', left: 20, bottom: 20}}
+            onPress={() => navigation.goBack()}>
+            <Icon name="arrow-back" size={normalize(25)} color="#808080" />
+          </TouchableOpacity>
+        )}
         <Text style={[styles.title, {color: theme.text}]}>🎨 THEME</Text>
       </View>
 
@@ -71,17 +80,18 @@ const ThemeSelectorScreen = () => {
         </TouchableOpacity>
       </View>
 
+      {/* Theme or Keyboard Section */}
       {selectedTab === 'colors' ? (
         <ScrollView contentContainerStyle={styles.scroll}>
           {Object.keys(themes).map(key => {
             const t = themes[key];
+            const isSelected = theme.name === t.name;
             return (
               <TouchableOpacity
                 key={key}
                 onPress={() => changeTheme(key)}
                 style={styles.pillContainer}
                 activeOpacity={0.8}>
-                {/* Pill Gradient */}
                 <LinearGradient
                   colors={t.backgroundGradient}
                   start={{x: 0, y: 0}}
@@ -92,13 +102,22 @@ const ThemeSelectorScreen = () => {
                   </Text>
                 </LinearGradient>
 
-                {/* Small circle below */}
-                <LinearGradient
-                  colors={t.backgroundGradient}
-                  start={{x: 0.3, y: 0}}
-                  end={{x: 0.7, y: 1}}
-                  style={styles.circle}
-                />
+                <View style={{alignItems: 'center', justifyContent: 'center'}}>
+                  <LinearGradient
+                    colors={t.backgroundGradient}
+                    start={{x: 0.3, y: 0}}
+                    end={{x: 0.7, y: 1}}
+                    style={styles.circle}>
+                    {isSelected && (
+                      <Icon
+                        name="checkmark"
+                        size={normalize(20)}
+                        color="#fff"
+                        style={{alignSelf: 'center', fontWeight: 'bold'}}
+                      />
+                    )}
+                  </LinearGradient>
+                </View>
               </TouchableOpacity>
             );
           })}
@@ -107,11 +126,16 @@ const ThemeSelectorScreen = () => {
         <KeyboardSelector />
       )}
 
-      <Text style={[styles.current, {color: theme.primary}]}>
-        {selectedTab === 'colors'
-          ? `Current Theme: ${theme.name}`
-          : `Selected Keyboard: ${''}`}
-      </Text>
+      {/* ✅ Only show NEXT button if onboarding */}
+      {from === 'onboarding' && (
+        <TouchableOpacity
+          style={[styles.nextButton, {backgroundColor: theme.primary}]}
+          onPress={handleNext}>
+          <Text style={[styles.nextText, {color: theme.buttonText || '#fff'}]}>
+            Next
+          </Text>
+        </TouchableOpacity>
+      )}
     </LinearGradient>
   );
 };
@@ -145,7 +169,6 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     justifyContent: 'center',
   },
-  // 🔹 Pill style (vertical shape)
   pill: {
     width: 60,
     height: 200,
@@ -166,15 +189,23 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     transform: [{rotate: '-90deg'}],
   },
-
-  // 🔹 Circle below pill
   circle: {
     width: 40,
     height: 40,
     borderRadius: 20,
     opacity: 0.9,
     marginLeft: 25,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-
-  current: {fontSize: 16, marginTop: 20},
+  nextButton: {
+    marginTop: 20,
+    paddingVertical: 12,
+    paddingHorizontal: 60,
+    borderRadius: 25,
+  },
+  nextText: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
 });
