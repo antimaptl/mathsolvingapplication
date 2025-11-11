@@ -427,10 +427,17 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import Geolocation from 'react-native-geolocation-service';
 import {check, request, PERMISSIONS, RESULTS} from 'react-native-permissions';
+import Icon from 'react-native-vector-icons/Ionicons';
+import Icon6 from 'react-native-vector-icons/FontAwesome6';
 
-const {width} = Dimensions.get('window');
+const {width, height} = Dimensions.get('window');
+
+// ✅ Enhanced normalize for full responsiveness
 const scale = width / 375;
-const normalize = size => Math.round(scale * size);
+const verticalScale = height / 812;
+const moderateScale = (size, factor = 0.5) =>
+  size + (scale * size - size) * factor;
+const normalize = size => Math.round(moderateScale(size));
 
 export default function SignUp() {
   const navigation = useNavigation();
@@ -447,6 +454,7 @@ export default function SignUp() {
   const [gender, setGender] = useState('');
   const [showGenderOptions, setShowGenderOptions] = useState(false);
   const [errors, setErrors] = useState({});
+  const [isTicked, setIsTicked] = useState(false);
 
   useEffect(() => {
     getUserLocation();
@@ -472,7 +480,7 @@ export default function SignUp() {
             if (data) {
               const city = data.city || data.locality || '';
               const countryName = data.countryName || '';
-              const countryCode = data.countryCode || ''; // example: "IN"
+              const countryCode = data.countryCode || '';
               const flag = getFlagEmoji(countryCode);
 
               const locationText =
@@ -518,14 +526,11 @@ export default function SignUp() {
   const handleSignUp = async () => {
     let tempErrors = {};
 
-    // ✅ Only these three fields required
     if (!username.trim()) tempErrors.username = 'This field is required';
     if (!email.trim()) tempErrors.email = 'This field is required';
     else if (!validateEmail(email))
       tempErrors.email = 'Please enter a valid email';
     if (!password.trim()) tempErrors.password = 'This field is required';
-
-    // ✅ Country, Gender, DOB are optional now
 
     if (Object.keys(tempErrors).length > 0) {
       setErrors(tempErrors);
@@ -593,9 +598,14 @@ export default function SignUp() {
           contentContainerStyle={styles.scrollContainer}
           keyboardShouldPersistTaps="handled">
           <View style={styles.formContainer}>
-            <Text style={styles.title}>Register</Text>
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => navigation.goBack()}>
+              <Icon name="caret-back-outline" size={normalize(28)} color="white" />
+            </TouchableOpacity>
 
-            {/* <Text style={{color:"red",opacity:1, fontWeight:"bold",start:"2%"}}>*</Text> */}
+            <Text style={styles.title}>Sign - In</Text>
+
             <InputField
               icon={require('../Screens/Image/gender.png')}
               placeholder="Username *"
@@ -643,25 +653,6 @@ export default function SignUp() {
             {errors.password && (
               <Text style={styles.errorText}>{errors.password}</Text>
             )}
-
-            {/* <View style={styles.inputContainer}>
-              <Image
-                style={styles.inputIcon}
-                source={require('../Screens/Image/location.png')}
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="City, Country"
-                placeholderTextColor="#94A3B8"
-                value={country}
-                onChangeText={setCountry}
-              />
-              {countryFlag ? (
-                <Text style={{fontSize: normalize(20), marginLeft: 8}}>
-                  {countryFlag}
-                </Text>
-              ) : null}
-            </View> */}
 
             <View
               style={[
@@ -729,7 +720,6 @@ export default function SignUp() {
                       color: dateOfBirth ? 'white' : '#94A3B8',
                     },
                   ]}>
-                  {' '}
                   {dateOfBirth || 'Date of Birth'}
                 </Text>
               </View>
@@ -752,6 +742,22 @@ export default function SignUp() {
               />
             )}
 
+            <View style={styles.tickContainer}>
+              <TouchableOpacity
+                onPress={() => setIsTicked(!isTicked)}
+                activeOpacity={0.8}>
+                <Text style={[styles.tickBox, isTicked && styles.tickChecked]}>
+                  {isTicked ? '✔' : ''}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => {
+                  navigation.navigate('TermsAndConditions');
+                }}>
+                <Text style={styles.tncText}>Please Read T&C</Text>
+              </TouchableOpacity>
+            </View>
+
             <TouchableOpacity style={styles.loginButton} onPress={handleSignUp}>
               <Text style={styles.loginButtonText}>Sign up</Text>
             </TouchableOpacity>
@@ -769,11 +775,20 @@ export default function SignUp() {
                 onPress={() =>
                   Toast.show({type: 'info', text1: 'Google login coming soon'})
                 }>
-                <Image
-                  style={styles.socialIcon}
-                  source={require('../Screens/Image/google.png')}
-                />
+                <Icon6 name="google" size={normalize(20)} color="#fff" />
               </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.socialButton}
+                onPress={() =>
+                  Toast.show({
+                    type: 'info',
+                    text1: 'Twitter login coming soon',
+                  })
+                }>
+                <Icon6 name="x-twitter" size={normalize(20)} color="#fff" />
+              </TouchableOpacity>
+
               <TouchableOpacity
                 style={styles.socialButton}
                 onPress={() =>
@@ -782,10 +797,7 @@ export default function SignUp() {
                     text1: 'Facebook login coming soon',
                   })
                 }>
-                <Image
-                  style={styles.socialIcon}
-                  source={require('../Screens/Image/facebook.png')}
-                />
+                <Icon6 name="facebook" size={normalize(20)} color="#fff" />
               </TouchableOpacity>
             </View>
 
@@ -802,7 +814,7 @@ export default function SignUp() {
   );
 }
 
-// Input Field with Image Icon
+// Input Field Component
 const InputField = ({icon, error, ...props}) => (
   <>
     <View style={[styles.inputContainer, error && styles.errorBorder]}>
@@ -822,10 +834,36 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
   },
+  backButton: {
+    position: 'absolute',
+    top: normalize(-20),
+    left: normalize(0),
+  },
+  tickContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: normalize(20),
+    marginBottom: normalize(10),
+    marginEnd: 'auto',
+    start: 10,
+  },
+  tickBox: {
+    borderWidth: 1,
+    borderColor: '#8e8e8e',
+    width: normalize(35),
+    height: normalize(25),
+    marginRight: 20,
+    textAlign: 'center',
+    color: '#fff',
+    borderRadius: 4,
+  },
+  tickChecked: {backgroundColor: '#fff', color: 'black'},
+  tncText: {color: 'red', fontSize: normalize(12)},
   scrollContainer: {
     flexGrow: 1,
     justifyContent: 'center',
     paddingBottom: normalize(50),
+    paddingTop: normalize(50)
   },
   formContainer: {
     width: width > 500 ? 500 : width * 0.9,
@@ -838,6 +876,7 @@ const styles = StyleSheet.create({
     color: 'white',
     marginBottom: normalize(30),
     textAlign: 'center',
+    top: '-8%',
   },
   inputContainer: {
     flexDirection: 'row',
@@ -895,14 +934,10 @@ const styles = StyleSheet.create({
     width: normalize(40),
     height: normalize(40),
     borderRadius: normalize(20),
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: '#17677F',
     justifyContent: 'center',
     alignItems: 'center',
     marginHorizontal: width * 0.02,
-  },
-  socialIcon: {
-    width: normalize(37),
-    height: normalize(37),
   },
   registerText: {
     marginTop: normalize(10),
@@ -961,5 +996,4 @@ const styles = StyleSheet.create({
     marginLeft: normalize(5),
   },
 });
-  
 

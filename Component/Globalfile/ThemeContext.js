@@ -12,6 +12,7 @@ export const themes = {
     primary: '#FB923C',
     cardBackground : '#1E293B',
     buttonGradient: ['#595CFF', '#87AEE9'],
+    subText:'#bdb8b8ff'
   },
   blue: {
     name: 'Blue Nova',
@@ -20,30 +21,34 @@ export const themes = {
     primary: '#00BFFF', 
     cardBackground : '#1E293B',
     buttonGradient: ['#0D47A1', '#1976D2'],
+    subText:'#bdb8b8ff'
   },
   purple: {
     name: 'Purple Galaxy',
     backgroundGradient: ['#2E003E', '#3D0075', '#6A00B5'],
     text: '#FFFFFF',
-    primary: '#F5B3FF',
-    cardBackground : '#1E293B',
+    primary: '#a346b1ff',
+    cardBackground : '#1F0A36',
     buttonGradient: ['#3D0075', '#6A00B5'],
+    subText:'#bdb8b8ff'
   },
   teal: {
     name: 'Teal Fusion',
     backgroundGradient: ['#012E40', '#026773', '#3CA6A6'],
     text: '#FFFFFF',
-    primary: '#F7DC6F',
-    cardBackground : '#1E293B',
+    primary: '#074963ff',
+    cardBackground : '#0d4a56ff',
     buttonGradient: ['#026773', '#3CA6A6'],
+    subText:'#bdb8b8ff'
   },
   pink: {
     name: 'Pink Sunset',
     backgroundGradient: ['#33001b', '#ff0084'],
     text: '#FFFFFF',
     primary: '#ff6bb5',
-    cardBackground : '#1E293B',
-    buttonGradient: ['#c62d7cff', '#ae3e62ff'],
+    cardBackground : '#4A1A2C',
+    buttonGradient: ['#c62d7cff', '#ed81a3ff'],
+    subText:'#bdb8b8ff'
   },
 };
 

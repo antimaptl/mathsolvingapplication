@@ -27,7 +27,7 @@ import {
   stopEffect,
   releaseAll,
 } from '../Globalfile/SoundManager';
-import { useTheme } from '../Globalfile/ThemeContext'; // ✅ Theme hook
+import { useTheme } from '../Globalfile/ThemeContext';
 
 const { width, height } = Dimensions.get('window');
 const scaleFont = size => size * PixelRatio.getFontScale();
@@ -53,7 +53,7 @@ const MathInputScreen = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const route = useRoute();
-  const { theme } = useTheme(); // ✅ Theme context
+  const { theme } = useTheme();
   const { difficulty, symbol, timer, qm } = route.params;
 
   const [input, setInput] = useState('');
@@ -83,13 +83,14 @@ const MathInputScreen = () => {
 
   useFocusEffect(
     useCallback(() => {
-      stopBackgroundMusic();
+      // stopBackgroundMusic();
       initSound('correct', 'rightanswer.mp3');
       initSound('incorrect', 'wronganswer.mp3');
       initSound('skipped', 'skip.mp3');
-      initSound('keypad', 'keypad.mp3');
+      // 🔇 Commented out keypad and beep initialization
+      // initSound('keypad', 'keypad.mp3');
       initSound('timer', 'every30second.wav');
-      initSound('beep', 'beep.mp3');
+      // initSound('beep', 'beep.mp3');
     }, []),
   );
 
@@ -104,6 +105,7 @@ const MathInputScreen = () => {
         setMinutes(mins);
         setSeconds(secs);
 
+        // ⏰ Last 10 seconds: play ticking sound
         if (totalTimeRef.current <= 10 && totalTimeRef.current > 0) {
           playEffect('timer', isSoundOnRef.current);
           Animated.sequence([
@@ -120,6 +122,7 @@ const MathInputScreen = () => {
           ]).start();
         }
 
+        // 🎵 Every 30 seconds: play timer sound for 10 seconds
         if (totalTimeRef.current % 30 === 0 && totalTimeRef.current !== 0) {
           setIsThirtySecPhase(true);
           let repeatCount = 0;
@@ -137,9 +140,9 @@ const MathInputScreen = () => {
               }),
             ]).start();
 
-            if (repeatCount === 0 || repeatCount === 3 || repeatCount === 6) {
-              playEffect('timer', isSoundOnRef.current);
-            }
+            // Play timer sound each second for 10 seconds
+            playEffect('timer', isSoundOnRef.current);
+
             repeatCount += 1;
             if (repeatCount >= 10) {
               clearInterval(animateInterval);
@@ -148,6 +151,7 @@ const MathInputScreen = () => {
           }, 1000);
         }
 
+        // ⏹ When timer ends
         if (totalTimeRef.current <= 0) {
           clearInterval(interval);
           const incorrectCount = incorrectCountRef.current;
@@ -198,11 +202,13 @@ const MathInputScreen = () => {
       if (!response.ok) throw new Error(`Status: ${response.status}`);
       const data = await response.json();
       const q = data.question;
-      console.log("mmmmmmmmmmmmmmmmmmmm" , q);
+      console.log('mmmmmmmmmmmmmmmmmmmm', q);
       setQuestion(`${String(q.input1)} ${getMathSymbol(q.symbol)} ${String(q.input2)}`);
       setCorrectAnswer(String(q.answer));
-      playEffect('beep', isSoundOnRef.current);
-      beepPlayingRef.current = true;
+
+      // 🔇 Beep sound removed
+      // playEffect('beep', isSoundOnRef.current);
+      // beepPlayingRef.current = true;
     } catch {
       setQuestion('Failed to load question.');
     } finally {
@@ -219,15 +225,18 @@ const MathInputScreen = () => {
 
   const handlePress = value => {
     if (isPaused || totalTimeRef.current <= 0 || isLoading || feedback) return;
-    if (beepPlayingRef.current) {
-      stopEffect('beep');
-      beepPlayingRef.current = false;
-    }
+
+    // 🔇 Removed beep stop logic
+    // if (beepPlayingRef.current) {
+    //   stopEffect('beep');
+    //   beepPlayingRef.current = false;
+    // }
 
     const key = value.toLowerCase();
     if (key === 'clear') return setInput('');
     if (key === '⌫') {
-      playEffect('keypad', isSoundOnRef.current);
+      // 🔇 Removed keypad sound
+      // playEffect('keypad', isSoundOnRef.current);
       return setInput(prev => prev.slice(0, -1));
     }
     if (key === 'skip') {
@@ -243,7 +252,8 @@ const MathInputScreen = () => {
       }, 1000);
     }
 
-    playEffect('keypad', isSoundOnRef.current);
+    // 🔇 Removed keypad sound
+    // playEffect('keypad', isSoundOnRef.current);
     const newInput = input + value;
     setInput(newInput);
 
@@ -277,7 +287,7 @@ const MathInputScreen = () => {
     }
   };
 
-  // ✅ Content defined ABOVE return
+  // ✅ Content component
   const Content = () => (
     <SafeAreaView style={[styles.container, { paddingTop: insets.top + 30 }]}>
       <StatusBar
@@ -299,7 +309,7 @@ const MathInputScreen = () => {
             navigation.goBack();
           }}
           style={styles.iconButton}>
-          <Icon name="chevron-back" size={scaleFont(18)} color="#000" />
+          <Icon name="chevron-back" size={scaleFont(24)} color="#fff" />
         </TouchableOpacity>
 
         <View style={styles.timerContainer}>
@@ -325,7 +335,7 @@ const MathInputScreen = () => {
           <Icon
             name={isSoundOn ? 'volume-high' : 'volume-mute'}
             size={24}
-            color="#000"
+            color="#fff"
           />
         </TouchableOpacity>
       </View>
@@ -343,6 +353,7 @@ const MathInputScreen = () => {
         <View
           style={[
             styles.answerBox,
+            { backgroundColor: theme.cardBackground || '#1E293B' },
             feedback === 'correct'
               ? { borderColor: 'green', borderWidth: 2 }
               : feedback === 'incorrect'
@@ -385,25 +396,16 @@ const MathInputScreen = () => {
                 <TouchableOpacity
                   key={index}
                   onPress={() => handlePress(item)}
-                  style={[
-                    styles.keyButton,
-                    isSpecial ? styles.specialKey : null,
-                  ]}>
+                  style={[styles.keyButton, isSpecial ? styles.specialKey : null]}>
                   {isSkip ? (
                     <LinearGradient
                       colors={theme.buttonGradient || ['#FFAD90', '#FF4500']}
                       style={[styles.gradientButton, { opacity: 0.8 }]}>
-                      <View
-                        style={{ alignItems: 'center', flexDirection: 'row' }}>
-                        <Text
-                          style={[styles.keyText, { fontSize: scaleFont(14) }]}>
+                      <View style={{ alignItems: 'center', flexDirection: 'row' }}>
+                        <Text style={[styles.keyText, { fontSize: scaleFont(14) }]}>
                           Skip
                         </Text>
-                        <MaterialIcons
-                          name="skip-next"
-                          size={25}
-                          color="#fff"
-                        />
+                        <MaterialIcons name="skip-next" size={25} color="#fff" />
                       </View>
                     </LinearGradient>
                   ) : !isSpecial ? (
@@ -415,14 +417,10 @@ const MathInputScreen = () => {
                         ]
                       }
                       style={styles.gradientButton}>
-                      <Text style={styles.keyText}>
-                        {item.toUpperCase()}
-                      </Text>
+                      <Text style={styles.keyText}>{item.toUpperCase()}</Text>
                     </LinearGradient>
                   ) : (
-                    <Text style={[styles.keyText, { color: '#fff' }]}>
-                      {item}
-                    </Text>
+                    <Text style={[styles.keyText, { color: '#fff' }]}>{item}</Text>
                   )}
                 </TouchableOpacity>
               );
@@ -431,7 +429,7 @@ const MathInputScreen = () => {
         ))}
       </View>
 
-      {/* ✅ Play Button with Theme Gradient */}
+      {/* Play Button */}
       <LinearGradient
         colors={theme.buttonGradient || ['#FB923C', '#FF7F50']}
         style={styles.playButton}>
@@ -444,7 +442,6 @@ const MathInputScreen = () => {
     </SafeAreaView>
   );
 
-  // ✅ Main Return (background theme applied)
   return theme.backgroundGradient ? (
     <LinearGradient colors={theme.backgroundGradient} style={{ flex: 1 }}>
       <Content />
@@ -473,7 +470,6 @@ const styles = StyleSheet.create({
   iconButton: {
     width: width * 0.06,
     height: width * 0.06,
-    backgroundColor: '#fff',
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
@@ -481,11 +477,9 @@ const styles = StyleSheet.create({
   iconButton1: {
     width: width * 0.06,
     height: width * 0.06,
-    backgroundColor: '#fff',
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
-    start: 5,
   },
   timerContainer: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   timerText: {
@@ -545,9 +539,5 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     paddingVertical: height * 0.015,
   },
-  playButtonText: {
-    color: '#fff',
-    fontSize: scaleFont(18),
-    fontWeight: 'bold',
-  },
+  playButtonText: { color: '#fff', fontSize: scaleFont(18), fontWeight: 'bold' },
 });

@@ -6,17 +6,17 @@ import {
   TouchableOpacity,
   Dimensions,
   StatusBar,
-  ImageBackground,
+  Image,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import { useNavigation } from '@react-navigation/native';
-import { useTheme } from '../Globalfile/ThemeContext'; // ✅ Theme hook
+import {useNavigation} from '@react-navigation/native';
+import {useTheme} from '../Globalfile/ThemeContext'; // ✅ Theme hook
 
-const { width, height } = Dimensions.get('window');
+const {width, height} = Dimensions.get('window');
 
 const ChooseThemeIntroScreen = () => {
   const navigation = useNavigation();
-  const { theme } = useTheme();
+  const {theme} = useTheme();
 
   return (
     <LinearGradient
@@ -24,41 +24,37 @@ const ChooseThemeIntroScreen = () => {
       style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#0E1220" />
 
-      {/* Optional glowing pattern background */}
-     
-        <View style={styles.innerContainer}>
-          {/* App Name */}
-          <Text style={styles.appName}>Mathletics</Text>
+      <View style={styles.innerContainer}>
+        {/* Title */}
+        <Text style={styles.title}>CHOOSE THEME</Text>
 
-          {/* Title */}
-          <Text style={styles.title}>CHOOSE THEME</Text>
+        {/* Center Image */}
+        <Image
+          source={require('../Screens/Image/cooseTheme.png')} // 🖼️ replace with your actual image path
+          style={styles.centerImage}
+          resizeMode="contain"
+        />
 
-          {/* Buttons */}
-          <View style={styles.buttonRow}>
-            <TouchableOpacity
-              onPress={() => navigation.replace('AddFriendScreen')}
-              style={styles.skipButton}>
-              <Text style={styles.skipText}>Skip</Text>
-            </TouchableOpacity>
+        {/* Buttons */}
+        <View style={styles.buttonRow}>
+          <TouchableOpacity
+            onPress={() => navigation.replace('AddFriendScreen')}
+            style={styles.skipButton}>
+            <Text style={styles.skipText}>Skip</Text>
+          </TouchableOpacity>
 
-            <TouchableOpacity
-              onPress={() => navigation.replace('ThemeSelectorScreen' ,{ from: 'onboarding' })}
-              style={[styles.continueButton, { backgroundColor: theme.primary || '#FB923C' }]}>
-              <Text style={styles.continueText}>Continue</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Theme icons */}
-          {/* <View style={styles.themeIcons}>
-            <View style={styles.iconWrapper}>
-              <Text style={styles.icon}>☀️</Text>
-            </View>
-            <View style={styles.iconWrapper}>
-              <Text style={styles.icon}>🌙</Text>
-            </View>
-          </View> */}
+          <TouchableOpacity
+            onPress={() =>
+              navigation.replace('ThemeSelectorScreen', {from: 'onboarding'})
+            }
+            style={[
+              styles.continueButton,
+              {backgroundColor: theme.primary || '#FB923C'},
+            ]}>
+            <Text style={styles.continueText}>Continue</Text>
+          </TouchableOpacity>
         </View>
-     
+      </View>
     </LinearGradient>
   );
 };
@@ -69,25 +65,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  background: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   innerContainer: {
-    height: '100%',
-    width: '100%',
-    justifyContent: 'space-evenly',
+    flex: 1,
+    justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: height * 0.08,
-  },
-  appName: {
-    color: '#fff',
-    fontSize: width * 0.065,
-    fontWeight: '700',
-    textAlign: 'center',
-    textShadowColor: 'rgba(255,255,255,0.25)',
-    textShadowRadius: 10,
   },
   title: {
     color: '#fff',
@@ -95,14 +77,18 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     textAlign: 'center',
     letterSpacing: 1,
-    marginTop: height * 0.02,
-    marginBottom: height * 0.04,
+    marginTop: height * 0.05,
+  },
+  centerImage: {
+    width: width * 0.7,
+    height: height * 0.4,
   },
   buttonRow: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
     gap: width * 0.05,
+    marginBottom: height * 0.06,
   },
   skipButton: {
     borderWidth: 2,
@@ -131,27 +117,5 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: width * 0.045,
     fontWeight: '700',
-  },
-  themeIcons: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: width * 0.12,
-    marginTop: height * 0.04,
-  },
-  iconWrapper: {
-    width: width * 0.13,
-    height: width * 0.13,
-    borderRadius: (width * 0.13) / 2,
-    backgroundColor: '#1C1F2E',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#FB923C',
-    shadowOpacity: 0.4,
-    shadowRadius: 6,
-    elevation: 6,
-  },
-  icon: {
-    fontSize: width * 0.07,
   },
 });

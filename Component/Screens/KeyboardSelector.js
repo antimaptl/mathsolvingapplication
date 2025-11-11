@@ -37,7 +37,7 @@ const KeyboardSelector = () => {
 export default KeyboardSelector;
 
 const styles = StyleSheet.create({
-  scroll: { alignItems: 'center', paddingBottom: 30 },
+  scroll: { alignItems: 'center', paddingBottom: 30,top:20 },
   card: { width: width * 0.7, height: 80, borderRadius: 15, justifyContent: 'center', alignItems: 'center', marginBottom: 15 },
   selectedCard: { borderWidth: 3, borderColor: '#FFC300' },
   cardText: { color: '#fff', fontSize: 18, fontWeight: '600' },

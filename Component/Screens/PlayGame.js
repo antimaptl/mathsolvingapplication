@@ -34,29 +34,29 @@ const PlayGame = ({route}) => {
   const [selectedSymbol, setSelectedSymbol] = useState('(+), (-), (x) and (/)');
 
   const gameMusicRef = useRef(null);
-  useEffect(() => {
-    gameMusicRef.current = new Sound(
-      'startgame.mp3',
-      Sound.MAIN_BUNDLE,
-      error => {
-        if (error) return console.log('Failed to load game music', error);
-        gameMusicRef.current.play(() => gameMusicRef.current.release());
-      },
-    );
+  // useEffect(() => {
+  //   gameMusicRef.current = new Sound(
+  //     'startgame.mp3',
+  //     Sound.MAIN_BUNDLE,
+  //     error => {
+  //       if (error) return console.log('Failed to load game music', error);
+  //       gameMusicRef.current.play(() => gameMusicRef.current.release());
+  //     },
+  //   );
 
-    return () => {
-      if (gameMusicRef.current) {
-        gameMusicRef.current.stop(() => gameMusicRef.current.release());
-      }
-    };
-  }, []);
+  //   return () => {
+  //     if (gameMusicRef.current) {
+  //       gameMusicRef.current.stop(() => gameMusicRef.current.release());
+  //     }
+  //   };
+  // }, []);
 
-  useFocusEffect(
-    useCallback(() => {
-      stopBackgroundMusic();
-      return () => {};
-    }, []),
-  );
+  // useFocusEffect(
+  //   useCallback(() => {
+  //     stopBackgroundMusic();
+  //     return () => {};
+  //   }, []),
+  // );
 
   AsyncStorage.getItem('diff').then(diff => {
     setSelectedDifficulty(diff || 'easy');
@@ -72,7 +72,9 @@ const PlayGame = ({route}) => {
           <Text style={styles.selectedOptionText}>{label}</Text>
         </LinearGradient>
       ) : (
-        <View style={styles.optionButton}>
+        <View style={[styles.optionButton,
+        { backgroundColor: theme.cardBackground || '#1E293B' },]}
+        >
           <Text style={styles.optionText}>{label}</Text>
         </View>
       )}
@@ -124,7 +126,7 @@ const PlayGame = ({route}) => {
         <TouchableOpacity
           onPress={() => navigation.goBack()}
           style={styles.iconButton}>
-          <Icon name="chevron-back" size={scaleFont(18)} color="#000" />
+          <Icon name="chevron-back" size={scaleFont(22)} color="#fff" />
         </TouchableOpacity>
       </View>
 
@@ -212,7 +214,7 @@ const styles = StyleSheet.create({
   iconButton: {
     width: width * 0.06,
     height: width * 0.06,
-    backgroundColor: '#fff',
+    // backgroundColor: trapa,
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',

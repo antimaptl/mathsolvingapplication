@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, {useEffect, useState, useRef} from 'react';
 import {
   View,
   Text,
@@ -13,29 +13,31 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { useNavigation } from '@react-navigation/native';
+import MaterialIcons from 'react-native-vector-icons/FontAwesome';
+import {useNavigation} from '@react-navigation/native';
 import Toast from 'react-native-toast-message';
+import LinearGradient from 'react-native-linear-gradient';
+import {useTheme} from '../Globalfile/ThemeContext';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const {width, height} = Dimensions.get('window');
+const guidelineBaseWidth = 375;
+const guidelineBaseHeight = 812;
 
-const scaleFont = (size) => {
-  const scale = SCREEN_WIDTH / 375;
-  const newSize = size * scale;
-  return Math.round(PixelRatio.roundToNearestPixel(newSize));
-};
+const scale = size => (width / guidelineBaseWidth) * size;
+const verticalScale = size => (height / guidelineBaseHeight) * size;
+const scaleFont = size =>
+  Math.round(PixelRatio.roundToNearestPixel(size * (width / guidelineBaseWidth)));
 
 const FriendRequestScreen = () => {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(false);
   const navigation = useNavigation();
-  const fetchCalled = useRef(false); // prevent double fetch
+  const fetchCalled = useRef(false);
+  const {theme} = useTheme();
 
-  // 🔹 Fetch friend requests
   const fetchFriendRequests = async () => {
     try {
       setLoading(true);
-      console.log('🌍 Calling API:', 'http://43.204.167.118:3000/api/friend/friend-request');
-
       const token = await AsyncStorage.getItem('authToken');
       if (!token) {
         Toast.show({
@@ -53,17 +55,13 @@ const FriendRequestScreen = () => {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
-        }
+        },
       );
 
       if (response.data.success) {
         setRequests(response.data.requests || []);
       } else if (response.data.message === 'No friend requests received') {
         setRequests([]);
-        Toast.show({
-          type: 'info',
-          text1: 'No friend requests yet',
-        });
       } else {
         Toast.show({
           type: 'error',
@@ -71,7 +69,6 @@ const FriendRequestScreen = () => {
           text2: response.data.message || 'Something went wrong',
         });
       }
-
     } catch (error) {
       console.log('Error fetching friend requests:', error);
       Toast.show({
@@ -84,7 +81,6 @@ const FriendRequestScreen = () => {
     }
   };
 
-  // 🔹 Accept or reject a request
   const handleAction = async (requesterId, recipientId, actionType) => {
     try {
       const token = await AsyncStorage.getItem('authToken');
@@ -95,19 +91,21 @@ const FriendRequestScreen = () => {
           ? 'http://43.204.167.118:3000/api/friend/accept-friend'
           : 'http://43.204.167.118:3000/api/friend/reject-friend';
 
-      // Disable double click
-      setRequests((prev) =>
-        prev.map((req) =>
-          req.requester._id === requesterId
-            ? { ...req, processing: true }
-            : req
-        )
+      setRequests(prev =>
+        prev.map(req =>
+          req.requester._id === requesterId ? {...req, processing: true} : req,
+        ),
       );
 
       const response = await axios.post(
         url,
-        { requester: requesterId, recipient: recipientId },
-        { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
+        {requester: requesterId, recipient: recipientId},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        },
       );
 
       if (response.data.success) {
@@ -118,44 +116,33 @@ const FriendRequestScreen = () => {
               ? 'Friend request accepted 🎉'
               : 'Friend request rejected ❌',
         });
-
-        // Remove request locally
-        setRequests((prev) =>
-          prev.filter(
-            (req) => req.requester._id !== requesterId
-          )
+        setRequests(prev =>
+          prev.filter(req => req.requester._id !== requesterId),
         );
       } else {
-        if (!response.data.message?.includes('Exactly one of topic')) { // skip FCM warning
-          Toast.show({
-            type: 'error',
-            text1: response.data.message || 'Failed to update request',
-          });
-        }
-        // Reset processing flag
-        setRequests((prev) =>
-          prev.map((req) =>
+        Toast.show({
+          type: 'error',
+          text1: response.data.message || 'Failed to update request',
+        });
+        setRequests(prev =>
+          prev.map(req =>
             req.requester._id === requesterId
-              ? { ...req, processing: false }
-              : req
-          )
+              ? {...req, processing: false}
+              : req,
+          ),
         );
       }
     } catch (error) {
       const msg = error.response?.data?.message;
-      if (!msg?.includes('Exactly one of topic')) { // skip FCM warning
-        Toast.show({
-          type: 'error',
-          text1: msg || 'Something went wrong, please try again.',
-        });
-      }
-      console.log('Error handling request:', error.response?.data || error.message);
-      setRequests((prev) =>
-        prev.map((req) =>
-          req.requester._id === requesterId
-            ? { ...req, processing: false }
-            : req
-        )
+      Toast.show({
+        type: 'error',
+        text1: msg || 'Something went wrong, please try again.',
+      });
+      console.log('Error handling request:', error);
+      setRequests(prev =>
+        prev.map(req =>
+          req.requester._id === requesterId ? {...req, processing: false} : req,
+        ),
       );
     }
   };
@@ -167,140 +154,223 @@ const FriendRequestScreen = () => {
     }
   }, []);
 
-  const renderItem = ({ item }) => (
-    <View style={styles.card}>
-      <View style={styles.info}>
-        <Image
-          source={require('../Screens/Image/avater.png')}
-          style={styles.avatar}
-        />
-        <View>
-          <Text style={styles.name}>{item.requester?.username}</Text>
-          <Text style={styles.subText}>{item.requester?.email}</Text>
+  const renderItem = ({item}) => (
+    <View
+      style={[
+        styles.card,
+        {backgroundColor: theme.cardBackground || '#1E293B'},
+      ]}>
+      <View style={styles.row}>
+        <View
+          style={[
+            styles.leftBox,
+            {borderColor: theme.border || '#94A3B8'},
+          ]}>
+          <Image
+            source={require('../Screens/Image/avater.png')}
+            style={styles.avatar}
+          />
         </View>
-      </View>
 
-      <View style={styles.actions}>
-        <TouchableOpacity
-          style={[styles.btn, { backgroundColor: '#22C55E' }]}
-          disabled={item.processing}
-          onPress={() =>
-            handleAction(item.requester._id, item.recipient, 'accepted')
-          }>
-          <Text style={styles.btnText}>
-            {item.processing ? 'Processing...' : 'Accept'}
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.btn, { backgroundColor: '#EF4444' }]}
-          disabled={item.processing}
-          onPress={() =>
-            handleAction(item.requester._id, item.recipient, 'rejected')
-          }>
-          <Text style={styles.btnText}>
-            {item.processing ? 'Processing...' : 'Reject'}
-          </Text>
-        </TouchableOpacity>
+        <View style={styles.infoBox}>
+          <View style={styles.infoRow}>
+            <Text style={[styles.label, {color: theme.subText}]}>
+              User Name:{' '}
+            </Text>
+            <Text style={[styles.label, {color: theme.text}]}>
+              {item.requester?.username}
+            </Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={[styles.label, {color: theme.subText}]}>Name: </Text>
+            <Text style={[styles.label, {color: theme.text}]}>John</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={[styles.label, {color: theme.subText}]}>Rating: </Text>
+            <Text style={[styles.label, {color: theme.text}]}>1000</Text>
+          </View>
+        </View>
+
+        <View style={styles.iconBox}>
+          <TouchableOpacity
+            disabled={item.processing}
+            onPress={() =>
+              handleAction(item.requester._id, item.recipient, 'accepted')
+            }>
+            <MaterialIcons
+              name="check"
+              size={scaleFont(24)}
+              color={theme.primary || '#17677F'}
+              style={{marginBottom: verticalScale(6)}}
+            />
+          </TouchableOpacity>
+          <TouchableOpacity
+            disabled={item.processing}
+            onPress={() =>
+              handleAction(item.requester._id, item.recipient, 'rejected')
+            }>
+            <MaterialIcons
+              name="close"
+              size={scaleFont(24)}
+              color={theme.error || '#EF4444'}
+            />
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );
 
   return (
-    <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.headerRow}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Icon name="arrow-back" size={22} color="#fff" />
-        </TouchableOpacity>
-        <Text style={styles.header}>Friend Requests</Text>
-      </View>
+    <LinearGradient
+      colors={theme.backgroundGradient || ['#0F172A', '#1E293B']}
+      style={{flex: 1}}>
+      <View style={styles.container}>
+        <View style={styles.headerRow}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={styles.backButton}>
+            <Icon
+              name="caret-back-outline"
+              size={scaleFont(22)}
+              color={theme.text || '#fff'}
+            />
+          </TouchableOpacity>
+          <View>
+            <Text style={[styles.headerText, {color: theme.text}]}>
+              Pending
+            </Text>
+            <Text style={[styles.headerText, {color: theme.text}]}>
+              Requests
+            </Text>
+          </View>
+        </View>
 
-      {loading ? (
-        <ActivityIndicator color="#FB923C" size="large" />
-      ) : (
-        <FlatList
-          data={requests}
-          keyExtractor={(item) => item._id}
-          renderItem={renderItem}
-          ListEmptyComponent={
-            <Text style={styles.emptyText}>No friend requests yet.</Text>
-          }
+        <View
+          style={[
+            styles.divider,
+            {borderColor:'#94A3B8'},
+          ]}
         />
-      )}
-    </View>
+
+        <View
+          style={[
+            styles.titleContainer,
+            {backgroundColor: theme.cardBackground || '#1E293B'},
+          ]}>
+          <Text style={[styles.titleText, {color: theme.text}]}>
+            Pending Requests ({requests.length})
+          </Text>
+        </View>
+
+        {loading ? (
+          <ActivityIndicator
+            color={theme.primary || '#FB923C'}
+            size="large"
+            style={{marginTop: verticalScale(40)}}
+          />
+        ) : (
+          <FlatList
+            data={requests}
+            keyExtractor={item => item._id}
+            renderItem={renderItem}
+            ListEmptyComponent={
+              <Text style={[styles.emptyText, {color: theme.subText}]}>
+                No pending friend requests.
+              </Text>
+            }
+            contentContainerStyle={{paddingBottom: verticalScale(60)}}
+            showsVerticalScrollIndicator={false}
+          />
+        )}
+      </View>
+    </LinearGradient>
   );
 };
 
-// 🔹 Styles
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0F172A',
-    padding: 16,
+    paddingHorizontal: scale(16),
+    paddingTop: verticalScale(20),
   },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: verticalScale(16),
+    gap:"31%"
   },
   backButton: {
-    marginRight: 10,
-    backgroundColor: '#1E293B',
-    borderRadius: 8,
-    padding: 6,
+    padding: scale(6),
   },
-  header: {
-    color: '#fff',
-    fontSize: scaleFont(18),
+  headerText: {
+    fontSize: scaleFont(19),
     fontWeight: '700',
   },
-  card: {
-    backgroundColor: '#1E293B',
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 10,
+  divider: {
+    height: 1,
+    opacity: 0.3,
+    marginBottom: verticalScale(45),
+    borderWidth: 1,
+    top:verticalScale(24)
   },
-  info: {
+  titleContainer: {
+    paddingVertical: verticalScale(10),
+    paddingHorizontal: scale(10),
+    borderRadius: scale(6),
+    marginBottom: verticalScale(12),
+  },
+  titleText: {
+    fontSize: scaleFont(15),
+    fontWeight: '600',
+  },
+  card: {
+    borderRadius: scale(8),
+    borderWidth: 1,
+    marginBottom: verticalScale(12),
+    padding: scale(15),
+    borderColor: '#334155',
+    top:verticalScale(12)
+  },
+  row: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  leftBox: {
+    width: scale(60),
+    height: scale(60),
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: scale(10),
+    borderRadius: scale(15),
+    borderWidth: 1,
   },
   avatar: {
-    width: SCREEN_WIDTH * 0.12,
-    height: SCREEN_WIDTH * 0.12,
-    borderRadius: (SCREEN_WIDTH * 0.12) / 2,
-    marginRight: 12,
+    width: '80%',
+    height: '80%',
+    resizeMode: 'contain',
   },
-  name: {
-    color: '#fff',
-    fontSize: scaleFont(16),
-    fontWeight: '600',
+  infoBox: {
+    flex: 1,
   },
-  subText: {
-    color: '#94A3B8',
-    fontSize: scaleFont(13),
-  },
-  actions: {
+  infoRow: {
     flexDirection: 'row',
-    marginTop: 10,
-    justifyContent: 'space-around',
-  },
-  btn: {
-    borderRadius: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 20,
-    minWidth: SCREEN_WIDTH * 0.3,
     alignItems: 'center',
+    marginBottom: verticalScale(2),
   },
-  btnText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: scaleFont(14),
+  label: {
+    fontSize: scaleFont(12),
+  },
+  iconBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: verticalScale(15),
   },
   emptyText: {
-    color: '#94A3B8',
     textAlign: 'center',
-    marginTop: 40,
-    fontSize: scaleFont(16),
+    marginTop: verticalScale(40),
+    fontSize: scaleFont(15),
+    fontWeight: 'bold',
   },
 });
 

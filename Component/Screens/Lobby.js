@@ -62,7 +62,7 @@ export default function Lobby() {
     });
 
     socket.on('game-started', ({gameState, currentQuestion}) => {
-      navigation.navigate('MultiPlayerGame', {currentQuestion});
+      navigation.navigate('MultiPlayerGame', {currentQuestion,timer });
       console.log(gameState, currentQuestion);
     });
 

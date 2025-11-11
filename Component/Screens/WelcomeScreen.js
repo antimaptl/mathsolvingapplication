@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -6,11 +6,11 @@ import {
   ImageBackground,
   StatusBar,
   Dimensions,
+  Animated,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../Globalfile/ThemeContext';
 import LinearGradient from 'react-native-linear-gradient';
-import Animated, { FadeInDown } from 'react-native-reanimated';
 
 const { width, height } = Dimensions.get('window');
 
@@ -18,9 +18,28 @@ const WelcomeScreen = () => {
   const navigation = useNavigation();
   const { theme } = useTheme();
 
+  // Animation values
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(-30)).current;
+
   useEffect(() => {
+    // Animate text fade + slide down
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 1500,
+      useNativeDriver: true,
+    }).start();
+
+    Animated.spring(translateY, {
+      toValue: 0,
+      friction: 4,
+      tension: 40,
+      useNativeDriver: true,
+    }).start();
+
+    // Auto navigate after delay
     const timer = setTimeout(() => {
-      navigation.replace('Home'); // ✅ auto navigate after 10s
+      navigation.replace('Home');
     }, 1000);
 
     return () => clearTimeout(timer);
@@ -34,7 +53,7 @@ const WelcomeScreen = () => {
 
       {/* Background Logo */}
       <ImageBackground
-        source={require('./Image/logo.png')} // ✅ Replace with your logo image
+        source={require('./Image/logo.png')}
         style={styles.backgroundImage}
         resizeMode="contain"
         imageStyle={{ opacity: 0.1 }}
@@ -42,8 +61,13 @@ const WelcomeScreen = () => {
 
       {/* Animated Welcome Text */}
       <Animated.View
-        entering={FadeInDown.duration(1500).springify()}
-        style={styles.textContainer}>
+        style={[
+          styles.textContainer,
+          {
+            opacity: fadeAnim,
+            transform: [{ translateY }],
+          },
+        ]}>
         <Text style={[styles.welcomeText, { color: theme.text }]}>
           Welcome to
         </Text>
@@ -76,7 +100,7 @@ const styles = StyleSheet.create({
   },
   textContainer: {
     alignItems: 'center',
-    marginTop: -height * 0.1, // lifts the text slightly up
+    marginTop: -height * 0.1,
   },
   welcomeText: {
     fontSize: width * 0.065,

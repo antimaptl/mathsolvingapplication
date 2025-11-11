@@ -57,6 +57,7 @@ import NotificationPermissionScreen from './Component/Screens/NotificationPermis
 import ChooseThemeIntroScreen from './Component/Screens/ChooseThemeIntroScreen';
 import AddFriendScreen from './Component/Screens/AddFriendScreen';
 import WelcomeScreen from './Component/Screens/WelcomeScreen';
+import TermsAndConditions from './Component/Screens/TermsAndConditions';
 
 
 const Stack = createNativeStackNavigator();
@@ -119,6 +120,7 @@ const App = () => {
                  <Stack.Screen name="AuthLandingScreen" component={AuthLandingScreen} />
                 <Stack.Screen name="Login" component={Login} />
                 <Stack.Screen name="SignUp" component={SignUp} />
+                 <Stack.Screen name="TermsAndConditions" component={TermsAndConditions} />
                 <Stack.Screen name="SkipScreen" component={SkipScreen} />
                 <Stack.Screen name="ChooseThemeIntroScreen" component={ChooseThemeIntroScreen} />
                 <Stack.Screen name="BottomTab" component={BottomTab} />

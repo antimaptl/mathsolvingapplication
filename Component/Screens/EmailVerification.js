@@ -1,5 +1,5 @@
-import { useRoute, useNavigation } from '@react-navigation/native';
-import React, { useRef, useState } from 'react';
+import {useRoute, useNavigation} from '@react-navigation/native';
+import React, {useRef, useState} from 'react';
 import {
   View,
   Text,
@@ -10,19 +10,21 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import Toast from 'react-native-toast-message'; // ✅ Toast import
+import Toast from 'react-native-toast-message';
 import Icon from 'react-native-vector-icons/Ionicons';
 
-const { width } = Dimensions.get('window');
+const {width} = Dimensions.get('window');
 const scale = width / 375;
-const normalize = (size) => Math.round(scale * size);
+const normalize = size => Math.round(scale * size);
 
 export default function EmailVerification() {
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [attemptCount, setAttemptCount] = useState(0);
   const inputs = useRef([]);
   const route = useRoute();
   const navigation = useNavigation();
-  const { userData } = route.params;
+  // const {userData} = route.params;
 
   const handleChange = (text, index) => {
     const newOtp = [...otp];
@@ -40,120 +42,151 @@ export default function EmailVerification() {
   };
 
   const handleVerifyOtp = async () => {
-  const userEnteredOtp = otp.join('').trim();
+    const userEnteredOtp = otp.join('').trim();
+    setErrorMessage(''); // reset error each time
 
-  // 1) Client‑side validation
-  if (
-    !userData.username?.trim() ||
-    !userData.email?.trim() ||
-    !userData.password?.trim() ||
-    !userData.gender?.trim() ||
-    !userData.dateOfBirth?.toString().trim() ||
-    // !userData.country?.trim() ||
-    // !userData.countryFlag ||
-    !userEnteredOtp
-  ) {
-    Toast.show({
-      type: 'error',
-      text1: 'Error',
-      text2: 'Please fill in all fields and enter the OTP.',
-    });
-    return;
-  }
+    if (!userEnteredOtp) {
+      setErrorMessage('Incorrect OTP. Please try Again');
+      return;
+    }
 
-  // 2) Build payload with the *exact* formats your API expects
-  const payload = {
-    username:    userData.username.trim(),
-    email:       userData.email,
-    password:    userData.password.trim(),
-    gender:      userData.gender.trim().toLowerCase(),
-    // country:     userData.country.trim(),
-    // countryFlag: userData.countryFlag, 
+    const payload = {
+      username: userData.username.trim(),
+      email: userData.email,
+      password: userData.password.trim(),
+      gender: userData.gender.trim().toLowerCase(),
+      dateOfBirth: String(userData.dateOfBirth).trim(),
+      otp: userEnteredOtp,
+    };
 
-    // <-- Preserve the YYYY-MM-DD string exactly
-    dateOfBirth: String(userData.dateOfBirth).trim(),
-    otp:         userEnteredOtp,
-  };
+    console.log('🔶 Raw payload →', JSON.stringify(payload, null, 2));
 
-  console.log('🔶 Raw payload →', JSON.stringify(payload, null, 2));
-
-  try {
-    const res = await fetch('http://43.204.167.118:3000/api/auth/signup', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
-    });
-
-    const body = await res.json();
-    console.log('🔷 Server responded with:', res.status, body);
-
-    if (res.status === 400) {
-      // assuming 400 = invalid OTP
-      return Toast.show({
-        type: 'error',
-        text1: 'Invalid OTP',
-        text2: body.message || 'The OTP you entered is incorrect.',
+    try {
+      const res = await fetch('http://43.204.167.118:3000/api/auth/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
       });
-    }
 
-    if (!res.ok) {
-      throw new Error(body.message || 'Registration failed');
-    }
+      const body = await res.json();
+      console.log('🔷 Server responded with:', res.status, body);
 
-    Toast.show({
-      type: 'success',
-      text1: 'Success',
-      text2: 'Registration successful!',
-    });
-    navigation.navigate('NotificationPermissionScreen');
-  } catch (err) {
-    console.error('❌ Signup error:', err);
-    Toast.show({
-      type: 'error',
-      text1: 'Error',
-      text2: err.message || 'Something went wrong',
-    });
-  }
-};
+      if (res.status === 400) {
+        // incorrect OTP logic
+        const newCount = attemptCount + 1;
+        setAttemptCount(newCount);
+
+        if (newCount >= 3) {
+          setErrorMessage(
+            'You have exceeded the number of attempts. Please try again after 1 Hour',
+          );
+        } else {
+          setErrorMessage('Incorrect OTP. Please try Again');
+        }
+        return;
+      }
+
+      if (!res.ok) {
+        throw new Error(body.message || 'Registration failed');
+      }
+
+      Toast.show({
+        type: 'success',
+        text1: 'Success',
+        text2: 'Registration successful!',
+      });
+      navigation.navigate('NotificationPermissionScreen');
+    } catch (err) {
+      console.error('❌ Signup error:', err);
+      setErrorMessage('Something went wrong. Please try again.');
+    }
+  };
 
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-    {/* 🔙 Back Button */}
-      <TouchableOpacity
-        style={styles.backButton}
-        onPress={() => navigation.goBack()}
-      >
-        <Icon name="chevron-back" size={28} color="white" />
-      </TouchableOpacity>
-      <Text style={styles.title}>Verify Email</Text>
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      {/* 🔙 Back Button and Title */}
+      <View
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'center',
+          alignItems: 'center',
+          width: '100%',
+          marginTop: normalize(40),
+          marginBottom: normalize(40),
+        }}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}>
+          <Icon name="caret-back-outline" size={28} color="white" />
+        </TouchableOpacity>
+        <Text style={styles.title}>Verify Email</Text>
+      </View>
 
+      {/* Info Text */}
+      <View>
+        <Text
+          style={{
+            color: 'white',
+            fontSize: normalize(16),
+            width: '80%',
+            textAlign: 'center',
+            alignSelf: 'center',
+          }}>
+          An OTP has been sent to your registered email address
+        </Text>
+      </View>
+
+      {/* OTP Inputs */}
       <View style={styles.otpContainer}>
         {otp.map((digit, index) => (
           <TextInput
             key={index}
-            ref={(ref) => (inputs.current[index] = ref)}
+            ref={ref => (inputs.current[index] = ref)}
             style={styles.otpInput}
             keyboardType="numeric"
             maxLength={1}
             value={digit}
-            onChangeText={(text) => handleChange(text, index)}
-            onKeyPress={({ nativeEvent }) =>
+            onChangeText={text => handleChange(text, index)}
+            onKeyPress={({nativeEvent}) =>
               handleBackspace(nativeEvent.key, index)
             }
           />
         ))}
       </View>
 
+      <Text
+        style={{
+          color: '#c4c3c3ff',
+          alignSelf: 'flex-end',
+          end: 30,
+          top: -20,
+        }}>
+        Resend
+      </Text>
+
+      {/* Verify Button */}
       <TouchableOpacity style={styles.verifyButton} onPress={handleVerifyOtp}>
         <Text style={styles.verifyText}>Verify</Text>
       </TouchableOpacity>
 
-      <Toast /> {/* ✅ Required to show the toast */}
+      {/* Error Message Display (like image) */}
+      {errorMessage ? (
+        <Text
+          style={{
+            color: 'red',
+            fontSize: normalize(14),
+            marginTop: normalize(30),
+            textAlign: 'center',
+          }}>
+          {errorMessage}
+        </Text>
+      ) : null}
+
+      <Toast />
     </KeyboardAvoidingView>
   );
 }
@@ -162,14 +195,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#0f162b',
-    justifyContent: 'center',
-    alignItems: 'center',
     paddingHorizontal: normalize(20),
+    paddingVertical: normalize(10),
   },
   backButton: {
     position: 'absolute',
-    top: normalize(50),
-    left: normalize(20),
+    top: normalize(0),
+    left: normalize(0),
   },
   title: {
     fontSize: normalize(24),
@@ -182,7 +214,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     width: '90%',
     marginBottom: normalize(30),
-    marginTop: normalize(50),
+    marginTop: normalize(100),
+    alignSelf: 'center',
   },
   otpInput: {
     width: normalize(40),
@@ -199,6 +232,8 @@ const styles = StyleSheet.create({
     paddingVertical: normalize(10),
     paddingHorizontal: normalize(95),
     borderRadius: normalize(25),
+    top: normalize(20),
+    alignSelf: 'center',
   },
   verifyText: {
     color: 'white',

@@ -19,12 +19,18 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useIsFocused, useNavigation} from '@react-navigation/native';
 import Toast from 'react-native-toast-message';
 import messaging from '@react-native-firebase/messaging';
+import LinearGradient from 'react-native-linear-gradient';
+import {useTheme} from '../Globalfile/ThemeContext';
 
-const {width} = Dimensions.get('window');
+const {width, height} = Dimensions.get('window');
+const scale = size => (width / 375) * size;
+const scaleFont = size => size * (width / 375);
 
 const AddUserScreen = () => {
   const navigation = useNavigation();
   const isFocused = useIsFocused();
+  const {theme} = useTheme();
+
   const [refreshing, setRefreshing] = useState(false);
   const [users, setUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
@@ -32,17 +38,15 @@ const AddUserScreen = () => {
   const [loading, setLoading] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
 
-
   const onRefresh = () => {
     setRefreshing(true);
-
     fetchPendingCount();
     fetchUsers();
     setTimeout(() => {
       setRefreshing(false);
     }, 2000);
   };
-  // 🔔 Fetch pending requests count (only for this user)
+
   const fetchPendingCount = async () => {
     try {
       const token = await AsyncStorage.getItem('authToken');
@@ -57,7 +61,7 @@ const AddUserScreen = () => {
       console.log('❌ Error fetching pending count:', error.message);
     }
   };
-  // 📡 Fetch all users and remove accepted
+
   const fetchUsers = async () => {
     try {
       setLoading(true);
@@ -67,6 +71,7 @@ const AddUserScreen = () => {
         {
           headers: {Authorization: `Bearer ${token}`},
         },
+        console.log("All User" , response)
       );
 
       if (response.data.success) {
@@ -75,8 +80,6 @@ const AddUserScreen = () => {
         );
         setUsers(filtered);
         setFilteredUsers(filtered);
-      } else {
-        console.log('API response:', response.data);
       }
     } catch (error) {
       console.log('❌ Error fetching users:', error.message);
@@ -85,7 +88,6 @@ const AddUserScreen = () => {
     }
   };
 
-  // 🔍 Backend search API
   const fetchSearchedUsers = async text => {
     try {
       setLoading(true);
@@ -111,7 +113,6 @@ const AddUserScreen = () => {
     }
   };
 
-  // 🟢 Add Friend
   const handleAddFriend = async recipientId => {
     try {
       const token = await AsyncStorage.getItem('authToken');
@@ -143,8 +144,6 @@ const AddUserScreen = () => {
           type: 'success',
           text1: 'Friend Request Sent',
         });
-
-        // update friendshipStatus in local list
         setFilteredUsers(prev =>
           prev.map(u =>
             u._id === recipientId ? {...u, friendshipStatus: 'pending'} : u,
@@ -167,7 +166,6 @@ const AddUserScreen = () => {
     }
   };
 
-  // 🔍 Search input change
   const handleSearch = text => {
     setSearchText(text);
     if (text.trim() === '') {
@@ -177,29 +175,64 @@ const AddUserScreen = () => {
     }
   };
 
-  // 🧩 Render User
   const renderItem = ({item}) => {
     const status = item.friendshipStatus;
 
     return (
-      <View style={styles.friendRow}>
+      <View
+        style={[
+          styles.friendRow,
+          {backgroundColor: theme.backgroundGradient || '#1E293B'},
+        ]}>
         <View style={styles.friendInfo}>
           <Image
             source={require('../Screens/Image/avater.png')}
             style={styles.avatar}
           />
-          <Text style={styles.friendName}>{item.username}</Text>
+          <View>
+            <View style={{flexDirection: 'row'}}>
+              <Text style={[styles.usernameText, {color: theme.subText}]}>
+                Username:{' '}
+              </Text>
+              <Text style={[styles.usernameText1, {color: theme.text}]}>
+                {item.username}
+              </Text>
+            </View>
+            <View style={{flexDirection: 'row'}}>
+              <Text style={[styles.nameText, {color: theme.subText}]}>
+                Name:{' '}
+              </Text>
+              <Text style={[styles.usernameText1, {color: theme.text}]}>
+                John Doe
+              </Text>
+            </View>
+            <View style={{flexDirection: 'row'}}>
+              <Text style={[styles.ratingText, {color: theme.subText}]}>
+                Rating:{' '}
+              </Text>
+              <Text style={[styles.usernameText1, {color: theme.text}]}>
+                1200
+              </Text>
+            </View>
+          </View>
         </View>
 
         {status === 'pending' ? (
-          <View style={[styles.addButton, {backgroundColor: '#64748B'}]}>
+          <View
+            style={[
+              styles.addButton,
+              {backgroundColor: theme.secondary || '#64748B'},
+            ]}>
             <Text style={styles.addText}>Pending</Text>
           </View>
         ) : (
           <TouchableOpacity
-            style={styles.addButton}
+            style={[
+              styles.addButton,
+              {backgroundColor: theme.primary || '#17677F'},
+            ]}
             onPress={() => handleAddFriend(item._id)}>
-            <Text style={styles.addText}>Add</Text>
+            <Text style={styles.addText}>+</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -213,7 +246,6 @@ const AddUserScreen = () => {
     }
   }, [isFocused]);
 
-  // 🔔 FCM listener for real-time updates
   useEffect(() => {
     const unsubscribe = messaging().onMessage(async remoteMessage => {
       const {data} = remoteMessage;
@@ -242,127 +274,169 @@ const AddUserScreen = () => {
   }, []);
 
   return (
-    <View style={styles.container}>
-      {/* 🔙 Header */}
-      <View style={styles.headerRow}>
-        <View style={styles.leftHeader}>
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={styles.backButton}>
-            <Icon name="arrow-back" size={22} color="#fff" />
-          </TouchableOpacity>
-          <Text style={styles.header}>Friends</Text>
-        </View>
-
-        <View style={styles.notificationContainer}>
-          <TouchableOpacity
-            onPress={() => {
-              navigation.navigate('FriendRequestScreen');
-            }}>
-            <Icon name="notifications-outline" size={22} color="#fff" />
-          </TouchableOpacity>
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>{pendingCount || 0}</Text>
-          </View>
-        </View>
-      </View>
-
-      {/* 🔍 Search */}
-      <View style={styles.searchContainer}>
-        <Icon name="search" size={22} color="#94A3B8" />
-        <TextInput
-          placeholder="Search by username..."
-          placeholderTextColor="#94A3B8"
-          style={styles.searchInput}
-          value={searchText}
-          onChangeText={handleSearch}
-        />
-      </View>
-
-      {/* 🟢 Loader */}
-      {loading ? (
-        <ActivityIndicator
-          size="large"
-          color="#FB923C"
-          style={{marginTop: 40}}
-        />
-      ) : (
-        <>
-          {/* 📱 Invite Section */}
-          <View style={styles.inviteSection}>
-            <Text style={styles.sectionTitle}>Invite & Connect</Text>
-
-            <TouchableOpacity style={styles.inviteButton1}>
-              <FontAwesome
-                name="whatsapp"
-                size={20}
-                color="#fff"
-                style={styles.iconLeft}
+    <LinearGradient
+      colors={theme.backgroundGradient || ['#0F172A', '#1E293B']}
+      style={{flex: 1,}}>
+      <View style={[styles.container]}>
+        <View style={styles.headerRow}>
+          <View style={styles.leftHeader}>
+            <TouchableOpacity
+              onPress={() => navigation.goBack()}
+              style={[styles.backButton]}>
+              <Icon
+                name="caret-back-outline"
+                size={scale(22)}
+                color={theme.text || '#fff'}
               />
-              <Text style={styles.inviteText}>
-                Invite Friends via WhatsApp or SMS
-              </Text>
             </TouchableOpacity>
-
-            <TouchableOpacity style={styles.inviteButton}>
-              <View style={styles.fbIconCircle}>
-                <FontAwesome name="facebook" size={23} color="#fff" />
-              </View>
-              <Text style={styles.inviteText}>Connect to Facebook</Text>
-            </TouchableOpacity>
+            <Text style={[styles.header, {color: theme.text}]}>Friends</Text>
           </View>
 
-          {/* 👯‍♂️ Friends List */}
-          <Text style={styles.sectionTitle}>
-            All Users ({filteredUsers.length})
-          </Text>
-          <ScrollView
-           horizontal={false}
-            vertical={true}
-            refreshControl={
-              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-            }
-           showsVerticalScrollIndicator={false}>
-            <FlatList
-              data={filteredUsers}
-              keyExtractor={item => item._id}
-              renderItem={renderItem}
-              scrollEnabled={false}
-              contentContainerStyle={{paddingBottom: 30}}
-            />
-          </ScrollView>
-        </>
-      )}
-    </View>
+          <View style={styles.notificationContainer}>
+            <TouchableOpacity
+              onPress={() => navigation.navigate('FriendRequestScreen')}>
+              <Icon
+                name="notifications-outline"
+                size={scale(22)}
+                color={theme.text || '#fff'}
+              />
+            </TouchableOpacity>
+            <View
+              style={[
+                styles.badge,
+                {backgroundColor: theme.error || '#EF4444'},
+              ]}>
+              <Text style={styles.badgeText}>{pendingCount || 0}</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* 🔹 Added Separator Line */}
+        <View
+          style={{
+            height: 1,
+            backgroundColor: '#94A3B8',
+            opacity: 0.3,
+            marginBottom: height * 0.02,
+            borderColor:  '#94A3B8',
+            borderWidth:1,
+            top:10
+          }}
+        />
+
+        {/* 🔍 Search */}
+        <View style={{top:20}}>
+        <View
+          style={[
+            styles.searchContainer,
+            {backgroundColor: theme.cardBackground || '#1E293B'},
+          ]}>
+          <Icon
+            name="search"
+            size={scale(22)}
+            color={theme.subText || '#94A3B8'}
+          />
+          <TextInput
+            placeholder="Search Contacts"
+            placeholderTextColor={theme.subText || '#94A3B8'}
+            style={[styles.searchInput, {color: theme.text}]}
+            value={searchText}
+            onChangeText={handleSearch}
+          />
+        </View>
+
+        {loading ? (
+          <ActivityIndicator
+            size="large"
+            color={theme.primary || '#FB923C'}
+            style={{marginTop: height * 0.05}}
+          />
+        ) : (
+          <>
+            <View
+              style={[
+                styles.inviteSection,
+                {backgroundColor: theme.cardBackground || '#1E293B'},
+              ]}>
+              <Text style={[styles.sectionTitle, {color: theme.text}]}>
+                Invite & Connect
+              </Text>
+
+              <TouchableOpacity
+                style={[styles.inviteButton1, {backgroundColor: '#25D366'}]}>
+                <FontAwesome
+                  name="whatsapp"
+                  size={scale(20)}
+                  color="#fff"
+                  style={styles.iconLeft}
+                />
+                <Text style={styles.inviteText}>
+                  Invite Friends via WhatsApp or SMS
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.inviteButton,
+                  {backgroundColor: theme.cardBackground || '#1E293B'},
+                ]}>
+                <View style={styles.fbIconCircle}>
+                  <FontAwesome name="facebook" size={scale(22)} color="#fff" />
+                </View>
+                <Text style={[styles.inviteText, {color: theme.text}]}>
+                  Facebook Friends
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            <Text style={[styles.sectionTitle, {color: theme.text}]}>
+              Friends ({filteredUsers.length})
+            </Text>
+            <ScrollView
+              refreshControl={
+                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+              }
+              showsVerticalScrollIndicator={false}>
+              <FlatList
+                data={filteredUsers}
+                keyExtractor={item => item._id}
+                renderItem={renderItem}
+                scrollEnabled={false}
+                contentContainerStyle={{paddingBottom: height * 0.1}}
+              />
+            </ScrollView>
+          </>
+        )}
+        </View>
+      </View>
+    </LinearGradient>
+    
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0F172A',
-    paddingHorizontal: 16,
-    paddingTop: 20,
+    paddingHorizontal: width * 0.04,
+    paddingTop: height * 0.03,
   },
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: height * 0.02,
   },
   leftHeader: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   backButton: {
-    marginRight: 12,
-    backgroundColor: '#1E293B',
+    marginRight: width * 0.3,
     borderRadius: 10,
-    padding: 6,
+    padding: width * 0.015,
   },
   header: {
-    color: '#fff',
-    fontSize: 20,
+    fontSize: scaleFont(18),
     fontWeight: '700',
   },
   notificationContainer: {
@@ -372,111 +446,113 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -6,
     right: -8,
-    backgroundColor: '#EF4444',
     borderRadius: 8,
     paddingHorizontal: 4,
     minWidth: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  fbIconCircle: {
-    backgroundColor: '#1877F2',
-    width: 34,
-    height: 34,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 10,
-  },
-  inviteSection: {
-    backgroundColor: '#1E293B',
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '700',
-    marginBottom: 12,
-  },
-  inviteButton1: {
-    backgroundColor: '#25D366',
-    borderRadius: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 10,
-    alignItems: 'center',
-    flexDirection: 'row',
-    marginBottom: 10,
-  },
-  inviteButton: {
-    backgroundColor: '#1E293B',
-    borderRadius: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 10,
-    alignItems: 'center',
-    flexDirection: 'row',
-    marginBottom: 10,
-  },
-  iconLeft: {
-    marginRight: 10,
-  },
-  inviteText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 14,
-  },
   badgeText: {
     color: '#fff',
-    fontSize: 10,
+    fontSize: scaleFont(10),
     fontWeight: '700',
   },
   searchContainer: {
-    backgroundColor: '#1E293B',
     borderRadius: 8,
-    marginBottom: 20,
+    marginBottom: height * 0.02,
     flexDirection: 'row',
     alignItems: 'center',
     paddingStart: '3%',
   },
   searchInput: {
-    height: 45,
+    height: height * 0.055,
     paddingHorizontal: 12,
+    flex: 1,
+  },
+  inviteSection: {
+    borderRadius: 10,
+    padding: width * 0.03,
+    marginBottom: height * 0.03,
+  },
+  sectionTitle: {
+    fontSize: scaleFont(16),
+    fontWeight: '700',
+    marginBottom: height * 0.015,
+  },
+  inviteButton1: {
+    borderRadius: 8,
+    paddingVertical: height * 0.012,
+    paddingHorizontal: width * 0.03,
+    alignItems: 'center',
+    flexDirection: 'row',
+    marginBottom: height * 0.012,
+  },
+  inviteButton: {
+    borderRadius: 8,
+    paddingVertical: height * 0.012,
+    paddingHorizontal: width * 0.03,
+    alignItems: 'center',
+    flexDirection: 'row',
+  },
+  iconLeft: {
+    marginRight: width * 0.03,
+  },
+  inviteText: {
     color: '#fff',
+    fontWeight: '600',
+    fontSize: scaleFont(14),
+  },
+  fbIconCircle: {
+    backgroundColor: '#1877F2',
+    width: scale(34),
+    height: scale(34),
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: width * 0.03,
   },
   friendRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     borderRadius: 8,
-    padding: 12,
-    marginBottom: 12,
-    backgroundColor: '#1E293B',
+    padding: width * 0.03,
+    marginBottom: height * 0.015,
   },
   friendInfo: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginRight: 12,
-  },
-  friendName: {
-    color: '#fff',
-    fontSize: 15,
-    fontWeight: '600',
+    width: scale(50),
+    height: scale(50),
+    marginRight: width * 0.03,
   },
   addButton: {
-    backgroundColor: '#FB923C',
     borderRadius: 6,
-    paddingHorizontal: 18,
-    paddingVertical: 6,
+    paddingHorizontal: width * 0.05,
+    paddingVertical: height * 0.006,
   },
   addText: {
     color: '#fff',
+    fontWeight: 'bold',
+    fontSize: scaleFont(18),
+  },
+  usernameText: {
+    fontSize: scaleFont(13),
     fontWeight: '600',
+  },
+  usernameText1: {
+    fontSize: scaleFont(13),
+    fontWeight: 'bold',
+  },
+  nameText: {
+    fontSize: scaleFont(12),
+    marginTop: 2,
+  },
+  ratingText: {
+    fontSize: scaleFont(11),
+    marginTop: 2,
   },
 });
 

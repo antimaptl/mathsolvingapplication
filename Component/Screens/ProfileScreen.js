@@ -1,5 +1,5 @@
-import {useNavigation} from '@react-navigation/native';
-import React, {useEffect, useState} from 'react';
+import { useNavigation } from '@react-navigation/native';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -10,19 +10,23 @@ import {
   PixelRatio,
   ScrollView,
   ActivityIndicator,
+  SafeAreaView,
+  StatusBar,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/Ionicons';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useTheme } from '../Globalfile/ThemeContext'; // ✅ Theme hook
 
-const {width} = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 const scale = width / 375;
 const normalize = size =>
   Math.round(PixelRatio.roundToNearestPixel(size * scale));
 
 const ProfileScreen = () => {
   const Navigation = useNavigation();
+  const { theme } = useTheme(); // ✅ Theme from context
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -67,23 +71,31 @@ const ProfileScreen = () => {
     const date = new Date(dateString);
     return date.toLocaleDateString();
   };
-  
-   const getFlagEmoji = countryCode => {
+
+  const getFlagEmoji = countryCode => {
     if (!countryCode) return '';
     return countryCode
       .toUpperCase()
       .replace(/./g, char => String.fromCodePoint(127397 + char.charCodeAt(0)));
   };
 
-  return (
-    <LinearGradient colors={['#0D0D26', '#121234']} style={styles.container}>
+  // ✅ Main screen content separated for cleaner theme wrapping
+  const Content = () => (
+    <SafeAreaView style={[styles.container]}>
+      <StatusBar
+        backgroundColor={
+          theme.backgroundGradient ? theme.backgroundGradient[0] : '#0D0D26'
+        }
+        barStyle="light-content"
+      />
+
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => Navigation.goBack()}>
-            <Icon name="arrow-back" size={normalize(22)} color="#fff" />
+            <Icon name="caret-back-outline" size={normalize(23)} color="#fff" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>PROFILE</Text>
           <TouchableOpacity>
@@ -92,18 +104,14 @@ const ProfileScreen = () => {
         </View>
 
         {loading ? (
-          <ActivityIndicator
-            size="large"
-            color="#fff"
-            style={{marginTop: 50}}
-          />
+          <ActivityIndicator size="large" color="#fff" style={{ marginTop: 50 }} />
         ) : (
           <View style={styles.profileSection}>
             {/* Profile Section */}
             <View style={styles.profileTop}>
               <View style={styles.imageContainer}>
                 <Image
-                  source={require('../Screens/Image/avater.png')}
+                  source={require('../Screens/Image/dummyProfile.jpg')}
                   style={styles.profileImage}
                 />
               </View>
@@ -126,7 +134,9 @@ const ProfileScreen = () => {
               <Text style={styles.detail}>
                 Gender: {userData?.gender || 'N/A'}
               </Text>
-             <Text style={styles.detail}>Country: { getFlagEmoji(userData?.country)}</Text>
+              <Text style={styles.detail}>
+                Country: {getFlagEmoji(userData?.country)}
+              </Text>
             </View>
 
             {/* Rank Tabs */}
@@ -150,8 +160,8 @@ const ProfileScreen = () => {
             <View style={styles.rankContainer}>
               <Text style={styles.rankText}>Current Rank: 10,456</Text>
               <View style={styles.rankBar}>
-                <View style={[styles.rankBarFillGreen, {width: '50%'}]} />
-                <View style={[styles.rankBarFillRed, {width: '45%'}]} />
+                <View style={[styles.rankBarFillGreen, { width: '50%' }]} />
+                <View style={[styles.rankBarFillRed, { width: '45%' }]} />
               </View>
             </View>
 
@@ -169,12 +179,27 @@ const ProfileScreen = () => {
           </View>
         )}
       </ScrollView>
+    </SafeAreaView>
+  );
+
+  // ✅ Apply theme background here
+  return theme.backgroundGradient ? (
+    <LinearGradient colors={theme.backgroundGradient} style={{ flex: 1 }}>
+      <Content />
     </LinearGradient>
+  ) : (
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: theme.backgroundColor || '#0D0D26',
+      }}>
+      <Content />
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {flex: 1, padding: normalize(10)},
+  container: { flex: 1, padding: normalize(10) },
   scrollContent: {
     paddingBottom: normalize(30),
     paddingHorizontal: normalize(16),
@@ -186,8 +211,8 @@ const styles = StyleSheet.create({
     marginTop: normalize(20),
     marginBottom: normalize(15),
   },
-  headerTitle: {color: '#fff', fontSize: normalize(18), fontWeight: '700'},
-  profileSection: {marginVertical: normalize(10)},
+  headerTitle: { color: '#fff', fontSize: normalize(18), fontWeight: '700' },
+  profileSection: { marginVertical: normalize(10) },
   profileTop: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -204,17 +229,17 @@ const styles = StyleSheet.create({
     height: normalize(70),
     borderRadius: normalize(40),
   },
-  profileText: {marginLeft: normalize(30)},
+  profileText: { marginLeft: normalize(30) },
   userName: {
     color: '#fff',
     fontSize: normalize(18),
     fontWeight: '600',
     marginBottom: normalize(4),
   },
-  joinDate: {color: '#999', fontSize: normalize(12)},
-  userInfo: {marginTop: normalize(10), alignItems: 'flex-start'},
-  email: {color: '#bbb', fontSize: normalize(14), marginBottom: normalize(2)},
-  emailText: {color: '#4da6ff'},
+  joinDate: { color: '#999', fontSize: normalize(12) },
+  userInfo: { marginTop: normalize(10), alignItems: 'flex-start' },
+  email: { color: '#bbb', fontSize: normalize(14), marginBottom: normalize(2) },
+  emailText: { color: '#4da6ff' },
   detail: {
     color: '#ccc',
     fontSize: normalize(14),
@@ -233,10 +258,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#1b1b3a',
     borderRadius: normalize(6),
   },
-  activeTab: {backgroundColor: '#4e54c8'},
-  tabText: {color: '#bbb', fontSize: normalize(14)},
-  activeTabText: {color: '#fff', fontWeight: '600'},
-  rankContainer: {marginTop: normalize(28)},
+  activeTab: { backgroundColor: '#4e54c8' },
+  tabText: { color: '#bbb', fontSize: normalize(14) },
+  activeTabText: { color: '#fff', fontWeight: '600' },
+  rankContainer: { marginTop: normalize(28) },
   rankText: {
     color: '#fff',
     fontSize: normalize(13),
@@ -249,16 +274,16 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     overflow: 'hidden',
   },
-  rankBarFillGreen: {backgroundColor: '#4CAF50'},
-  rankBarFillRed: {backgroundColor: '#F44336'},
-  achievementsContainer: {marginTop: normalize(25)},
+  rankBarFillGreen: { backgroundColor: '#4CAF50' },
+  rankBarFillRed: { backgroundColor: '#F44336' },
+  achievementsContainer: { marginTop: normalize(25) },
   achievementTitle: {
     color: '#fff',
     fontSize: normalize(14),
     marginBottom: normalize(10),
     textAlign: 'center',
   },
-  achievementRow: {flexDirection: 'row', justifyContent: 'space-between'},
+  achievementRow: { flexDirection: 'row', justifyContent: 'space-between' },
   achievementBox: {
     flex: 1,
     backgroundColor: '#1e1e40',
@@ -267,7 +292,7 @@ const styles = StyleSheet.create({
     borderRadius: normalize(8),
     alignItems: 'center',
   },
-  achievementText: {color: '#ddd', fontSize: normalize(12)},
+  achievementText: { color: '#ddd', fontSize: normalize(12) },
 });
 
 export default ProfileScreen;

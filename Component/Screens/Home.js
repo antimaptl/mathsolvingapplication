@@ -19,8 +19,8 @@ import { useTheme } from '../Globalfile/ThemeContext'; // ✅ import theme
 
 // 🎵 Import SoundManager
 import {
-  playBackgroundMusic,
-  stopBackgroundMusic,
+  // playBackgroundMusic,
+  // stopBackgroundMusic,
   muteBackgroundMusic,
   unmuteBackgroundMusic,
 } from '../Globalfile/playBackgroundMusic';
@@ -35,16 +35,16 @@ const Home = () => {
 
   const [isMuted, setIsMuted] = useState(false);
 
-  useEffect(() => {
-    playBackgroundMusic();
-    return () => stopBackgroundMusic();
-  }, []);
+  // useEffect(() => {
+  //   playBackgroundMusic();
+  //   return () => stopBackgroundMusic();
+  // }, []);
 
-  const toggleSound = () => {
-    if (isMuted) unmuteBackgroundMusic();
-    else muteBackgroundMusic();
-    setIsMuted(!isMuted);
-  };
+  // const toggleSound = () => {
+  //   if (isMuted) unmuteBackgroundMusic();
+  //   else muteBackgroundMusic();
+  //   setIsMuted(!isMuted);
+  // };
 
   const Content = () => (
     <View style={[styles.contentContainer, { paddingTop: insets.top + 25 }]}>
@@ -64,7 +64,7 @@ const Home = () => {
           </TouchableOpacity>
 
           {/* 🔊 Sound Toggle */}
-          <TouchableOpacity onPress={toggleSound}>
+          <TouchableOpacity onPress={() => setIsMuted(prev => !prev)}>
             <MaskedView
               maskElement={
                 <Ionicons

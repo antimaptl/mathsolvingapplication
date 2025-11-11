@@ -15,7 +15,7 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import {useNavigation} from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import LinearGradient from 'react-native-linear-gradient';
-import {useTheme} from '../Globalfile/ThemeContext'; // ✅ import ThemeContext
+import {useTheme} from '../Globalfile/ThemeContext';
 
 const {width, height} = Dimensions.get('window');
 const scale = size => (width / 375) * size;
@@ -66,16 +66,16 @@ const More = () => {
       <View style={styles.topBar}>
         <TouchableOpacity onPress={() => navigation.navigate('Home')}>
           <Ionicons
-            name="arrow-back"
-            size={scale(24)}
+            name="caret-back-outline"
+            size={scale(26)}
             color={theme.text || '#808080'}
           />
         </TouchableOpacity>
         <Text style={[styles.menuTitle, {color: theme.text || '#fff'}]}>
-          More
+          MORE
         </Text>
       </View>
-
+      <View style={{borderWidth:1,bottom:"1%",borderColor: '#94A3B8',opacity:0.5,}}></View>
       <ScrollView contentContainerStyle={styles.menuList}>
         {menuItems.map((item, index) => {
           const IconComp =
@@ -108,6 +108,7 @@ const More = () => {
       </ScrollView>
 
       {/* ✅ Themed Logout Button */}
+      <View style={{paddingHorizontal: width * 0.06,}}>
       <LinearGradient
         colors={[theme.primary || '#FB923C', theme.primary || '#FF7F50']}
         style={styles.logoutButton}>
@@ -117,6 +118,7 @@ const More = () => {
           <Text style={styles.logoutText}>Logout</Text>
         </TouchableOpacity>
       </LinearGradient>
+       </View>
     </SafeAreaView>
   );
 
@@ -136,22 +138,27 @@ export default More;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: width * 0.06,
+    paddingHorizontal: width * 0.02,
   },
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent:"flex-start",
     marginTop: height * 0.05,
     marginBottom: height * 0.05,
+    paddingHorizontal: width * 0.05,
+    gap:"32%"
   },
   menuTitle: {
     fontSize: scaleFont(17),
     fontWeight: 'bold',
-    marginLeft: width * 0.3,
+    marginLeft: width * 0.0,
     opacity: 0.9,
+    alignSelf:"center",
   },
   menuList: {
     flexGrow: 1,
+    paddingHorizontal: width * 0.06,
   },
   menuItem: {
     flexDirection: 'row',
@@ -173,6 +180,8 @@ const styles = StyleSheet.create({
     marginBottom: height * 0.06,
     marginTop: height * 0.03,
     overflow: 'hidden',
+    paddingHorizontal: width * 0.06,
+    
   },
   logoutText: {
     color: '#fff',

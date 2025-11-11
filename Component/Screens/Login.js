@@ -19,7 +19,7 @@ import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from 'react-native-toast-message';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
+import Icon6 from 'react-native-vector-icons/FontAwesome6';
 
 const { width } = Dimensions.get('window');
 const scale = width / 375;
@@ -170,16 +170,13 @@ export default function Login() {
 
         <View style={styles.socialContainer}>
           <TouchableOpacity style={styles.socialButton} onPress={() => Alert.alert('Info', 'Google login coming soon')}>
-            <Image
-              style={{ width: normalize(35), height: normalize(35) }}
-              source={require('../Screens/Image/google.png')}
-            />
+             <Icon6 name="google" size={normalize(20)} color="#fff" />
+          </TouchableOpacity>
+           <TouchableOpacity style={styles.socialButton} onPress={() => Alert.alert('Info', 'Twitter login coming soon')}>
+             <Icon6 name="x-twitter" size={normalize(20)} color="#fff" />
           </TouchableOpacity>
           <TouchableOpacity style={styles.socialButton} onPress={() => Alert.alert('Info', 'Facebook login coming soon')}>
-            <Image
-              style={{ width: normalize(35), height: normalize(35) }}
-              source={require('../Screens/Image/facebook.png')}
-            />
+            <Icon6 name="google" size={normalize(20)} color="#fff" />
           </TouchableOpacity>
         </View>
 
@@ -285,7 +282,7 @@ const styles = StyleSheet.create({
     width: normalize(40),
     height: normalize(40),
     borderRadius: normalize(20),
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: '#17677F',
     justifyContent: 'center',
     alignItems: 'center',
     marginHorizontal: width * 0.02,
