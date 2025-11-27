@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useRoute, useNavigation} from '@react-navigation/native';
 import React, {useRef, useState} from 'react';
 import {
@@ -43,63 +44,87 @@ export default function EmailVerification() {
 
   const handleVerifyOtp = async () => {
     const userEnteredOtp = otp.join('').trim();
-    setErrorMessage(''); // reset error each time
+    setErrorMessage('');
 
     if (!userEnteredOtp) {
-      setErrorMessage('Incorrect OTP. Please try Again');
-      return;
+      return Toast.show({
+        type: 'error',
+        text1: 'Invalid OTP',
+        text2: 'Please enter the 6 digit OTP.',
+      });
+    }
+
+    const {userData} = route.params || {};
+    if (!userData) {
+      return Toast.show({
+        type: 'error',
+        text1: 'Internal Error',
+        text2: 'Missing user data. Please restart the signup.',
+      });
     }
 
     const payload = {
-      username: userData.username.trim(),
+      username: userData.username,
       email: userData.email,
-      password: userData.password.trim(),
-      gender: userData.gender.trim().toLowerCase(),
-      dateOfBirth: String(userData.dateOfBirth).trim(),
+      password: userData.password,
+      gender: userData.gender.toLowerCase(),
+      dateOfBirth: String(userData.dateOfBirth),
       otp: userEnteredOtp,
     };
 
-    console.log('🔶 Raw payload →', JSON.stringify(payload, null, 2));
+    console.log('🔶 Payload sending →', payload);
 
     try {
       const res = await fetch('http://43.204.167.118:3000/api/auth/signup', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(payload),
       });
 
       const body = await res.json();
-      console.log('🔷 Server responded with:', res.status, body);
+      console.log('🔷 Server response →', res.status, body);
 
-      if (res.status === 400) {
-        // incorrect OTP logic
-        const newCount = attemptCount + 1;
-        setAttemptCount(newCount);
+      // ❌ SERVER ERROR HANDLING
+      if (!res.ok) {
+        const msg = body?.message || 'Registration failed';
 
-        if (newCount >= 3) {
-          setErrorMessage(
-            'You have exceeded the number of attempts. Please try again after 1 Hour',
-          );
-        } else {
-          setErrorMessage('Incorrect OTP. Please try Again');
+        if (body?.error?.includes('password')) {
+          msg = 'Password must be at least 6 characters';
         }
+        
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: msg,
+        });
+
+        setErrorMessage(msg);
         return;
       }
 
-      if (!res.ok) {
-        throw new Error(body.message || 'Registration failed');
+      // SAVE TOKEN
+      if (body?.token) {
+        await AsyncStorage.setItem('authToken', body.token);
+        console.log('✅ Token saved:', body.token);
       }
 
+      // ✅ SUCCESS
       Toast.show({
         type: 'success',
         text1: 'Success',
         text2: 'Registration successful!',
       });
+
       navigation.navigate('NotificationPermissionScreen');
     } catch (err) {
       console.error('❌ Signup error:', err);
+
+      Toast.show({
+        type: 'error',
+        text1: 'Network Error',
+        text2: 'Something went wrong. Please try again.',
+      });
+
       setErrorMessage('Something went wrong. Please try again.');
     }
   };

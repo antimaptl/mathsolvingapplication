@@ -39,7 +39,7 @@ const WelcomeScreen = () => {
 
     // Auto navigate after delay
     const timer = setTimeout(() => {
-      navigation.replace('Home');
+      navigation.replace('BottomTab');
     }, 1000);
 
     return () => clearTimeout(timer);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, {useState, useEffect, useRef, useCallback} from 'react';
 import {
   View,
   Text,
@@ -9,27 +9,28 @@ import {
   SafeAreaView,
   Animated,
   StatusBar,
+  AppState,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import LinearGradient from 'react-native-linear-gradient';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {
   useFocusEffect,
   useNavigation,
   useRoute,
 } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { stopBackgroundMusic } from '../Globalfile/playBackgroundMusic';
+import {stopBackgroundMusic} from '../Globalfile/playBackgroundMusic';
 import {
   initSound,
   playEffect,
   stopEffect,
   releaseAll,
 } from '../Globalfile/SoundManager';
-import { useTheme } from '../Globalfile/ThemeContext';
+import {useTheme} from '../Globalfile/ThemeContext';
 
-const { width, height } = Dimensions.get('window');
+const {width, height} = Dimensions.get('window');
 const scaleFont = size => size * PixelRatio.getFontScale();
 
 const numPad = [
@@ -50,11 +51,13 @@ const getMathSymbol = word =>
   }[word] || word);
 
 const MathInputScreen = () => {
+  const appState = useRef(AppState.currentState);
+  const startTimeRef = useRef(null);
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const route = useRoute();
-  const { theme } = useTheme();
-  const { difficulty, symbol, timer, qm } = route.params;
+  const {theme} = useTheme();
+  const {difficulty, symbol, timer, qm} = route.params;
 
   const [input, setInput] = useState('');
   const [question, setQuestion] = useState('');
@@ -90,6 +93,7 @@ const MathInputScreen = () => {
       // 🔇 Commented out keypad and beep initialization
       // initSound('keypad', 'keypad.mp3');
       initSound('timer', 'every30second.wav');
+      initSound('ticktock', 'ticktock.mp3');
       // initSound('beep', 'beep.mp3');
     }, []),
   );
@@ -97,17 +101,46 @@ const MathInputScreen = () => {
   useEffect(() => {
     fetchQuestion();
 
-    const interval = setInterval(() => {
-      if (!isPaused) {
-        totalTimeRef.current -= 1;
-        const mins = Math.floor(totalTimeRef.current / 60);
-        const secs = totalTimeRef.current % 60;
-        setMinutes(mins);
-        setSeconds(secs);
+    // Timer start time
+    startTimeRef.current = Date.now();
 
-        // ⏰ Last 10 seconds: play ticking sound
-        if (totalTimeRef.current <= 10 && totalTimeRef.current > 0) {
+    const interval = setInterval(() => {
+      const now = Date.now();
+      const elapsed = Math.floor((now - startTimeRef.current) / 1000);
+      const remaining = timer - elapsed;
+
+      totalTimeRef.current = remaining;
+
+      const mins = Math.floor(remaining / 60);
+      const secs = remaining % 60;
+      setMinutes(mins);
+      setSeconds(secs);
+
+      // 🔔 Last 10 seconds ticktock
+      if (remaining <= 10 && remaining > 0) {
+        playEffect('ticktock', isSoundOnRef.current);
+        Animated.sequence([
+          Animated.timing(animateWatch, {
+            toValue: 1.4,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+          Animated.timing(animateWatch, {
+            toValue: 1,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+        ]).start();
+      }
+
+      // 🔔 Every 30 seconds
+      if (remaining % 30 === 0 && remaining !== timer && remaining > 0) {
+        setIsThirtySecPhase(true);
+        let repeatCount = 0;
+
+        const secInterval = setInterval(() => {
           playEffect('timer', isSoundOnRef.current);
+
           Animated.sequence([
             Animated.timing(animateWatch, {
               toValue: 1.4,
@@ -120,59 +153,57 @@ const MathInputScreen = () => {
               useNativeDriver: true,
             }),
           ]).start();
-        }
 
-        // 🎵 Every 30 seconds: play timer sound for 10 seconds
-        if (totalTimeRef.current % 30 === 0 && totalTimeRef.current !== 0) {
-          setIsThirtySecPhase(true);
-          let repeatCount = 0;
-          const animateInterval = setInterval(() => {
-            Animated.sequence([
-              Animated.timing(animateWatch, {
-                toValue: 1.4,
-                duration: 300,
-                useNativeDriver: true,
-              }),
-              Animated.timing(animateWatch, {
-                toValue: 1,
-                duration: 300,
-                useNativeDriver: true,
-              }),
-            ]).start();
+          repeatCount++;
+          if (repeatCount >= 10) {
+            clearInterval(secInterval);
+            setIsThirtySecPhase(false);
+          }
+        }, 1000);
+      }
 
-            // Play timer sound each second for 10 seconds
-            playEffect('timer', isSoundOnRef.current);
+      // ⛔ Timer finished
+      if (remaining <= 0) {
+        clearInterval(interval);
+        stopEffect('ticktock');
 
-            repeatCount += 1;
-            if (repeatCount >= 10) {
-              clearInterval(animateInterval);
-              setIsThirtySecPhase(false);
-            }
-          }, 1000);
-        }
+        const incorrectCount = incorrectCountRef.current;
+        const attempted = correctAnswersRef.current + incorrectCount;
+        const correctPercentage =
+          attempted > 0
+            ? Math.round((correctAnswersRef.current / attempted) * 100)
+            : 0;
 
-        // ⏹ When timer ends
-        if (totalTimeRef.current <= 0) {
-          clearInterval(interval);
-          const incorrectCount = incorrectCountRef.current;
-          const attempted = correctAnswersRef.current + incorrectCount;
-          const correctPercentage =
-            attempted > 0
-              ? Math.round((correctAnswersRef.current / attempted) * 100)
-              : 0;
-          navigation.replace('WellDoneScreen', {
-            totalScore: scoreRef.current,
-            correctCount: correctAnswersRef.current,
-            inCorrectCount: incorrectCount,
-            skippedQuestions: skippedCountRef.current,
-            correctPercentage,
-            difficulty,
-          });
-        }
+        navigation.replace('WellDoneScreen', {
+          totalScore: scoreRef.current,
+          correctCount: correctAnswersRef.current,
+          inCorrectCount: incorrectCount,
+          skippedQuestions: skippedCountRef.current,
+          correctPercentage,
+          difficulty,
+        });
       }
     }, 1000);
 
     return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', nextState => {
+      if (nextState === 'active') {
+        const now = Date.now();
+        const elapsed = Math.floor((now - startTimeRef.current) / 1000);
+        const remaining = timer - elapsed;
+
+        totalTimeRef.current = remaining;
+
+        setMinutes(Math.floor(remaining / 60));
+        setSeconds(remaining % 60);
+      }
+      appState.current = nextState;
+    });
+
+    return () => subscription.remove();
   }, []);
 
   const fetchQuestion = async () => {
@@ -203,7 +234,9 @@ const MathInputScreen = () => {
       const data = await response.json();
       const q = data.question;
       console.log('mmmmmmmmmmmmmmmmmmmm', q);
-      setQuestion(`${String(q.input1)} ${getMathSymbol(q.symbol)} ${String(q.input2)}`);
+      setQuestion(
+        `${String(q.input1)} ${getMathSymbol(q.symbol)} ${String(q.input2)}`,
+      );
       setCorrectAnswer(String(q.answer));
 
       // 🔇 Beep sound removed
@@ -289,7 +322,7 @@ const MathInputScreen = () => {
 
   // ✅ Content component
   const Content = () => (
-    <SafeAreaView style={[styles.container, { paddingTop: insets.top + 30 }]}>
+    <SafeAreaView style={[styles.container, {paddingTop: insets.top + 30}]}>
       <StatusBar
         backgroundColor={
           theme.backgroundGradient ? theme.backgroundGradient[0] : '#0B1220'
@@ -301,7 +334,7 @@ const MathInputScreen = () => {
       <View
         style={[
           styles.topBar,
-          { backgroundColor: theme.cardBackground || '#1E293B' },
+          {backgroundColor: theme.cardBackground || '#1E293B'},
         ]}>
         <TouchableOpacity
           onPress={() => {
@@ -318,7 +351,7 @@ const MathInputScreen = () => {
             style={[
               styles.timerIcon,
               {
-                transform: [{ scale: animateWatch }],
+                transform: [{scale: animateWatch}],
                 tintColor:
                   minutes * 60 + seconds <= 10 || isThirtySecPhase
                     ? 'red'
@@ -353,24 +386,24 @@ const MathInputScreen = () => {
         <View
           style={[
             styles.answerBox,
-            { backgroundColor: theme.cardBackground || '#1E293B' },
+            {backgroundColor: theme.cardBackground || '#1E293B'},
             feedback === 'correct'
-              ? { borderColor: 'green', borderWidth: 2 }
+              ? {borderColor: 'green', borderWidth: 2}
               : feedback === 'incorrect'
-              ? { borderColor: 'red', borderWidth: 2 }
+              ? {borderColor: 'red', borderWidth: 2}
               : feedback === 'skipped'
-              ? { borderColor: 'orange', borderWidth: 2 }
+              ? {borderColor: 'orange', borderWidth: 2}
               : {},
           ]}>
           <Text
             style={[
               styles.answerText,
               feedback === 'correct'
-                ? { color: 'green' }
+                ? {color: 'green'}
                 : feedback === 'incorrect'
-                ? { color: 'red' }
+                ? {color: 'red'}
                 : feedback === 'skipped'
-                ? { color: 'orange' }
+                ? {color: 'orange'}
                 : {},
             ]}>
             {input ||
@@ -396,16 +429,25 @@ const MathInputScreen = () => {
                 <TouchableOpacity
                   key={index}
                   onPress={() => handlePress(item)}
-                  style={[styles.keyButton, isSpecial ? styles.specialKey : null]}>
+                  style={[
+                    styles.keyButton,
+                    isSpecial ? styles.specialKey : null,
+                  ]}>
                   {isSkip ? (
                     <LinearGradient
                       colors={theme.buttonGradient || ['#FFAD90', '#FF4500']}
-                      style={[styles.gradientButton, { opacity: 0.8 }]}>
-                      <View style={{ alignItems: 'center', flexDirection: 'row' }}>
-                        <Text style={[styles.keyText, { fontSize: scaleFont(14) }]}>
+                      style={[styles.gradientButton, {opacity: 0.8}]}>
+                      <View
+                        style={{alignItems: 'center', flexDirection: 'row'}}>
+                        <Text
+                          style={[styles.keyText, {fontSize: scaleFont(14)}]}>
                           Skip
                         </Text>
-                        <MaterialIcons name="skip-next" size={25} color="#fff" />
+                        <MaterialIcons
+                          name="skip-next"
+                          size={25}
+                          color="#fff"
+                        />
                       </View>
                     </LinearGradient>
                   ) : !isSpecial ? (
@@ -420,7 +462,9 @@ const MathInputScreen = () => {
                       <Text style={styles.keyText}>{item.toUpperCase()}</Text>
                     </LinearGradient>
                   ) : (
-                    <Text style={[styles.keyText, { color: '#fff' }]}>{item}</Text>
+                    <Text style={[styles.keyText, {color: '#fff'}]}>
+                      {item}
+                    </Text>
                   )}
                 </TouchableOpacity>
               );
@@ -435,7 +479,7 @@ const MathInputScreen = () => {
         style={styles.playButton}>
         <TouchableOpacity
           onPress={() => console.log('Play pressed')}
-          style={{ width: '100%', alignItems: 'center' }}>
+          style={{width: '100%', alignItems: 'center'}}>
           <Text style={styles.playButtonText}>Play</Text>
         </TouchableOpacity>
       </LinearGradient>
@@ -443,11 +487,12 @@ const MathInputScreen = () => {
   );
 
   return theme.backgroundGradient ? (
-    <LinearGradient colors={theme.backgroundGradient} style={{ flex: 1 }}>
+    <LinearGradient colors={theme.backgroundGradient} style={{flex: 1}}>
       <Content />
     </LinearGradient>
   ) : (
-    <View style={{ flex: 1, backgroundColor: theme.backgroundColor || '#0B1220' }}>
+    <View
+      style={{flex: 1, backgroundColor: theme.backgroundColor || '#0B1220'}}>
       <Content />
     </View>
   );
@@ -456,7 +501,7 @@ const MathInputScreen = () => {
 export default MathInputScreen;
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  container: {flex: 1},
   topBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -481,14 +526,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  timerContainer: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  timerContainer: {flexDirection: 'row', alignItems: 'center', gap: 5},
   timerText: {
     color: '#fff',
     fontSize: scaleFont(13),
     fontWeight: '600',
     opacity: 0.7,
   },
-  timerIcon: { width: 18, height: 18 },
+  timerIcon: {width: 18, height: 18},
   question: {
     fontSize: scaleFont(22),
     color: '#fff',
@@ -507,8 +552,8 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     marginBottom: '27%',
   },
-  answerText: { fontSize: scaleFont(18), color: '#fff', fontWeight: '600' },
-  keypadContainer: { width: '100%' },
+  answerText: {fontSize: scaleFont(18), color: '#fff', fontWeight: '600'},
+  keypadContainer: {width: '100%'},
   keypadRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -523,7 +568,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     backgroundColor: '#1C2433',
   },
-  specialKey: { backgroundColor: '#1C2433' },
+  specialKey: {backgroundColor: '#1C2433'},
   gradientButton: {
     width: '100%',
     height: '100%',
@@ -531,7 +576,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 10,
   },
-  keyText: { fontSize: scaleFont(18), color: '#fff', fontWeight: '600' },
+  keyText: {fontSize: scaleFont(18), color: '#fff', fontWeight: '600'},
   playButton: {
     marginTop: height * 0.04,
     width: width * 0.5,
@@ -539,5 +584,5 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     paddingVertical: height * 0.015,
   },
-  playButtonText: { color: '#fff', fontSize: scaleFont(18), fontWeight: 'bold' },
+  playButtonText: {color: '#fff', fontSize: scaleFont(18), fontWeight: 'bold'},
 });

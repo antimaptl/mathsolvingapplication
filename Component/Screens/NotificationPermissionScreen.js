@@ -63,12 +63,13 @@ const NotificationPermissionScreen = () => {
           );
 
           if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+            
             showStyledAlert('✅ Permission Granted! You will receive notifications.');
           } else {
             showStyledAlert('❌ Permission Denied! Notifications are disabled.');
           }
         } else {
-          showStyledAlert('✅ Notifications are allowed by default.');
+           navigation.replace('ChooseThemeIntroScreen');
         }
       }
     } catch (error) {

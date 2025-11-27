@@ -62,10 +62,11 @@ const ProfileScreen = () => {
         setLoading(false);
       }
     };
-
     fetchUserData();
   }, []);
 
+
+  console.log("UserData" , userData)
   const formatDate = dateString => {
     if (!dateString) return 'N/A';
     const date = new Date(dateString);

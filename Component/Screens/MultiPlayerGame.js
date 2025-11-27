@@ -1,3 +1,424 @@
+// import React, {useState, useEffect, useRef, useContext} from 'react';
+// import {
+//   View,
+//   Text,
+//   TouchableOpacity,
+//   StyleSheet,
+//   Dimensions,
+//   PixelRatio,
+//   SafeAreaView,
+//   StatusBar,
+//   Animated,
+// } from 'react-native';
+// import AsyncStorage from '@react-native-async-storage/async-storage';
+// import Icon from 'react-native-vector-icons/Ionicons';
+// import {useNavigation, useRoute} from '@react-navigation/native';
+// import LinearGradient from 'react-native-linear-gradient';
+// import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+// import {useSocket} from '../../Context/Socket';
+// import {useSafeAreaInsets} from 'react-native-safe-area-context';
+
+// // ⭐ ADD THE THEME CONTEXT — SAME AS MathInputScreen
+// import { useTheme } from '../Globalfile/ThemeContext';
+
+// const {width, height} = Dimensions.get('window');
+// const scaleFont = size => size * PixelRatio.getFontScale();
+
+// const numPad = [
+//   ['7', '8', '9', '-'],
+//   ['4', '5', '6', '.'],
+//   ['1', '2', '3', 'na'],
+//   ['Clear', '0', '⌫', 'skip'],
+// ];
+
+// const getMathSymbol = word => {
+//   const symbolMap = {
+//     Sum: '+',
+//     Difference: '-',
+//     Product: '*',
+//     Quotient: '/',
+//     Modulus: '%',
+//     Exponent: '^',
+//   };
+//   return symbolMap[word] || word;
+// };
+
+// const MultiPlayerGame = () => {
+//   const socket = useSocket();
+//   const insets = useSafeAreaInsets();
+//   const navigation = useNavigation();
+//   const route = useRoute();
+
+//   // ⭐ GET THE THEME
+//   const {theme} = useTheme();
+
+//   const {currentQuestion, timer, difficulty} = route.params || {};
+
+//   const [input, setInput] = useState('');
+//   const [question, setQuestion] = useState('');
+//   const [correctAnswer, setCorrectAnswer] = useState('');
+//   const [loading, setLoading] = useState(true);
+//   const [user, setUser] = useState(null);
+//   const socketRef = useRef(null);
+
+//   const totalTimeRef = useRef(timer ?? 60);
+//   const [minutes, setMinutes] = useState(Math.floor((timer ?? 60) / 60));
+//   const [seconds, setSeconds] = useState((timer ?? 60) % 60);
+//   const [animateWatch] = useState(new Animated.Value(1));
+//   const [isThirtySecPhase, setIsThirtySecPhase] = useState(false);
+//   const [isPaused, setIsPaused] = useState(false);
+
+//   const scoreRef = useRef(0);
+//   const correctAnswersRef = useRef(0);
+//   const incorrectCountRef = useRef(0);
+//   const skippedCountRef = useRef(0);
+
+//   const [score, setScore] = useState(0);
+//   const [correctAnswers, setCorrectAnswers] = useState(0);
+//   const [skippedCount, setSkippedCount] = useState(0);
+
+//   const [feedback, setFeedback] = useState(null);
+//   const [awaitingResult, setAwaitingResult] = useState(false);
+
+//   useEffect(() => {
+//     AsyncStorage.getItem('userData')
+//       .then(stored => {
+//         if (stored) setUser(JSON.parse(stored));
+//       })
+//       .catch(console.error);
+//   }, []);
+
+//   useEffect(() => {
+//     if (!socket) return;
+//     socketRef.current = socket;
+
+//     const handleNewQuestion = q => {
+//       const mathSymbol = getMathSymbol(q.symbol);
+//       setQuestion(`${q.input1} ${mathSymbol} ${q.input2}`);
+//       setCorrectAnswer(String(q.answer));
+//       setInput('');
+//       setLoading(false);
+//       setFeedback(null);
+//       setAwaitingResult(false);
+//     };
+
+//     const handleNextQuestion = data => {
+//       const q = data.question;
+//       const mathSymbol = getMathSymbol(q.symbol);
+//       setQuestion(`${q.input1} ${mathSymbol} ${q.input2}`);
+//       setCorrectAnswer(String(q.answer));
+//       setInput('');
+//       setLoading(false);
+//       setFeedback(null);
+//       setAwaitingResult(false);
+//     };
+
+//     socket.on('new-question', handleNewQuestion);
+//     socket.on('next-question', handleNextQuestion);
+
+//     if (currentQuestion) {
+//       const mathSymbol = getMathSymbol(currentQuestion.symbol);
+//       setQuestion(
+//         `${currentQuestion.input1} ${mathSymbol} ${currentQuestion.input2}`,
+//       );
+//       setCorrectAnswer(String(currentQuestion.answer));
+//       setLoading(false);
+//     }
+
+//     return () => {
+//       socket.off('new-question', handleNewQuestion);
+//     };
+//   }, [socket, currentQuestion]);
+
+//   // Timer
+//   useEffect(() => {
+//     if (typeof timer === 'number') {
+//       totalTimeRef.current = timer;
+//       setMinutes(Math.floor(timer / 60));
+//       setSeconds(timer % 60);
+//     }
+
+//     const interval = setInterval(() => {
+//       if (!isPaused) {
+//         totalTimeRef.current -= 1;
+
+//         const mins = Math.floor(totalTimeRef.current / 60);
+//         const secs = totalTimeRef.current % 60;
+//         setMinutes(mins);
+//         setSeconds(secs);
+
+//         if (totalTimeRef.current <= 10 && totalTimeRef.current > 0) {
+//           Animated.sequence([
+//             Animated.timing(animateWatch, {
+//               toValue: 1.4,
+//               duration: 300,
+//               useNativeDriver: true,
+//             }),
+//             Animated.timing(animateWatch, {
+//               toValue: 1,
+//               duration: 300,
+//               useNativeDriver: true,
+//             }),
+//           ]).start();
+//         }
+
+//         if (totalTimeRef.current <= 0) {
+//           clearInterval(interval);
+
+//           navigation.replace('MultiplayerResultScreen', {
+//             totalScore: scoreRef.current,
+//             correctCount: correctAnswersRef.current,
+//             inCorrectCount: incorrectCountRef.current,
+//             skippedQuestions: skippedCountRef.current,
+//             difficulty,
+//             isWinner: true,
+//           });
+//         }
+//       }
+//     }, 1000);
+
+//     return () => clearInterval(interval);
+//   }, [isPaused]);
+
+//   const handlePress = async value => {
+//     if (loading || awaitingResult) return;
+
+//     const key = value.toLowerCase();
+//     const playerId = await AsyncStorage.getItem('playerId');
+
+//     if (key === 'clear') {
+//       setInput('');
+//       return;
+//     }
+//     if (key === '⌫') {
+//       setInput(prev => prev.slice(0, -1));
+//       return;
+//     }
+//     if (key === 'skip') {
+//       skippedCountRef.current += 1;
+//       setSkippedCount(skippedCountRef.current);
+//       setFeedback('skipped');
+
+//       socketRef.current?.emit('next-question', {userId: user?.id});
+
+//       setTimeout(() => setFeedback(null), 900);
+//       return;
+//     }
+
+//     const newInput = input + value;
+//     setInput(newInput);
+
+//     if (newInput.length >= correctAnswer.length) {
+//       const isCorrect = newInput === correctAnswer;
+//       setFeedback(isCorrect ? 'correct' : 'incorrect');
+
+//       if (isCorrect) {
+//         scoreRef.current += 1;
+//         setScore(scoreRef.current);
+//       }
+
+//       socketRef.current?.emit('submit-answer', {
+//         answer: newInput,
+//         playerId,
+//         userName: user?.username,
+//       });
+//     }
+//   };
+
+//   return (
+//     <SafeAreaView style={[styles.container, {backgroundColor: theme. backgroundGradient[0] ||  '#1E293B' , paddingTop: insets.top}]}>
+//       <StatusBar  backgroundColor={
+//           theme.backgroundGradient ? theme.backgroundGradient[0] : '#0B1220'
+//         }
+//         barStyle="light-content" />
+
+//       {/* TOP BAR */}
+//       <View style={[styles.topBar, {backgroundColor: theme.cardBackground || '#1E293B'}]}>
+//         <TouchableOpacity onPress={() => navigation.goBack()} style={[styles.iconButton, {backgroundColor: theme.card}]}>
+//           <Icon name="chevron-back" size={scaleFont(18)} color={theme.text} />
+//         </TouchableOpacity>
+
+//         {/* TIMER */}
+//         <View style={{flexDirection: 'row', alignItems: 'center'}}>
+//           <Animated.Image
+//             source={require('../Screens/Image/Stopwatch.png')}
+//             style={[
+//               styles.timerIcon,
+//               {
+//                 tintColor:
+//                   minutes * 60 + seconds <= 10 ? 'red' : theme.text,
+//                 transform: [{scale: animateWatch}],
+//               },
+//             ]}
+//           />
+//           <Text style={{color: theme.text, fontSize: scaleFont(15), marginLeft: 6}}>
+//             {`${minutes}:${String(seconds).padStart(2, '0')}`}
+//           </Text>
+//         </View>
+
+//         <View style={{width: width * 0.06}} />
+//       </View>
+
+//       {/* QUESTION */}
+//       <Text style={[styles.question, {color: theme.text}]}>
+//         {loading ? 'Loading...' : question}
+//       </Text>
+
+//       {/* ANSWER BOX */}
+//       <View style={{flexDirection: 'row', justifyContent: 'center', marginBottom: height * 0.04}}>
+//         <View
+//           style={[
+//             styles.answerBox,
+//             {backgroundColor: theme.cardBackground || '#1E293B'},
+//             feedback === 'correct'
+//               ? {borderColor: 'green', borderWidth: 2}
+//               : feedback === 'incorrect'
+//               ? {borderColor: 'red', borderWidth: 2}
+//               : feedback === 'skipped'
+//               ? {borderColor: 'orange', borderWidth: 2}
+//               : {},
+//           ]}>
+//           <Text
+//             style={[
+//               styles.answerText,
+//               {color: theme.text},
+//               feedback === 'correct'
+//                 ? {color: 'green'}
+//                 : feedback === 'incorrect'
+//                 ? {color: 'red'}
+//                 : feedback === 'skipped'
+//                 ? {color: 'orange'}
+//                 : {},
+//             ]}>
+//             {feedback ? feedback.toUpperCase() : input}
+//           </Text>
+//         </View>
+//       </View>
+
+//       {/* STATS */}
+//       <View style={styles.statsRow}>
+//         <Text style={[styles.statText, {color: theme.text}]}>Score: {score}</Text>
+//         <Text style={[styles.statText, {color: theme.text}]}>Correct: {correctAnswers}</Text>
+//         <Text style={[styles.statText, {color: theme.text}]}>Skipped: {skippedCount}</Text>
+//       </View>
+
+//       {/* KEYPAD */}
+//       <View style={styles.keypadContainer}>
+//         {numPad.map((row, rowIndex) => (
+//           <View key={rowIndex} style={styles.keypadRow}>
+//             {row.map((item, index) => {
+//               const isSpecial = item.toLowerCase() === 'clear' || item === '⌫';
+//               const isSkip = item.toLowerCase() === 'skip';
+
+//               return (
+//                 <TouchableOpacity
+//                   key={index}
+//                   onPress={() => handlePress(item)}
+//                   style={[
+//                     styles.keyButton,
+//                     {backgroundColor: theme.card},
+//                     isSpecial ? {} : {},
+//                   ]}>
+//                   {isSkip ? (
+//                     <LinearGradient colors={theme.buttonGradient || ['#FFAD90', '#FF4500']}>
+//                       <View style={{alignItems: 'center', flexDirection: 'row'}}>
+//                         <Text style={[styles.keyText, {color: theme.buttonText}]}>Skip</Text>
+//                         <MaterialIcons name="skip-next" size={25} color={theme.buttonText} />
+//                       </View>
+//                     </LinearGradient>
+//                   ) : !isSpecial ? (
+//                     <LinearGradient  colors={
+//                         theme.buttonGradient || [
+//                           theme.primaryColor || '#595CFF',
+//                           theme.secondaryColor || '#87AEE9',
+//                         ]
+//                       } style={styles.gradientButton}>
+//                       <Text style={[styles.keyText, {color: theme.buttonText}]}>
+//                         {item.toUpperCase()}
+//                       </Text>
+//                     </LinearGradient>
+//                   ) : (
+//                     <Text style={[styles.keyText, {color: theme.text}]}>{item}</Text>
+//                   )}
+//                 </TouchableOpacity>
+//               );
+//             })}
+//           </View>
+//         ))}
+//       </View>
+//     </SafeAreaView>
+//   );
+// };
+
+// export default MultiPlayerGame;
+
+// const styles = StyleSheet.create({
+//   container: {flex: 1},
+//   topBar: {
+//     flexDirection: 'row',
+//     justifyContent: 'space-between',
+//     alignItems: 'center',
+//     paddingHorizontal: width * 0.04,
+//     paddingVertical: height * 0.02,
+//     marginBottom: height * 0.03,
+//     borderBottomEndRadius: 15,
+//     borderBottomStartRadius: 15,
+//   },
+//   iconButton: {
+//     width: width * 0.06,
+//     height: width * 0.06,
+//     borderRadius: 8,
+//     justifyContent: 'center',
+//     alignItems: 'center',
+//   },
+//   timerIcon: {width: 18, height: 18},
+//   question: {
+//     fontSize: scaleFont(22),
+//     textAlign: 'center',
+//     marginTop: height * 0.05,
+//     marginBottom: height * 0.02,
+//     fontWeight: 'bold',
+//   },
+//   answerBox: {
+//     width: width * 0.6,
+//     height: height * 0.06,
+//     borderRadius: 10,
+//     justifyContent: 'center',
+//     alignItems: 'center',
+//     marginBottom: '27%',
+//   },
+//   answerText: {fontSize: scaleFont(18), fontWeight: '600'},
+//   keypadContainer: {width: '100%'},
+//   keypadRow: {
+//     flexDirection: 'row',
+//     justifyContent: 'space-between',
+//     marginBottom: height * 0.02,
+//     paddingHorizontal: width * 0.05,
+//   },
+//   keyButton: {
+//     width: width * 0.2,
+//     height: height * 0.1,
+//     justifyContent: 'center',
+//     alignItems: 'center',
+//     borderRadius: 10,
+//   },
+//   gradientButton: {
+//     width: '100%',
+//     height: '100%',
+//     justifyContent: 'center',
+//     alignItems: 'center',
+//     borderRadius: 10,
+//   },
+//   keyText: {fontSize: scaleFont(18), fontWeight: '600'},
+//   statsRow: {
+//     flexDirection: 'row',
+//     justifyContent: 'space-around',
+//     marginBottom: 12,
+//   },
+//   statText: {fontSize: scaleFont(12), opacity: 0.8},
+// });
+
+//Old code
 import React, {useState, useEffect, useRef} from 'react';
 import {
   View,
@@ -90,7 +511,6 @@ const MultiPlayerGame = () => {
   useEffect(() => {
     if (!socket) return;
     socketRef.current = socket;
-
     // Handler for incoming new question
     const handleNewQuestion = q => {
       console.log('📥 Received new-question:', q);
@@ -107,7 +527,7 @@ const MultiPlayerGame = () => {
     const handleNextQuestion = data => {
       console.log('📥 next-question:', data);
       const q = data.question;
-       console.log(' Q question:', q);
+      console.log(' Q question:', q);
       const mathSymbol = getMathSymbol(q.symbol);
       setQuestion(`${q.input1} ${mathSymbol} ${q.input2}`);
       setCorrectAnswer(String(q.answer));
@@ -126,8 +546,16 @@ const MultiPlayerGame = () => {
       // { status: 'correct' } or { correct: true } or { isCorrect: true }
       const status =
         payload?.status ||
-        (payload?.correct === true ? 'correct' : payload?.correct === false ? 'incorrect' : null) ||
-        (payload?.isCorrect === true ? 'correct' : payload?.isCorrect === false ? 'incorrect' : null) ||
+        (payload?.correct === true
+          ? 'correct'
+          : payload?.correct === false
+          ? 'incorrect'
+          : null) ||
+        (payload?.isCorrect === true
+          ? 'correct'
+          : payload?.isCorrect === false
+          ? 'incorrect'
+          : null) ||
         null;
 
       if (status === 'answer') {
@@ -195,6 +623,7 @@ const MultiPlayerGame = () => {
 
     return () => {
       socket.off('new-question', handleNewQuestion);
+      socket.off('game-winner');
       // socket.off('next-question', handleNextQuestion);
       // socket.off('answer-result', handleAnswerResult);
       // socket.off('submit-response', handleAnswerResult);
@@ -273,13 +702,27 @@ const MultiPlayerGame = () => {
             attempted > 0
               ? Math.round((correctAnswersRef.current / attempted) * 100)
               : 0;
-          navigation.replace('WellDoneScreen', {
+          socket.emit('game-completed', {
+            score: scoreRef.current,
+            correct: scoreRef.current,
+            time: timer,
+          });
+          console.log('completed Score', scoreRef.current);
+          console.log('time', timer);
+          console.log('correct', score);
+          socket.on('game-winner', winner => {
+            console.log('🏆 WINNER RECEIVED:', winner);
+          });
+
+          navigation.replace('MultiplayerResultScreen', {
             totalScore: scoreRef.current,
             correctCount: correctAnswersRef.current,
             inCorrectCount: incorrectCount,
             skippedQuestions: skippedCountRef.current,
             correctPercentage,
             difficulty,
+            isWinner: true,
+            // isWinner: winner?.winnerId === user?.id,
           });
         }
       }
@@ -323,9 +766,13 @@ const MultiPlayerGame = () => {
     if (newInput.length >= correctAnswer.length) {
       const isCorrect = newInput === correctAnswer;
       setFeedback(isCorrect ? 'correct' : 'incorrect');
+      if (isCorrect) {
+        scoreRef.current += 1;
+        setScore(scoreRef.current);
+        console.log('SCore1', scoreRef.current);
+      }
       // setAwaitingResult(true);
       // setFeedback('pending');
-
       socketRef.current?.emit('submit-answer', {
         answer: newInput,
         // In multiplayer you were sending timeSpent:100 earlier; keep same
@@ -362,7 +809,10 @@ const MultiPlayerGame = () => {
               styles.timerIcon,
               {
                 transform: [{scale: animateWatch}],
-                tintColor: minutes * 60 + seconds <= 10 || isThirtySecPhase ? 'red' : '#fff',
+                tintColor:
+                  minutes * 60 + seconds <= 10 || isThirtySecPhase
+                    ? 'red'
+                    : '#fff',
               },
             ]}
           />
@@ -376,7 +826,12 @@ const MultiPlayerGame = () => {
 
       <Text style={styles.question}>{loading ? 'Loading...' : question}</Text>
 
-      <View style={{flexDirection: 'row', justifyContent: 'center', marginBottom: height * 0.04}}>
+      <View
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'center',
+          marginBottom: height * 0.04,
+        }}>
         <View
           style={[
             styles.answerBox,
@@ -391,15 +846,23 @@ const MultiPlayerGame = () => {
           <Text
             style={[
               styles.answerText,
-              feedback === 'correct' ? {color: 'green'} :
-              feedback === 'incorrect' ? {color: 'red'} :
-              feedback === 'skipped' ? {color: 'orange'} : {},
+              feedback === 'correct'
+                ? {color: 'green'}
+                : feedback === 'incorrect'
+                ? {color: 'red'}
+                : feedback === 'skipped'
+                ? {color: 'orange'}
+                : {},
             ]}>
-            {feedback === 'pending' ? 'Checking...' :
-             feedback === 'correct' ? 'Correct' :
-             feedback === 'incorrect' ? 'Incorrect' :
-             feedback === 'skipped' ? 'Skipped' :
-             input}
+            {feedback === 'pending'
+              ? 'Checking...'
+              : feedback === 'correct'
+              ? 'Correct'
+              : feedback === 'incorrect'
+              ? 'Incorrect'
+              : feedback === 'skipped'
+              ? 'Skipped'
+              : input}
           </Text>
         </View>
       </View>
@@ -422,20 +885,37 @@ const MultiPlayerGame = () => {
                 <TouchableOpacity
                   key={index}
                   onPress={() => handlePress(item)}
-                  style={[styles.keyButton, isSpecial ? styles.specialKey : null]}>
+                  style={[
+                    styles.keyButton,
+                    isSpecial ? styles.specialKey : null,
+                  ]}>
                   {isSkip ? (
-                    <LinearGradient colors={['#FFAD90', '#FF4500']} style={styles.gradientButton}>
-                      <View style={{alignItems: 'center', flexDirection: 'row'}}>
-                        <Text style={[styles.keyText, {fontSize: scaleFont(14)}]}>Skip</Text>
-                        <MaterialIcons name="skip-next" size={25} color="#fff" />
+                    <LinearGradient
+                      colors={['#FFAD90', '#FF4500']}
+                      style={styles.gradientButton}>
+                      <View
+                        style={{alignItems: 'center', flexDirection: 'row'}}>
+                        <Text
+                          style={[styles.keyText, {fontSize: scaleFont(14)}]}>
+                          Skip
+                        </Text>
+                        <MaterialIcons
+                          name="skip-next"
+                          size={25}
+                          color="#fff"
+                        />
                       </View>
                     </LinearGradient>
                   ) : !isSpecial ? (
-                    <LinearGradient colors={['#595CFF', '#87AEE9']} style={styles.gradientButton}>
+                    <LinearGradient
+                      colors={['#595CFF', '#87AEE9']}
+                      style={styles.gradientButton}>
                       <Text style={styles.keyText}>{item.toUpperCase()}</Text>
                     </LinearGradient>
                   ) : (
-                    <Text style={[styles.keyText, {color: '#fff'}]}>{item}</Text>
+                    <Text style={[styles.keyText, {color: '#fff'}]}>
+                      {item}
+                    </Text>
                   )}
                 </TouchableOpacity>
               );
