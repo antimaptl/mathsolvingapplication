@@ -4,10 +4,10 @@ import React from 'react'
 const Puzzle = () => {
   return (
     <View style={{flex:1}}>
-    <Image
+    {/* <Image
     style={{height:"100%",width:"auto",resizeMode:"cover"}}
        source={require('../Screens/Image/comingsoonpng.jpg')}
-    />
+    /> */}
     </View>
   )
 }

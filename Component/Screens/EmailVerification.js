@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useRoute, useNavigation} from '@react-navigation/native';
-import React, {useRef, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {
   View,
   Text,
@@ -22,10 +22,34 @@ export default function EmailVerification() {
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [errorMessage, setErrorMessage] = useState('');
   const [attemptCount, setAttemptCount] = useState(0);
+  const [loading, setLoading] = useState(false);
   const inputs = useRef([]);
   const route = useRoute();
   const navigation = useNavigation();
   // const {userData} = route.params;
+
+  useEffect(() => {
+    const enteredOtp = otp.join('');
+    if (enteredOtp.length === 6 && !loading) {
+      handleVerifyOtp(enteredOtp);
+       loadAttempts();
+    }
+  }, [otp]);
+
+  const loadAttempts = async () => {
+  const savedCount = await AsyncStorage.getItem('otpAttempts');
+  const savedTime = await AsyncStorage.getItem('otpLockedUntil');
+
+  const now = Date.now();
+
+  if (savedTime && now < Number(savedTime)) {
+    // Still locked
+    setAttemptCount(3);
+  } else {
+    // Reset
+    setAttemptCount(savedCount ? Number(savedCount) : 0);
+  }
+};
 
   const handleChange = (text, index) => {
     const newOtp = [...otp];
@@ -42,25 +66,60 @@ export default function EmailVerification() {
     }
   };
 
-  const handleVerifyOtp = async () => {
-    const userEnteredOtp = otp.join('').trim();
-    setErrorMessage('');
+ const handleResendOtp = async () => {
+  setErrorMessage('');
 
-    if (!userEnteredOtp) {
-      return Toast.show({
-        type: 'error',
-        text1: 'Invalid OTP',
-        text2: 'Please enter the 6 digit OTP.',
+  setOtp(['', '', '', '', '', '']);
+  inputs.current[0]?.focus();
+
+  try {
+    const email = route.params?.userData?.email;
+
+    console.log("📤 Resend OTP API Triggered for email:", email);
+
+    const response = await fetch(
+      'http://43.204.167.118:3000/api/auth/verifymail',
+      {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({email}),
+      },
+    );
+
+    console.log("📥 Raw Response →", response);
+
+    const data = await response.json();
+    console.log("📥 Parsed Response Body →", data);
+
+    if (data.success === true) {
+      Toast.show({
+        type: 'success',
+        text1: 'OTP Sent',
+        text2: 'OTP sent again to your email',
       });
+    } else {
+      console.log("❌ Backend Error Message →", data.message);
+      setErrorMessage(data.message || 'Failed to resend OTP');
     }
+  } catch (error) {
+    console.log("❌ Network Error Occurred →", error);
+    setErrorMessage('Network error. Please try again.');
+  }
+};
+
+
+  const handleVerifyOtp = async userEnteredOtp => {
+    setLoading(true);
+    setErrorMessage('');
 
     const {userData} = route.params || {};
     if (!userData) {
-      return Toast.show({
+      Toast.show({
         type: 'error',
         text1: 'Internal Error',
-        text2: 'Missing user data. Please restart the signup.',
+        text2: 'Missing user data. Restart signup.',
       });
+      return;
     }
 
     const payload = {
@@ -72,8 +131,6 @@ export default function EmailVerification() {
       otp: userEnteredOtp,
     };
 
-    console.log('🔶 Payload sending →', payload);
-
     try {
       const res = await fetch('http://43.204.167.118:3000/api/auth/signup', {
         method: 'POST',
@@ -82,33 +139,17 @@ export default function EmailVerification() {
       });
 
       const body = await res.json();
-      console.log('🔷 Server response →', res.status, body);
 
-      // ❌ SERVER ERROR HANDLING
       if (!res.ok) {
-        const msg = body?.message || 'Registration failed';
-
-        if (body?.error?.includes('password')) {
-          msg = 'Password must be at least 6 characters';
-        }
-        
-        Toast.show({
-          type: 'error',
-          text1: 'Error',
-          text2: msg,
-        });
-
-        setErrorMessage(msg);
+        setErrorMessage(body?.message || 'Invalid OTP');
+        setLoading(false);
         return;
       }
 
-      // SAVE TOKEN
       if (body?.token) {
         await AsyncStorage.setItem('authToken', body.token);
-        console.log('✅ Token saved:', body.token);
       }
 
-      // ✅ SUCCESS
       Toast.show({
         type: 'success',
         text1: 'Success',
@@ -117,17 +158,18 @@ export default function EmailVerification() {
 
       navigation.navigate('NotificationPermissionScreen');
     } catch (err) {
-      console.error('❌ Signup error:', err);
-
       Toast.show({
         type: 'error',
         text1: 'Network Error',
-        text2: 'Something went wrong. Please try again.',
+        text2: 'Something went wrong.',
       });
 
-      setErrorMessage('Something went wrong. Please try again.');
+      setErrorMessage('Something went wrong. Try again.');
+    } finally {
+      setLoading(false);
     }
   };
+
 
   return (
     <KeyboardAvoidingView
@@ -148,7 +190,7 @@ export default function EmailVerification() {
           onPress={() => navigation.goBack()}>
           <Icon name="caret-back-outline" size={28} color="white" />
         </TouchableOpacity>
-        <Text style={styles.title}>Verify Email</Text>
+        <Text style={styles.title}>Sign - Up</Text>
       </View>
 
       {/* Info Text */}
@@ -183,20 +225,21 @@ export default function EmailVerification() {
         ))}
       </View>
 
-      <Text
-        style={{
-          color: '#c4c3c3ff',
-          alignSelf: 'flex-end',
-          end: 30,
-          top: -20,
-        }}>
-        Resend
-      </Text>
-
-      {/* Verify Button */}
-      <TouchableOpacity style={styles.verifyButton} onPress={handleVerifyOtp}>
-        <Text style={styles.verifyText}>Verify</Text>
+      <TouchableOpacity onPress={handleResendOtp}>
+        <Text
+          style={{
+            color: '#c4c3c3ff',
+            alignSelf: 'flex-end',
+            end: 30,
+            top: -20,
+          }}>
+          Resend
+        </Text>
       </TouchableOpacity>
+      {/* Verify Button */}
+      {/* <TouchableOpacity style={styles.verifyButton} onPress={handleVerifyOtp}>
+        <Text style={styles.verifyText}>Confirm</Text>
+      </TouchableOpacity> */}
 
       {/* Error Message Display (like image) */}
       {errorMessage ? (
@@ -255,8 +298,8 @@ const styles = StyleSheet.create({
   verifyButton: {
     backgroundColor: '#FB923C',
     paddingVertical: normalize(10),
-    paddingHorizontal: normalize(95),
-    borderRadius: normalize(25),
+    paddingHorizontal: normalize(90),
+    borderRadius: normalize(10),
     top: normalize(20),
     alignSelf: 'center',
   },

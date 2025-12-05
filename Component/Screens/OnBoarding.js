@@ -71,12 +71,7 @@ const OnBoarding = ({ navigation }) => {
     <LinearGradient
       colors={theme.backgroundGradient || ['#0f162b', '#0f162b']}
       style={[styles.container, { paddingTop: insets.top }]}
-    >
-      <StatusBar
-        backgroundColor={theme.statusBarColor || '#0f162b'}
-        barStyle={theme.statusBarStyle || 'light-content'}
-      />
-
+    >     
       {/* Swiper Section */}
       <Swiper
         ref={swiperRef}

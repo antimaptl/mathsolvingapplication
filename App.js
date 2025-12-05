@@ -59,6 +59,7 @@ import AddFriendScreen from './Component/Screens/AddFriendScreen';
 import WelcomeScreen from './Component/Screens/WelcomeScreen';
 import TermsAndConditions from './Component/Screens/TermsAndConditions';
 import MultiplayerResultScreen from './Component/Screens/MultiplayerResultScreen';
+import SettingsScreen from './Component/Screens/SettingsScreen';
 
 
 const Stack = createNativeStackNavigator();
@@ -161,6 +162,7 @@ const App = () => {
                  <Stack.Screen name="LanguageSelectionScreen" component={LanguageSelectionScreen} />
                  <Stack.Screen name="LanguageConfirmationScreen" component={LanguageConfirmationScreen} />
                  <Stack.Screen name="MultiplayerResultScreen" component={MultiplayerResultScreen} />
+                 <Stack.Screen name="SettingsScreen" component={SettingsScreen} />
               </Stack.Navigator>
             </NavigationContainer>
             <Toast />

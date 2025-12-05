@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, {useState} from 'react';
 import {
   StyleSheet,
   Text,
@@ -7,11 +7,25 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
+  Dimensions,
+  PixelRatio,
 } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Toast from 'react-native-toast-message';
+import Icon from 'react-native-vector-icons/Ionicons';
+import {useNavigation} from '@react-navigation/native';
 
-const ForgetPassword = ({ navigation }) => {
+const {width} = Dimensions.get('window');
+const scale = width / 375;
+const normalize = size => {
+  const newSize = size * scale;
+  return Platform.OS === 'ios'
+    ? Math.round(PixelRatio.roundToNearestPixel(newSize))
+    : Math.round(PixelRatio.roundToNearestPixel(newSize)) - 1;
+};
+
+const ForgetPassword = () => {
+  const navigation = useNavigation();
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -20,7 +34,7 @@ const ForgetPassword = ({ navigation }) => {
   const [otpError, setOtpError] = useState('');
   const [passwordError, setPasswordError] = useState('');
 
-  const validateEmail = (value) => {
+  const validateEmail = value => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(value);
   };
@@ -41,8 +55,8 @@ const ForgetPassword = ({ navigation }) => {
     try {
       const response = await fetch(apiUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({email}),
       });
 
       const result = await response.json();
@@ -95,8 +109,8 @@ const ForgetPassword = ({ navigation }) => {
     try {
       const response = await fetch(apiUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, otp, newPass: newPassword }),
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({email, otp, newPass: newPassword}),
       });
 
       const result = await response.json();
@@ -127,15 +141,29 @@ const ForgetPassword = ({ navigation }) => {
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <Text style={styles.title}>Forgot Password</Text>
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <View style={styles.header}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.backBtn}>
+          <Icon name="caret-back-outline" size={normalize(29)} color="white" />
+        </TouchableOpacity>
+        <Text style={styles.title}>Forgot Password</Text>
+      </View>
+
+      <View style={{paddingBottom: 170}}></View>
       <Toast />
 
       {!isOtpSent ? (
         <>
-          <View style={[styles.inputContainer, emailError && styles.errorBorder]}>
-            <MaterialIcons name="email" size={20} color="#94A3B8" style={styles.inputIcon} />
+          <View
+            style={[styles.inputContainer, emailError && styles.errorBorder]}>
+            <MaterialIcons
+              name="email"
+              size={20}
+              color="#94A3B8"
+              style={styles.inputIcon}
+            />
             <TextInput
               placeholder="Enter your email"
               style={styles.input}
@@ -143,25 +171,32 @@ const ForgetPassword = ({ navigation }) => {
               placeholderTextColor="#94A3B8"
               autoCapitalize="none"
               value={email}
-              onChangeText={(text) => {
+              onChangeText={text => {
                 setEmail(text);
                 setEmailError('');
               }}
             />
           </View>
-          {emailError !== '' && <Text style={styles.errorText}>{emailError}</Text>}
+          {emailError !== '' && (
+            <Text style={styles.errorText}>{emailError}</Text>
+          )}
         </>
       ) : (
         <>
           <View style={[styles.inputContainer, otpError && styles.errorBorder]}>
-            <MaterialIcons name="lock" size={20} color="#94A3B8" style={styles.inputIcon} />
+            <MaterialIcons
+              name="lock"
+              size={20}
+              color="#94A3B8"
+              style={styles.inputIcon}
+            />
             <TextInput
               placeholder="Enter OTP"
               style={styles.input}
               keyboardType="numeric"
               placeholderTextColor="#94A3B8"
               value={otp}
-              onChangeText={(text) => {
+              onChangeText={text => {
                 setOtp(text);
                 setOtpError('');
               }}
@@ -169,29 +204,41 @@ const ForgetPassword = ({ navigation }) => {
           </View>
           {otpError !== '' && <Text style={styles.errorText}>{otpError}</Text>}
 
-          <View style={[styles.inputContainer, passwordError && styles.errorBorder]}>
-            <MaterialIcons name="lock" size={20} color="#94A3B8" style={styles.inputIcon} />
+          <View
+            style={[
+              styles.inputContainer,
+              passwordError && styles.errorBorder,
+            ]}>
+            <MaterialIcons
+              name="lock"
+              size={20}
+              color="#94A3B8"
+              style={styles.inputIcon}
+            />
             <TextInput
               placeholder="Enter new password"
               style={styles.input}
               secureTextEntry
               placeholderTextColor="#94A3B8"
               value={newPassword}
-              onChangeText={(text) => {
+              onChangeText={text => {
                 setNewPassword(text);
                 setPasswordError('');
               }}
             />
           </View>
-          {passwordError !== '' && <Text style={styles.errorText}>{passwordError}</Text>}
+          {passwordError !== '' && (
+            <Text style={styles.errorText}>{passwordError}</Text>
+          )}
         </>
       )}
 
       <TouchableOpacity
         style={styles.button}
-        onPress={isOtpSent ? handlePasswordChange : handleVerify}
-      >
-        <Text style={styles.buttonText}>{isOtpSent ? 'Reset Password' : 'Send Otp'}</Text>
+        onPress={isOtpSent ? handlePasswordChange : handleVerify}>
+        <Text style={styles.buttonText}>
+          {isOtpSent ? 'Reset Password' : 'Send Otp'}
+        </Text>
       </TouchableOpacity>
     </KeyboardAvoidingView>
   );
@@ -202,10 +249,27 @@ export default ForgetPassword;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 24,
-    justifyContent: 'center',
+    padding: 34,
+    // justifyContent: 'center',
     backgroundColor: '#0f162b',
   },
+  header: {
+  width: '100%',
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'flex-start',
+  paddingVertical: 10,
+  position: 'absolute',
+  top: 30,
+  left: 20,
+  zIndex: 999,
+},
+
+backBtn: {
+  padding: 8,  
+  marginRight: 50,
+},
+
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -221,8 +285,8 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '600',
     textAlign: 'center',
-    marginBottom: 30,
     color: '#fff',
+    // top: -34,
   },
   input: {
     flex: 1,

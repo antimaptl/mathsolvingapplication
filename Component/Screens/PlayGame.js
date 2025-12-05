@@ -19,7 +19,7 @@ import {
   playBackgroundMusic,
   stopBackgroundMusic,
 } from '../Globalfile/playBackgroundMusic';
-import {useTheme} from '../Globalfile/ThemeContext'; // ✅ Theme import
+import {useTheme} from '../Globalfile/ThemeContext';
 
 const {width, height} = Dimensions.get('window');
 const scaleFont = size => size * PixelRatio.getFontScale();
@@ -60,6 +60,9 @@ const PlayGame = ({route}) => {
 
   AsyncStorage.getItem('diff').then(diff => {
     setSelectedDifficulty(diff || 'easy');
+    AsyncStorage.getItem('timer').then(t => {
+    setSelectedTimer(t || '1 Minute');
+  });
   });
 
   // ✅ Dynamic theme-based selected option
@@ -72,9 +75,11 @@ const PlayGame = ({route}) => {
           <Text style={styles.selectedOptionText}>{label}</Text>
         </LinearGradient>
       ) : (
-        <View style={[styles.optionButton,
-        { backgroundColor: theme.cardBackground || '#1E293B' },]}
-        >
+        <View
+          style={[
+            styles.optionButton,
+            {backgroundColor: theme.cardBackground || '#1E293B'},
+          ]}>
           <Text style={styles.optionText}>{label}</Text>
         </View>
       )}
@@ -115,22 +120,18 @@ const PlayGame = ({route}) => {
 
   const Content = () => (
     <ScrollView
-      contentContainerStyle={[styles.container, {paddingTop: insets.top + 30}]}>
-      <StatusBar
-        backgroundColor={
-          theme.backgroundGradient ? theme.backgroundGradient[0] : '#0B1220'
-        }
-        barStyle="light-content"
-      />
+      contentContainerStyle={[styles.container, {paddingTop: insets.top + 40}]}>
       <View style={{flexDirection: 'row', gap: width * 0.025}}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
           style={styles.iconButton}>
-          <Icon name="chevron-back" size={scaleFont(22)} color="#fff" />
+          <Icon name="caret-back-outline" size={scaleFont(26)} color="#fff" />
         </TouchableOpacity>
       </View>
 
-      <Text style={styles.heading}>Play Game</Text>
+      <Text style={styles.heading}>
+        {gametype === 'PRACTICE' ? 'Practice Game' : 'Play Game'}
+      </Text>
 
       {/* Difficulty Section */}
       <Text style={styles.sectionTitle}>Select Difficulty</Text>
@@ -152,15 +153,20 @@ const PlayGame = ({route}) => {
       {/* Timer Section */}
       <Text style={styles.sectionTitle}>Timer</Text>
       <View style={styles.row}>
-        {renderOption('1 Minute', selectedTimer === '1 Minute', () =>
-          setSelectedTimer('1 Minute'),
-        )}
-        {renderOption('2 Minute', selectedTimer === '2 Minute', () =>
-          setSelectedTimer('2 Minute'),
-        )}
-        {renderOption('3 Minute', selectedTimer === '3 Minute', () =>
-          setSelectedTimer('3 Minute'),
-        )}
+        {renderOption('1 Minute', selectedTimer === '1 Minute', async () => {
+          await AsyncStorage.setItem('timer', '1 Minute');
+          setSelectedTimer('1 Minute');
+        })}
+
+        {renderOption('2 Minute', selectedTimer === '2 Minute', async () => {
+          await AsyncStorage.setItem('timer', '2 Minute');
+          setSelectedTimer('2 Minute');
+        })}
+
+        {renderOption('3 Minute', selectedTimer === '3 Minute', async () => {
+          await AsyncStorage.setItem('timer', '3 Minute');
+          setSelectedTimer('3 Minute');
+        })}
       </View>
 
       {/* Symbol Section */}
@@ -178,10 +184,7 @@ const PlayGame = ({route}) => {
 
       {/* ✅ Themed Gradient Play Button */}
       <LinearGradient
-        colors={[
-          theme.primary || '#FB923C',
-          theme.primary || '#FF7F50',
-        ]}
+        colors={[theme.primary || '#FB923C', theme.primary || '#FF7F50']}
         style={styles.playButton}>
         <TouchableOpacity
           onPress={handlePlayPress}
@@ -220,12 +223,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   heading: {
-    fontSize: scaleFont(33),
+    fontSize: scaleFont(28),
     color: '#fff',
     fontWeight: 'bold',
     alignSelf: 'center',
-    marginBottom: height * 0.04,
-    marginTop: height * 0.05,
+    marginBottom: height * 0.09,
+    marginTop: height * -0.03,
     fontFamily: 'jaro',
   },
   sectionTitle: {

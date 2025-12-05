@@ -82,19 +82,19 @@ const BottomTab = () => {
           }}
         />
         <Tab.Screen
-          name="Puzzle"
+          name="Play"
           component={Puzzle}
           options={{
             tabBarIcon: ({ focused }) =>
-              renderIcon(require('../Screens/Image/PuzzleIcon.png'), 'Puzzle', focused),
+              renderIcon(require('../Screens/Image/PuzzleIcon.png'), 'Play', focused),
           }}
         />
         <Tab.Screen
-          name="Learn"
+          name="Practise"
           component={Learn}
           options={{
             tabBarIcon: ({ focused }) =>
-              renderIcon(require('../Screens/Image/Learn.png'), 'Learn', focused),
+              renderIcon(require('../Screens/Image/Learn.png'), 'Practise', focused),
           }}
         />
         <Tab.Screen
@@ -116,11 +116,13 @@ const styles = StyleSheet.create({
   iconContainer: {
     alignItems: 'center',
     justifyContent: 'center',
+    width: width * 0.18,
   },
   icon: {
     width: width * 0.06,   // smaller icon
     height: height * 0.035,
     marginBottom: 2,
+    
   },
   label: {
     fontSize: 10,

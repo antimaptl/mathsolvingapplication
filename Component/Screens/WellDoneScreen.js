@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef } from 'react';
+import React, {useCallback, useEffect, useRef} from 'react';
 import {
   View,
   Text,
@@ -10,22 +10,25 @@ import {
   SafeAreaView,
   StatusBar,
 } from 'react-native';
-import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import ConfettiCannon from 'react-native-confetti-cannon';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import Sound from 'react-native-sound';
 import LinearGradient from 'react-native-linear-gradient';
-import { playBackgroundMusic, stopBackgroundMusic } from '../Globalfile/playBackgroundMusic';
-import { useTheme } from '../Globalfile/ThemeContext'; // ✅ Import theme
+import {
+  playBackgroundMusic,
+  stopBackgroundMusic,
+} from '../Globalfile/playBackgroundMusic';
+import {useTheme} from '../Globalfile/ThemeContext'; // ✅ Import theme
 
-const { width, height } = Dimensions.get('window');
+const {width, height} = Dimensions.get('window');
 const scale = size => (width / 375) * size;
 const scaleFont = size => size * PixelRatio.getFontScale();
 
-const WellDoneScreen = ({ route }) => {
+const WellDoneScreen = ({route}) => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
-  const { theme } = useTheme(); // ✅ Get current theme
+  const {theme} = useTheme(); // ✅ Get current theme
 
   const {
     totalScore,
@@ -67,53 +70,73 @@ const WellDoneScreen = ({ route }) => {
   // );
 
   const Content = () => (
-    <ScrollView contentContainerStyle={[styles.container, { paddingTop: insets.top + 20 }]}>
-      <ConfettiCannon count={150} origin={{ x: width / 2, y: 0 }} fadeOut autoStart fallSpeed={4000} />
+    <ScrollView
+      contentContainerStyle={[styles.container, {paddingTop: insets.top + 20}]}>
+      <ConfettiCannon
+        count={150}
+        origin={{x: width / 2, y: 0}}
+        fadeOut
+        autoStart
+        fallSpeed={4000}
+      />
       <Text style={styles.title}>Well Done</Text>
 
-      <View style={[styles.scoreBox,
-       { backgroundColor: theme.cardBackground || '#1E293B' }
-      ]}>
+      <View
+        style={[
+          styles.scoreBox,
+          {backgroundColor: theme.cardBackground || '#1E293B'},
+        ]}>
         <Text style={styles.label}>Total Score</Text>
         <Text style={styles.value}>{totalScore}</Text>
       </View>
-      <View style={[styles.scoreBox,
-       { backgroundColor: theme.cardBackground || '#1E293B' }
-      ]}>
+      <View
+        style={[
+          styles.scoreBox,
+          {backgroundColor: theme.cardBackground || '#1E293B'},
+        ]}>
         <Text style={styles.label}>Correct Count</Text>
         <Text style={styles.value}>{correctCount}</Text>
       </View>
-     <View style={[styles.scoreBox,
-       { backgroundColor: theme.cardBackground || '#1E293B' }
-      ]}>
+      <View
+        style={[
+          styles.scoreBox,
+          {backgroundColor: theme.cardBackground || '#1E293B'},
+        ]}>
         <Text style={styles.label}>Incorrect Count</Text>
         <Text style={styles.value}>{inCorrectCount}</Text>
       </View>
-     <View style={[styles.scoreBox,
-       { backgroundColor: theme.cardBackground || '#1E293B' }
-      ]}>
+      <View
+        style={[
+          styles.scoreBox,
+          {backgroundColor: theme.cardBackground || '#1E293B'},
+        ]}>
         <Text style={styles.label}>Skipped Questions</Text>
         <Text style={styles.value}>{skippedQuestions}</Text>
       </View>
-      <View style={[styles.scoreBox,
-       { backgroundColor: theme.cardBackground || '#1E293B' }
-      ]}>
+      <View
+        style={[
+          styles.scoreBox,
+          {backgroundColor: theme.cardBackground || '#1E293B'},
+        ]}>
         <Text style={styles.label}>Correct Percentage</Text>
         <Text style={styles.value}>{correctPercentage}%</Text>
       </View>
 
       {/* 🎮 Themed "New Game" Button */}
       <LinearGradient
-        colors={
-          [
-            theme.primary || '#FB923C',
-            theme.primary || '#FF7F50',
-          ]
-        }
+        colors={[theme.primary || '#FB923C', theme.primary || '#FF7F50']}
         style={styles.newGameBtn}>
         <TouchableOpacity
-          onPress={() => navigation.navigate('PlayGame', { gametype: 'PRACTICE' })}
-          style={{ width: '100%', alignItems: 'center' }}>
+          onPress={() =>
+            navigation.navigate('BottomTab', {
+              screen: 'Home',
+              params: {
+                screen: 'PlayGame',
+                params: {gametype: 'PRACTICE'},
+              },
+            })
+          }
+          style={{width: '100%', alignItems: 'center'}}>
           <Text style={styles.newGameText}>New Game</Text>
         </TouchableOpacity>
       </LinearGradient>
@@ -123,30 +146,19 @@ const WellDoneScreen = ({ route }) => {
         onPress={() => navigation.navigate('BottomTab')}
         style={[
           styles.homeBtn,
-          { backgroundColor: theme.cardBackground || '#fff' },
+          {backgroundColor: theme.cardBackground || '#fff'},
         ]}>
-        <Text
-          style={[
-            styles.homeText,
-            { color: '#fff' },
-          ]}>
-          Home
-        </Text>
+        <Text style={[styles.homeText, {color: '#fff'}]}>Home</Text>
       </TouchableOpacity>
     </ScrollView>
   );
 
   return theme.backgroundGradient ? (
-    <LinearGradient colors={theme.backgroundGradient} style={{ flex: 1 }}>
-      <StatusBar
-        backgroundColor={theme.backgroundGradient[0]}
-        barStyle="light-content"
-      />
+    <LinearGradient colors={theme.backgroundGradient} style={{flex: 1}}>
       <Content />
     </LinearGradient>
   ) : (
-    <View style={{ flex: 1, backgroundColor: '#0B1220' }}>
-      <StatusBar backgroundColor="#0B1220" barStyle="light-content" />
+    <View style={{flex: 1, backgroundColor: '#0B1220'}}>
       <Content />
     </View>
   );

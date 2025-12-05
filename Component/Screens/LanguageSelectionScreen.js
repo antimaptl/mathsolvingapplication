@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -33,6 +33,13 @@ const LanguageSelectionScreen = () => {
     { id: 4, label: '中文', code: 'zh' },
   ];
 
+useEffect(() => {
+  const setFirstLaunchFlag = async () => {
+    await AsyncStorage.setItem('firstLaunch', 'false');
+  };
+  setFirstLaunchFlag();
+}, []);
+
   const primaryColor = theme?.primary || '#FB923C';
 
   const handleLanguageSelect = async lang => {
@@ -45,11 +52,6 @@ const LanguageSelectionScreen = () => {
     <SafeAreaView style={styles.safeArea}>
       {theme.backgroundGradient ? (
         <LinearGradient colors={theme.backgroundGradient} style={styles.container}>
-          <StatusBar
-            backgroundColor={theme.backgroundGradient[0]}
-            barStyle="light-content"
-          />
-
           {/* 🌍 Header */}
           <View style={styles.headerContainer}>
             <Image

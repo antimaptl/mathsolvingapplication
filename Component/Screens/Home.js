@@ -47,7 +47,7 @@ const Home = () => {
   // };
 
   const Content = () => (
-    <View style={[styles.contentContainer, { paddingTop: insets.top + 25 }]}>
+    <View style={[styles.contentContainer, { paddingTop: insets.top + 30 }]}>
       <View style={styles.iconGrid}>
         <View style={styles.iconColumn}>
           <TouchableOpacity onPress={() => navigation.navigate('CommingSoon')}>
@@ -109,14 +109,11 @@ const Home = () => {
   );
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <View style={styles.safeArea}>
       {/* ✅ Apply theme background */}
       {theme.backgroundGradient ? (
         <LinearGradient colors={theme.backgroundGradient} style={styles.container}>
-          <StatusBar
-            backgroundColor={theme.backgroundGradient[0]}
-            barStyle="light-content"
-          />
+         
           <Content />
         </LinearGradient>
       ) : (
@@ -125,14 +122,10 @@ const Home = () => {
             styles.container,
             { backgroundColor: theme.backgroundColor || '#0B1220' },
           ]}>
-          <StatusBar
-            backgroundColor={theme.backgroundColor || '#0B1220'}
-            barStyle="light-content"
-          />
           <Content />
         </View>
       )}
-    </SafeAreaView>
+    </View>
   );
 };
 

@@ -170,13 +170,13 @@ const styles = StyleSheet.create({
   },
   title: {
     color: '#fff',
-    fontSize: scaleFont(28),
+    fontSize: scaleFont(30),
     fontWeight: 'bold',
     marginBottom: height * 0.015,
   },
   subtitle: {
     color: '#94A3B8',
-    fontSize: scaleFont(15),
+    fontSize: scaleFont(18),
     textAlign: 'center',
     marginHorizontal: width * 0.08,
   },

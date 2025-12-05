@@ -78,6 +78,7 @@ const MathInputScreen = () => {
   const incorrectCountRef = useRef(0);
   const beepPlayingRef = useRef(false);
   const isSoundOnRef = useRef(true);
+  const last10PlayedRef = useRef(false);
 
   const [score, setScore] = useState(0);
   const [correctAnswers, setCorrectAnswers] = useState(0);
@@ -88,7 +89,7 @@ const MathInputScreen = () => {
     useCallback(() => {
       // stopBackgroundMusic();
       initSound('correct', 'rightanswer.mp3');
-      initSound('incorrect', 'wronganswer.mp3');
+      initSound('incorrect', 'wronganswerr.mp3');
       initSound('skipped', 'skip.mp3');
       // 🔇 Commented out keypad and beep initialization
       // initSound('keypad', 'keypad.mp3');
@@ -116,9 +117,13 @@ const MathInputScreen = () => {
       setMinutes(mins);
       setSeconds(secs);
 
+      
       // 🔔 Last 10 seconds ticktock
       if (remaining <= 10 && remaining > 0) {
-        playEffect('ticktock', isSoundOnRef.current);
+        if (!last10PlayedRef.current) {
+          playEffect('ticktock', isSoundOnRef.current);
+          last10PlayedRef.current = true;
+        }
         Animated.sequence([
           Animated.timing(animateWatch, {
             toValue: 1.4,
@@ -136,31 +141,54 @@ const MathInputScreen = () => {
       // 🔔 Every 30 seconds
       if (remaining % 30 === 0 && remaining !== timer && remaining > 0) {
         setIsThirtySecPhase(true);
-        let repeatCount = 0;
 
-        const secInterval = setInterval(() => {
-          playEffect('timer', isSoundOnRef.current);
+        // ✅ Just play ONE TIME — no interval, no repeat
+        playEffect('timer', isSoundOnRef.current);
 
-          Animated.sequence([
-            Animated.timing(animateWatch, {
-              toValue: 1.4,
-              duration: 300,
-              useNativeDriver: true,
-            }),
-            Animated.timing(animateWatch, {
-              toValue: 1,
-              duration: 300,
-              useNativeDriver: true,
-            }),
-          ]).start();
-
-          repeatCount++;
-          if (repeatCount >= 10) {
-            clearInterval(secInterval);
-            setIsThirtySecPhase(false);
-          }
-        }, 1000);
+        Animated.sequence([
+          Animated.timing(animateWatch, {
+            toValue: 1.4,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+          Animated.timing(animateWatch, {
+            toValue: 1,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+        ]).start(() => {
+          setIsThirtySecPhase(false);
+        });
       }
+
+      // // 🔔 Every 30 seconds
+      // if (remaining % 30 === 0 && remaining !== timer && remaining > 0) {
+      //   setIsThirtySecPhase(true);
+      //   let repeatCount = 0;
+
+      //   const secInterval = setInterval(() => {
+      //     playEffect('timer', isSoundOnRef.current);
+
+      //     Animated.sequence([
+      //       Animated.timing(animateWatch, {
+      //         toValue: 1.4,
+      //         duration: 300,
+      //         useNativeDriver: true,
+      //       }),
+      //       Animated.timing(animateWatch, {
+      //         toValue: 1,
+      //         duration: 300,
+      //         useNativeDriver: true,
+      //       }),
+      //     ]).start();
+
+      //     repeatCount++;
+      //     if (repeatCount >= 10) {
+      //       clearInterval(secInterval);
+      //       setIsThirtySecPhase(false);
+      //     }
+      //   }, 1000);
+      // }
 
       // ⛔ Timer finished
       if (remaining <= 0) {
@@ -187,6 +215,23 @@ const MathInputScreen = () => {
 
     return () => clearInterval(interval);
   }, []);
+
+  
+useEffect(() => {
+  const sub = AppState.addEventListener('change', state => {
+    if (state !== 'active') {
+      //  App background → ticktock 
+      stopEffect('ticktock');
+    } else {
+      // App active →  last 10 sec  → ticktock 
+      if (totalTimeRef.current <= 10 && totalTimeRef.current > 0) {
+        playEffect('ticktock', isSoundOnRef.current);
+      }
+    }
+  });
+
+  return () => sub.remove();
+}, []);
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', nextState => {
@@ -254,6 +299,14 @@ const MathInputScreen = () => {
     const newVal = !isSoundOnRef.current;
     setIsSoundOn(newVal);
     isSoundOnRef.current = newVal;
+     if (!newVal) {
+    stopEffect('ticktock');
+  } else {
+    if (totalTimeRef.current <= 10 && totalTimeRef.current > 0) {
+      last10PlayedRef.current = false;  // RESET
+      playEffect('ticktock', true);
+    }
+  }
   };
 
   const handlePress = value => {
@@ -323,13 +376,6 @@ const MathInputScreen = () => {
   // ✅ Content component
   const Content = () => (
     <SafeAreaView style={[styles.container, {paddingTop: insets.top + 30}]}>
-      <StatusBar
-        backgroundColor={
-          theme.backgroundGradient ? theme.backgroundGradient[0] : '#0B1220'
-        }
-        barStyle="light-content"
-      />
-
       {/* Top Bar */}
       <View
         style={[
@@ -338,11 +384,12 @@ const MathInputScreen = () => {
         ]}>
         <TouchableOpacity
           onPress={() => {
-            releaseAll();
+            // releaseAll();
+            stopEffect('ticktock'); 
             navigation.goBack();
           }}
           style={styles.iconButton}>
-          <Icon name="chevron-back" size={scaleFont(24)} color="#fff" />
+          <Icon name="caret-back-outline" size={scaleFont(24)} color="#fff" />
         </TouchableOpacity>
 
         <View style={styles.timerContainer}>

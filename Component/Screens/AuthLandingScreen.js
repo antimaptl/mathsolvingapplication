@@ -13,7 +13,6 @@ import LinearGradient from 'react-native-linear-gradient';
 import {useTheme} from '../Globalfile/ThemeContext';
 import {useTranslation} from 'react-i18next';
 import {useNavigation} from '@react-navigation/native';
-
 const {width, height} = Dimensions.get('window');
 
 const AuthLandingScreen = () => {
@@ -29,14 +28,10 @@ const AuthLandingScreen = () => {
         start={{x: 0, y: 0}}
         end={{x: 1, y: 1}}
         style={styles.gradient}>
-        <StatusBar
-          backgroundColor={theme.backgroundGradient?.[0] || '#00F5FF'}
-          barStyle="light-content"
-        />
-
+        
         {/* Background Logo Image */}
         <ImageBackground
-          source={require('../Screens/Image/logo.png')} // 👈 apna logo path yahan lagao
+          source={require('../Screens/Image/logo.png')} 
           resizeMode="contain"
           style={styles.logoBg}
           imageStyle={{opacity: 0.5}} // low transparency
@@ -68,7 +63,7 @@ const AuthLandingScreen = () => {
             activeOpacity={0.8}
             onPress={() => navigation.navigate('GuestHome')}>
             <Text style={styles.guestText}>
-              {t('continue_as_guest') || 'Continue as Guest'}
+              {t('Continue as Guest') || 'Continue as Guest'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -100,20 +95,20 @@ const styles = StyleSheet.create({
   bottomContainer: {
     width: '90%',
     alignItems: 'center',
-    marginBottom: height * 0.08,
+    marginBottom: height * 0.04,
   },
   buttonRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    width: '90%',
-    marginBottom: 20,
+    width: '100%',
+    marginBottom: 40,
   },
   btn: {
     flex: 1,
     borderRadius: 50,
     borderWidth: 1.2,
     paddingVertical: height * 0.02,
-    marginHorizontal: 8,
+    marginHorizontal: 15,
     alignItems: 'center',
   },
   btnText: {

@@ -31,11 +31,7 @@ const LanguageConfirmationScreen = () => {
         start={{x: 0, y: 0}}
         end={{x: 1, y: 1}}
         style={styles.container}>
-        <StatusBar
-          backgroundColor={theme.backgroundGradient?.[0] || '#00F5FF'}
-          barStyle="light-content"
-        />
-
+        
         {/* Floating Card */}
         <View style={styles.card}>
           <LinearGradient

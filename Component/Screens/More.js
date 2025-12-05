@@ -34,7 +34,7 @@ const menuItems = [
   {icon: 'stats-chart-outline', label: 'STATS', route: 'CommingSoon'},
   {icon: 'trophy-outline', label: 'ACHIEVEMENTS', route: 'CommingSoon'},
   {icon: 'bar-chart-outline', label: 'LEADERBOARD', route: 'CommingSoon'},
-  {icon: 'settings', label: 'SETTINGS', route: 'CommingSoon'},
+  {icon: 'settings', label: 'SETTINGS', route: 'SettingsScreen'},
   {icon: 'color-palette-outline', label: 'THEME', route: 'ThemeSelectorScreen'},
   {icon: 'volume-medium-outline', label: 'SOUND', route: 'CommingSoon'},
   {icon: 'language', label: 'LANGUAGE', route: 'CommingSoon'},
@@ -48,21 +48,19 @@ const menuItems = [
 
 const More = () => {
   const navigation = useNavigation();
-  const {theme} = useTheme(); // ✅ Get theme
+  const {theme} = useTheme(); 
+  const [showLogoutModal, setShowLogoutModal] = React.useState(false);
 
   const handleLogout = async () => {
-    await AsyncStorage.clear();
-    navigation.navigate('Login');
-  };
+  await AsyncStorage.removeItem('authToken');
+  navigation.reset({
+    index: 0,
+    routes: [{ name: 'Login' }],
+  });
+};
 
   const Content = () => (
     <SafeAreaView style={[styles.container]}>
-      <StatusBar
-        backgroundColor={
-          theme.backgroundGradient ? theme.backgroundGradient[0] : '#0F172A'
-        }
-        barStyle="light-content"
-      />
       <View style={styles.topBar}>
         <TouchableOpacity onPress={() => navigation.navigate('Home')}>
           <Ionicons
@@ -75,7 +73,13 @@ const More = () => {
           MORE
         </Text>
       </View>
-      <View style={{borderWidth:1,bottom:"1%",borderColor: '#94A3B8',opacity:0.5,}}></View>
+      <View
+        style={{
+          borderWidth: 1,
+          bottom: '1%',
+          borderColor: '#94A3B8',
+          opacity: 0.5,
+        }}></View>
       <ScrollView contentContainerStyle={styles.menuList}>
         {menuItems.map((item, index) => {
           const IconComp =
@@ -108,17 +112,52 @@ const More = () => {
       </ScrollView>
 
       {/* ✅ Themed Logout Button */}
-      <View style={{paddingHorizontal: width * 0.06,}}>
-      <LinearGradient
-        colors={[theme.primary || '#FB923C', theme.primary || '#FF7F50']}
-        style={styles.logoutButton}>
-        <TouchableOpacity
-          onPress={handleLogout}
-          style={{width: '100%', alignItems: 'center'}}>
-          <Text style={styles.logoutText}>Logout</Text>
-        </TouchableOpacity>
-      </LinearGradient>
-       </View>
+      <View style={{paddingHorizontal: width * 0.06}}>
+        <LinearGradient
+          colors={[theme.primary || '#FB923C', theme.primary || '#FF7F50']}
+          style={styles.logoutButton}>
+          <TouchableOpacity
+            onPress={() => setShowLogoutModal(true)}
+            style={{width: '100%', alignItems: 'center'}}>
+            <Text style={styles.logoutText}>Logout</Text>
+          </TouchableOpacity>
+        </LinearGradient>
+      </View>
+      {/* 🔥 Center Popup Confirmation Modal */}
+      {showLogoutModal && (
+        <View style={styles.centerOverlay}>
+          <View
+            style={[
+              styles.centerModal,
+              {backgroundColor: theme.cardBackground || '#1E293B'},
+            ]}>
+            <Text style={[styles.centerTitle, {color: theme.text || '#fff'}]}>
+              Logout
+            </Text>
+
+            <Text style={[styles.centerMessage, {color: theme.text || '#fff'}]}>
+              Are you sure you want to logout?
+            </Text>
+
+            <View style={styles.centerButtons}>
+              <TouchableOpacity
+                onPress={() => setShowLogoutModal(false)}
+                style={styles.centerCancelBtn}>
+                <Text style={styles.centerCancelTxt}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => {
+                  setShowLogoutModal(false);
+                  handleLogout();
+                }}
+                style={styles.centerLogoutBtn}>
+                <Text style={styles.centerLogoutTxt}>Logout</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
     </SafeAreaView>
   );
 
@@ -143,18 +182,18 @@ const styles = StyleSheet.create({
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent:"flex-start",
+    justifyContent: 'flex-start',
     marginTop: height * 0.05,
     marginBottom: height * 0.05,
     paddingHorizontal: width * 0.05,
-    gap:"32%"
+    gap: '32%',
   },
   menuTitle: {
     fontSize: scaleFont(17),
     fontWeight: 'bold',
     marginLeft: width * 0.0,
     opacity: 0.9,
-    alignSelf:"center",
+    alignSelf: 'center',
   },
   menuList: {
     flexGrow: 1,
@@ -181,11 +220,85 @@ const styles = StyleSheet.create({
     marginTop: height * 0.03,
     overflow: 'hidden',
     paddingHorizontal: width * 0.06,
-    
   },
   logoutText: {
     color: '#fff',
     fontSize: scaleFont(14),
     fontWeight: 'bold',
   },
+
+ centerOverlay: {
+  position: 'absolute',
+  top: 0,
+  bottom: 0,
+  left: 0,
+  right: 0,
+  backgroundColor: 'rgba(0,0,0,0.5)',
+  justifyContent: 'center',
+  alignItems: 'center',
+  paddingHorizontal: 20,
+},
+
+centerModal: {
+  width: '80%',
+  paddingVertical: 25,
+  paddingHorizontal: 20,
+  borderRadius: 15,
+  elevation: 10,
+  shadowColor: '#000',
+  shadowOpacity: 0.3,
+  shadowRadius: 8,
+  alignItems: 'center',
+},
+
+centerTitle: {
+  fontSize: scaleFont(18),
+  fontWeight: '700',
+  marginBottom: 10,
+},
+
+centerMessage: {
+  fontSize: scaleFont(14),
+  opacity: 0.8,
+  textAlign: 'center',
+  marginBottom: 25,
+},
+
+centerButtons: {
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  width: '100%',
+},
+
+centerCancelBtn: {
+  flex: 1,
+  marginRight: 10,
+  paddingVertical: 10,
+  borderRadius: 10,
+  borderWidth: 1,
+  borderColor: '#94A3B8',
+  alignItems: 'center',
+},
+
+centerCancelTxt: {
+  fontSize: scaleFont(14),
+  color: '#94A3B8',
+  fontWeight: '600',
+},
+
+centerLogoutBtn: {
+  flex: 1,
+  marginLeft: 10,
+  paddingVertical: 10,
+  borderRadius: 10,
+  backgroundColor: '#EF4444',
+  alignItems: 'center',
+},
+
+centerLogoutTxt: {
+  fontSize: scaleFont(14),
+  color: '#fff',
+  fontWeight: '700',
+},
+
 });
