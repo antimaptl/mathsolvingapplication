@@ -256,18 +256,19 @@ const ThemeSelectorScreen = () => {
         }}>
         {from !== 'onboarding' && (
           <TouchableOpacity
-            style={{position: 'absolute', left: '-30%', bottom: 20}}
+            style={{position: 'absolute', left: '-30%', bottom: 10}}
             onPress={() => navigation.goBack()}>
             <Icon
               name="caret-back-outline"
               size={normalize(25)}
-              color="#808080"
+              color="#fff"
             />
           </TouchableOpacity>
         )}
         <Text style={[styles.title, {color: theme.text}]}>🎨 THEME</Text>
       </View>
-          <View style={{borderWidth:1,borderColor: '#94A3B8',width:"95%",opacity: 0.8,}}></View>
+          <View style={{borderWidth:1,borderColor: '#94A3B8',width:"95%",opacity: 0.5,bottom:"1%"
+         }}></View>
       {/* Toggle Buttons */}
       <View style={styles.toggleContainer}>
         <TouchableOpacity
@@ -351,7 +352,7 @@ export default ThemeSelectorScreen;
 
 const styles = StyleSheet.create({
   container: {flex: 1, paddingVertical: 30, alignItems: 'center',paddingHorizontal:"auto"},
-  title: {fontSize: normalize(22), fontWeight: '700', marginBottom: 20},
+  title: {fontSize: normalize(18), fontWeight: '700', marginBottom: 15},
   toggleContainer: {
     flexDirection: 'row',
     backgroundColor: '#1C2433',

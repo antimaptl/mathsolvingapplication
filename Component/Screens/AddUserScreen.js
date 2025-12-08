@@ -320,6 +320,7 @@ const AddUserScreen = () => {
             marginBottom: height * 0.02,
             borderColor:  '#94A3B8',
             borderWidth:1,
+             marginHorizontal: -width * 0.05,
             top:10
           }}
         />

@@ -29,6 +29,7 @@ import {
   releaseAll,
 } from '../Globalfile/SoundManager';
 import {useTheme} from '../Globalfile/ThemeContext';
+import { useSound } from '../../Context/SoundContext';
 
 const {width, height} = Dimensions.get('window');
 const scaleFont = size => size * PixelRatio.getFontScale();
@@ -68,7 +69,8 @@ const MathInputScreen = () => {
   const [minutes, setMinutes] = useState(Math.floor(timer / 60));
   const [seconds, setSeconds] = useState(timer % 60);
   const [animateWatch] = useState(new Animated.Value(1));
-  const [isSoundOn, setIsSoundOn] = useState(true);
+  // const [isSoundOn, setIsSoundOn] = useState(true);
+  const { isSoundOn, toggleSound } = useSound();
   const [isThirtySecPhase, setIsThirtySecPhase] = useState(false);
 
   const totalTimeRef = useRef(timer);
@@ -84,6 +86,19 @@ const MathInputScreen = () => {
   const [correctAnswers, setCorrectAnswers] = useState(0);
   const [skippedCount, setSkippedCount] = useState(0);
   const [qmState, setQmState] = useState(parseInt(qm, 10));
+
+
+ // 🔊 Sync Context sound → MathInput sound
+useEffect(() => {
+  isSoundOnRef.current = isSoundOn;
+
+  if (!isSoundOn) {
+    stopEffect('ticktock');
+    stopEffect('timer');
+    last10PlayedRef.current = false;
+  }
+}, [isSoundOn]);
+
 
   useFocusEffect(
     useCallback(() => {
@@ -295,19 +310,22 @@ useEffect(() => {
     }
   };
 
-  const toggleSound = () => {
-    const newVal = !isSoundOnRef.current;
-    setIsSoundOn(newVal);
-    isSoundOnRef.current = newVal;
-     if (!newVal) {
-    stopEffect('ticktock');
+  const handleToggleSound = () => {
+  toggleSound();  // Context sound toggle
+
+  const newVal = !isSoundOn; 
+  isSoundOnRef.current = newVal;
+
+  if (!newVal) {
+    stopEffect('ticktock'); 
   } else {
     if (totalTimeRef.current <= 10 && totalTimeRef.current > 0) {
-      last10PlayedRef.current = false;  // RESET
+      last10PlayedRef.current = false;
       playEffect('ticktock', true);
     }
   }
-  };
+};
+
 
   const handlePress = value => {
     if (isPaused || totalTimeRef.current <= 0 || isLoading || feedback) return;
@@ -411,7 +429,7 @@ useEffect(() => {
           }${seconds}`}</Text>
         </View>
 
-        <TouchableOpacity onPress={toggleSound} style={styles.iconButton1}>
+        <TouchableOpacity onPress={handleToggleSound} style={styles.iconButton1}>
           <Icon
             name={isSoundOn ? 'volume-high' : 'volume-mute'}
             size={24}

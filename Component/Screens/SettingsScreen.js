@@ -1,4 +1,3 @@
-// SettingsScreen.js
 import React, {useState} from 'react';
 import {
   View,
@@ -7,18 +6,26 @@ import {
   TouchableOpacity,
   Switch,
   SafeAreaView,
-  StatusBar,
+  Dimensions,
   Vibration,
+  PixelRatio,
 } from 'react-native';
 
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {useNavigation} from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
 import {useTheme} from '../Globalfile/ThemeContext';
+import { useSound } from '../../Context/SoundContext';
+
+const {width, height} = Dimensions.get('window');
+const scaleFont = size => size * PixelRatio.getFontScale();
 
 const SettingsScreen = () => {
   const navigation = useNavigation();
-  const {theme} = useTheme();
+  const {theme} = useTheme(); // Theme Hook
+  const { isSoundOn, toggleSound, setIsSoundOn } = useSound();
+
 
   const [settings, setSettings] = useState({
     notification: true,
@@ -29,52 +36,138 @@ const SettingsScreen = () => {
 
   // ---------- Handle Toggle Change ----------
   const handleToggle = key => {
-    const newValue = !settings[key];
+  const newValue = !settings[key];
 
-    // Only Vibrate toggle will vibrate (optional)
-    if (key === 'vibrate' && newValue) {
-      Vibration.vibrate(300);
-    }
+  if (key === "sound") {
+    setIsSoundOn(newValue);   // 🔥 Global Sound Update
+  }
 
-    setSettings(prev => ({...prev, [key]: newValue}));
-  };
+  if (key === "vibrate" && newValue) {
+    Vibration.vibrate(300);
+  }
 
-  const ToggleItem = ({label, stateKey}) => (
-    <View style={styles.row}>
-      <Text style={[styles.label, {color: theme.text}]}>{label}</Text>
+  setSettings(prev => ({ ...prev, [key]: newValue }));
+};
 
-      <Switch
-        trackColor={{false: '#D1D5DB', true: '#10B981'}}
-        thumbColor="#fff"
-        value={settings[stateKey]}
-        onValueChange={() => handleToggle(stateKey)}
-      />
-    </View>
-  );
+
+  // ✅ Setting Card with Icon
+  const SettingCard = ({ label, stateKey, iconName }) => {
+  const isSoundCard = stateKey === "sound";
 
   return (
-    <LinearGradient
-      colors={theme.backgroundGradient || ['#0F172A', '#1E293B']}
-      style={{flex: 1}}>
-      <SafeAreaView style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Ionicons name="caret-back-outline" size={26} color="white" />
-          </TouchableOpacity>
+    <View style={[
+      styles.settingCard,
+      {
+        backgroundColor: theme.cardBackground || '#fff',
+        borderColor: theme.borderColor || '#334155',
+      }
+    ]}>
+      
+      <View style={styles.iconLabelContainer}>
+        <MaterialCommunityIcons
+          name={iconName}
+          size={scaleFont(22)}
+          color={theme.primaryColor || '#10B981'}
+          style={styles.settingIcon}
+        />
+        <Text style={[styles.label, { color: theme.text || '#000' }]}>
+          {label}
+        </Text>
+      </View>
 
-          <Text style={styles.headerTitle}>SETTINGS</Text>
-        </View>
+      {/* 🔥 SOUND TOGGLE REAL CONTEXT VALUE */}
+      {isSoundCard ? (
+        <Switch
+          trackColor={{
+            false: theme.secondaryColor || '#D1D5DB',
+            true: theme.primaryColor || '#10B981',
+          }}
+          thumbColor={isSoundOn ? '#fff' : theme.thumbColor || '#71717A'}
+          value={isSoundOn}
+          onValueChange={toggleSound}
+        />
+      ) : (
+        <Switch
+          trackColor={{
+            false: theme.secondaryColor || '#D1D5DB',
+            true: theme.primaryColor || '#10B981',
+          }}
+          thumbColor={settings[stateKey] ? '#fff' : theme.thumbColor || '#71717A'}
+          value={settings[stateKey]}
+          onValueChange={() => handleToggle(stateKey)}
+        />
+      )}
 
-        {/* Settings */}
-        <View style={styles.box}>
-          <ToggleItem label="Notification" stateKey="notification" />
-          <ToggleItem label="Sound" stateKey="sound" />
-          <ToggleItem label="Vibration" stateKey="vibrate" />
-          <ToggleItem label="Music" stateKey="music" />
-        </View>
-      </SafeAreaView>
+    </View>
+  );
+};
+
+  const Content = () => (
+    <SafeAreaView style={styles.container}>
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.backButton}>
+          <Ionicons
+            name="caret-back-outline"
+            size={scaleFont(28)}
+            color={theme.text || 'black'}
+          />
+        </TouchableOpacity>
+
+        {/* Header Title (Center Aligned) */}
+        <Text
+          style={[
+            styles.headerTitle,
+            {color: theme.text || 'black'},
+          ]}>
+          SETTINGS
+        </Text>
+        {/* Placeholder for centering */}
+        <View style={styles.rightPlaceholder} />
+      </View>
+
+     
+      <View style={styles.headerSeparator} />
+
+
+      {/* Settings List (Separate Cards) */}
+      <View style={styles.settingsList}>
+        <SettingCard
+          label="Allow Notification"
+          stateKey="notification"
+          iconName="bell-outline"
+        />
+        <SettingCard
+          label="Sound"
+          stateKey="sound"
+          iconName="volume-high"
+        />
+        <SettingCard
+          label="Vibrate"
+          stateKey="vibrate"
+          iconName="vibrate"
+        />
+        <SettingCard
+          label="Music"
+          stateKey="music"
+          iconName="music"
+        />
+      </View>
+    </SafeAreaView>
+  );
+
+  // Background Theme
+  return theme.backgroundGradient ? (
+    <LinearGradient colors={theme.backgroundGradient} style={{flex: 1}}>
+      <Content />
     </LinearGradient>
+  ) : (
+    <View
+      style={{flex: 1, backgroundColor: theme.backgroundColor || '#fff'}}>
+      <Content />
+    </View>
   );
 };
 
@@ -83,39 +176,79 @@ export default SettingsScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: 18,
-    paddingTop: 20,
+    paddingHorizontal: width * 0.05,
+    paddingTop: height * 0.03,
   },
 
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 15,
-    gap: 20,
+    justifyContent: 'space-between',
+    paddingTop: height * 0.01,
+    paddingBottom: height * 0.01, 
+  },
+
+ 
+  headerSeparator: {
+    height: 1, 
+    backgroundColor: '#94A3B8', 
+    opacity: 0.5,
+    top:30,
+    marginHorizontal: -width * 0.05,
+    marginBottom: height * 0.04, 
+  },
+
+  backButton: {
+    paddingRight: 15,
+    flex: 0.15,
   },
 
   headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: 'white',
+    fontSize: scaleFont(22),
+    fontWeight: '800',
+    flex: 1,
+    textAlign: 'center',
+    marginLeft: -width * 0.08,
   },
 
-  box: {
-    marginTop: 25,
-    backgroundColor: '#ffffff20',
-    borderRadius: 12,
-    padding: 15,
+  rightPlaceholder: {
+    flex: 0.15,
   },
 
-  row: {
+  settingsList: {
+    marginTop: height * 0.04,
+  },
+
+  settingCard: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingHorizontal: width * 0.05,
+    paddingVertical: height * 0.02,
+    borderWidth: 1,
+    borderRadius: 8,
+    marginBottom: height * 0.02,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 1},
+    shadowOpacity: 0.1,
+    shadowRadius: 1,
+    elevation: 2,
+  },
+
+  iconLabelContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+
+  settingIcon: {
+    marginRight: 15,
+    width: scaleFont(25),
+    textAlign: 'center',
   },
 
   label: {
-    fontSize: 16,
+    fontSize: scaleFont(16),
     fontWeight: '500',
   },
 });

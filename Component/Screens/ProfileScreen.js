@@ -19,7 +19,8 @@ import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useTheme} from '../Globalfile/ThemeContext'; // ✅ Theme hook
 
-const {width} = Dimensions.get('window');
+const {width, height} = Dimensions.get('window');
+const scaleFont = size => size * PixelRatio.getFontScale();
 const scale = width / 375;
 const normalize = size =>
   Math.round(PixelRatio.roundToNearestPixel(size * scale));
@@ -66,7 +67,7 @@ const ProfileScreen = () => {
     fetchUserData();
   }, []);
 
-  console.log('UserData', userData);
+  // console.log('UserData', userData);
   const formatDate = dateString => {
     if (!dateString) return 'N/A';
     const date = new Date(dateString);
@@ -104,13 +105,7 @@ const ProfileScreen = () => {
   // ✅ Main screen content separated for cleaner theme wrapping
   const Content = () => (
     <SafeAreaView style={[styles.container]}>
-      <StatusBar
-        backgroundColor={
-          theme.backgroundGradient ? theme.backgroundGradient[0] : '#0D0D26'
-        }
-        barStyle="light-content"
-      />
-
+     
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}>
@@ -120,10 +115,15 @@ const ProfileScreen = () => {
             <Icon name="caret-back-outline" size={normalize(23)} color="#fff" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>PROFILE</Text>
-          <TouchableOpacity onPress={() => setShowEditModal(true)}>
+
+          <TouchableOpacity
+             onPress={() =>{
+              Navigation.navigate("UpdateProfile")
+             }}>
             <FontAwesome5 name="user-edit" size={normalize(16)} color="#fff" />
-          </TouchableOpacity>
+          </TouchableOpacity>        
         </View>
+        <View style={styles.headerSeparator} />
 
         {loading ? (
           <ActivityIndicator
@@ -293,6 +293,15 @@ const styles = StyleSheet.create({
     marginBottom: normalize(15),
   },
   headerTitle: {color: '#fff', fontSize: normalize(18), fontWeight: '700'},
+    headerSeparator: {
+    height: 1,
+    backgroundColor: '#94A3B8',
+    opacity: 0.5,
+    top: 10,
+    marginHorizontal: -width * 0.05,
+    marginBottom: height * 0.02,
+    bottom: '1%',
+  },
   profileSection: {marginVertical: normalize(10)},
   profileTop: {
     flexDirection: 'row',
@@ -308,7 +317,7 @@ const styles = StyleSheet.create({
   profileImage: {
     width: normalize(70),
     height: normalize(70),
-    borderRadius: normalize(40),
+    // borderRadius: normalize(40),
   },
   profileText: {marginLeft: normalize(30)},
   userName: {

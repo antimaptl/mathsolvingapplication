@@ -25,7 +25,7 @@ const menuItems = [
   {
     icon: 'notifications-on',
     label: 'NOTIFICATION',
-    route: 'CommingSoon',
+    route: 'GameNotifications',
     lib: 'MaterialIcons',
   },
   {icon: 'person-circle-outline', label: 'PROFILE', route: 'ProfileScreen'},
@@ -36,7 +36,7 @@ const menuItems = [
   {icon: 'bar-chart-outline', label: 'LEADERBOARD', route: 'CommingSoon'},
   {icon: 'settings', label: 'SETTINGS', route: 'SettingsScreen'},
   {icon: 'color-palette-outline', label: 'THEME', route: 'ThemeSelectorScreen'},
-  {icon: 'volume-medium-outline', label: 'SOUND', route: 'CommingSoon'},
+  {icon: 'volume-medium-outline', label: 'SOUND', route: 'SoundScreen'},
   {icon: 'language', label: 'LANGUAGE', route: 'CommingSoon'},
   {
     icon: 'support-agent',
@@ -79,6 +79,7 @@ const More = () => {
           bottom: '1%',
           borderColor: '#94A3B8',
           opacity: 0.5,
+           marginHorizontal: -width * 0.05,
         }}></View>
       <ScrollView contentContainerStyle={styles.menuList}>
         {menuItems.map((item, index) => {
@@ -178,13 +179,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: width * 0.02,
+     paddingTop: height * 0.03,
   },
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-start',
-    marginTop: height * 0.05,
-    marginBottom: height * 0.05,
+    // marginTop: height * 0.03,
+    marginBottom: height * 0.04,
     paddingHorizontal: width * 0.05,
     gap: '32%',
   },
