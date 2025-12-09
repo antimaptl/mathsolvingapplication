@@ -61,8 +61,8 @@ const PlayGame = ({route}) => {
   AsyncStorage.getItem('diff').then(diff => {
     setSelectedDifficulty(diff || 'easy');
     AsyncStorage.getItem('timer').then(t => {
-    setSelectedTimer(t || '1 Minute');
-  });
+      setSelectedTimer(t || '1 Minute');
+    });
   });
 
   // ✅ Dynamic theme-based selected option
@@ -132,7 +132,15 @@ const PlayGame = ({route}) => {
       <Text style={styles.heading}>
         {gametype === 'PRACTICE' ? 'Practice Game' : 'Play Game'}
       </Text>
-
+      <View
+        style={{
+          borderWidth: 1,
+          bottom: '1%',
+          borderColor: '#ffffff',
+          opacity: 0.5,
+          marginHorizontal: -width * 0.05,
+          marginBottom: height * 0.04,
+        }}></View>
       {/* Difficulty Section */}
       <Text style={styles.sectionTitle}>Select Difficulty</Text>
       <View style={styles.row}>
@@ -211,24 +219,24 @@ export default PlayGame;
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    padding: width * 0.07,
+    padding: width * 0.06,
     paddingBottom: height * 0.07,
   },
   iconButton: {
     width: width * 0.06,
-    height: width * 0.06,
+    height: width * 0.07,
     // backgroundColor: trapa,
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
   },
   heading: {
-    fontSize: scaleFont(28),
+    fontSize: scaleFont(25),
     color: '#fff',
     fontWeight: 'bold',
     alignSelf: 'center',
-    marginBottom: height * 0.09,
-    marginTop: height * -0.03,
+    marginBottom: height * 0.04,
+    marginTop: height * -0.04,
     fontFamily: 'jaro',
   },
   sectionTitle: {
@@ -240,7 +248,7 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: width * 0.025,
+    // gap: width * 0.024,
     marginBottom: height * 0.015,
     justifyContent: 'space-between',
   },
@@ -266,7 +274,7 @@ const styles = StyleSheet.create({
     paddingVertical: height * 0.014,
     paddingHorizontal: width * 0.04,
     borderRadius: 0,
-    marginRight: width * 0.025,
+    marginRight: width * 0.020,
     marginTop: height * 0.01,
   },
   selectedOptionText: {

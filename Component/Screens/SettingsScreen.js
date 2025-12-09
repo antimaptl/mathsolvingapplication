@@ -17,6 +17,7 @@ import {useNavigation} from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
 import {useTheme} from '../Globalfile/ThemeContext';
 import { useSound } from '../../Context/SoundContext';
+import messaging from '@react-native-firebase/messaging';
 
 const {width, height} = Dimensions.get('window');
 const scaleFont = size => size * PixelRatio.getFontScale();

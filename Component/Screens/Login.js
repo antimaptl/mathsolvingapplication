@@ -443,6 +443,58 @@ export default function Login() {
     return regex.test(email);
   };
 
+
+const handleForgotPassword = async () => {
+  if (!email.trim()) {
+    setEmailError("This field is required");
+    return;
+  }
+
+  if (!validateEmail(email.trim())) {
+    setEmailError("Please enter a valid email");
+    return;
+  }
+
+  setEmailError("");
+
+  try {
+    const response = await fetch(
+      "http://43.204.167.118:3000/api/auth/sendForgotPassOtp",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      }
+    );
+
+    const result = await response.json();
+
+    if (response.ok) {
+      Toast.show({
+        type: "success",
+        text1: "OTP Sent",
+        text2: `OTP sent to ${email}`,
+      });
+
+      navigation.navigate("ForgetPassword", { email });
+    } else {
+      Toast.show({
+        type: "error",
+        text1: "Failed",
+        text2: result.message || "Something went wrong!",
+      });
+    }
+  } catch (error) {
+    console.error(error);
+    Toast.show({
+      type: "error",
+      text1: "Network Error",
+      text2: "Please try again later.",
+    });
+  }
+};
+
+
    const handleLogin = async () => {
     let valid = true;
 
@@ -556,7 +608,7 @@ export default function Login() {
         </View>
         {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
 
-        <TouchableOpacity onPress={() => navigation.navigate("ForgetPassword")}>
+        <TouchableOpacity onPress={handleForgotPassword}>
           <Text style={styles.forgotPassword}>Forgot Password</Text>
         </TouchableOpacity>
 

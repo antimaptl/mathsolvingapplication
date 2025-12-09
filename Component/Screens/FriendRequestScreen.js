@@ -200,7 +200,7 @@ const FriendRequestScreen = () => {
             <MaterialIcons
               name="check"
               size={scaleFont(24)}
-              color={theme.primary || '#17677F'}
+              color={'#177f57ff'}
               style={{marginBottom: verticalScale(6)}}
             />
           </TouchableOpacity>
@@ -212,7 +212,7 @@ const FriendRequestScreen = () => {
             <MaterialIcons
               name="close"
               size={scaleFont(24)}
-              color={theme.error || '#EF4444'}
+              color={'#EF4444'}
             />
           </TouchableOpacity>
         </View>

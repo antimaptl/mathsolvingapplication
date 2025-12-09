@@ -266,13 +266,14 @@ const styles = StyleSheet.create({
   },
 
   playButton: {
-    marginTop: height * 0.05,
+    marginTop: height * 0.03,
     paddingVertical: height * 0.015,
     borderRadius: 20,
     width: width * 0.6,
     alignSelf: 'center',
     alignItems: 'center',
     overflow: 'hidden',
+    marginBottom: height * 0.04,
   },
   playButtonText: {
     color: '#fff',

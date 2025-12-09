@@ -1,7 +1,6 @@
 import {StyleSheet} from 'react-native';
 import React, {useEffect, useRef} from 'react';
 import {NavigationContainer} from '@react-navigation/native';
-
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {AppState} from 'react-native';

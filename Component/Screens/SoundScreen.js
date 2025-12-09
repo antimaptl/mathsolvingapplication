@@ -168,7 +168,7 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: '#94A3B8',
     opacity: 0.5,
-    top: 30,
+    top: 28,
     marginHorizontal: -width * 0.09,
     marginBottom: height * 0.04,
 
