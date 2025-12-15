@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -13,17 +13,17 @@ import {
 
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import {useNavigation} from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
-import {useTheme} from '../Globalfile/ThemeContext';
+import { useTheme } from '../Globalfile/ThemeContext';
 import { useSound } from '../../Context/SoundContext';   // 🔥 ADD THIS
 
-const {width, height} = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 const scaleFont = size => size * PixelRatio.getFontScale();
 
 const SoundScreen = () => {
   const navigation = useNavigation();
-  const {theme} = useTheme();
+  const { theme } = useTheme();
 
   // 🔥 GLOBAL SOUND CONTEXT
   const { isSoundOn, toggleSound } = useSound();
@@ -42,11 +42,11 @@ const SoundScreen = () => {
       Vibration.vibrate(300);
     }
 
-    setSettings(prev => ({...prev, [key]: newValue}));
+    setSettings(prev => ({ ...prev, [key]: newValue }));
   };
 
   // ---------- Setting Card ----------
-  const SettingCard = ({label, stateKey, iconName}) => {
+  const SettingCard = ({ label, stateKey, iconName }) => {
     const isSoundCard = stateKey === "sound";
 
     return (
@@ -58,7 +58,7 @@ const SoundScreen = () => {
             borderColor: theme.borderColor || '#334155',
           },
         ]}>
-        
+
         <View style={styles.iconLabelContainer}>
           <MaterialCommunityIcons
             name={iconName}
@@ -66,7 +66,7 @@ const SoundScreen = () => {
             color={theme.primaryColor || '#10B981'}
             style={styles.settingIcon}
           />
-          <Text style={[styles.label, {color: theme.text || '#000'}]}>
+          <Text style={[styles.label, { color: theme.text || '#000' }]}>
             {label}
           </Text>
         </View>
@@ -100,7 +100,7 @@ const SoundScreen = () => {
 
   const Content = () => (
     <SafeAreaView style={styles.container}>
-      
+
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
@@ -113,7 +113,7 @@ const SoundScreen = () => {
           />
         </TouchableOpacity>
 
-        <Text style={[styles.headerTitle, {color: theme.text || 'black'}]}>
+        <Text style={[styles.headerTitle, { color: theme.text || 'black' }]}>
           SOUND
         </Text>
 
@@ -124,23 +124,23 @@ const SoundScreen = () => {
 
       {/* Settings List */}
       <View style={styles.settingsList}>
-        
+
         {/* 🔥 Sound is Global */}
         <SettingCard label="Sound" stateKey="sound" iconName="volume-high" />
-        
-        <SettingCard label="Vibrate" stateKey="vibrate" iconName="vibrate" />
-        <SettingCard label="Music" stateKey="music" iconName="music" />
+
+        {/* <SettingCard label="Vibrate" stateKey="vibrate" iconName="vibrate" />
+        <SettingCard label="Music" stateKey="music" iconName="music" /> */}
 
       </View>
     </SafeAreaView>
   );
 
   return theme.backgroundGradient ? (
-    <LinearGradient colors={theme.backgroundGradient} style={{flex: 1}}>
+    <LinearGradient colors={theme.backgroundGradient} style={{ flex: 1 }}>
       <Content />
     </LinearGradient>
   ) : (
-    <View style={{flex: 1, backgroundColor: theme.backgroundColor || '#fff'}}>
+    <View style={{ flex: 1, backgroundColor: theme.backgroundColor || '#fff' }}>
       <Content />
     </View>
   );
@@ -205,7 +205,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: height * 0.02,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 1},
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 1,
     elevation: 2,

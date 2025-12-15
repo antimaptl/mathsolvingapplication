@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {useRoute, useNavigation} from '@react-navigation/native';
-import React, {useEffect, useRef, useState} from 'react';
+import { useRoute, useNavigation } from '@react-navigation/native';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -14,7 +14,7 @@ import {
 import Toast from 'react-native-toast-message';
 import Icon from 'react-native-vector-icons/Ionicons';
 
-const {width} = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 const scale = width / 375;
 const normalize = size => Math.round(scale * size);
 
@@ -32,24 +32,24 @@ export default function EmailVerification() {
     const enteredOtp = otp.join('');
     if (enteredOtp.length === 6 && !loading) {
       handleVerifyOtp(enteredOtp);
-       loadAttempts();
+      loadAttempts();
     }
   }, [otp]);
 
   const loadAttempts = async () => {
-  const savedCount = await AsyncStorage.getItem('otpAttempts');
-  const savedTime = await AsyncStorage.getItem('otpLockedUntil');
+    const savedCount = await AsyncStorage.getItem('otpAttempts');
+    const savedTime = await AsyncStorage.getItem('otpLockedUntil');
 
-  const now = Date.now();
+    const now = Date.now();
 
-  if (savedTime && now < Number(savedTime)) {
-    // Still locked
-    setAttemptCount(3);
-  } else {
-    // Reset
-    setAttemptCount(savedCount ? Number(savedCount) : 0);
-  }
-};
+    if (savedTime && now < Number(savedTime)) {
+      // Still locked
+      setAttemptCount(3);
+    } else {
+      // Reset
+      setAttemptCount(savedCount ? Number(savedCount) : 0);
+    }
+  };
 
   const handleChange = (text, index) => {
     const newOtp = [...otp];
@@ -66,110 +66,99 @@ export default function EmailVerification() {
     }
   };
 
- const handleResendOtp = async () => {
-  setErrorMessage('');
+  const handleResendOtp = async () => {
+    setErrorMessage('');
 
-  setOtp(['', '', '', '', '', '']);
-  inputs.current[0]?.focus();
+    setOtp(['', '', '', '', '', '']);
+    inputs.current[0]?.focus();
 
-  try {
-    const email = route.params?.userData?.email;
+    try {
+      const email = route.params?.userData?.email;
 
-    console.log("📤 Resend OTP API Triggered for email:", email);
+      console.log("📤 Resend OTP API Triggered for email:", email);
 
-    const response = await fetch(
-      'http://43.204.167.118:3000/api/auth/verifymail',
-      {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({email}),
-      },
-    );
+      const response = await fetch(
+        'http://43.204.167.118:3000/api/auth/resend-signup-otp',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email }),
+        },
+      );
 
-    console.log("📥 Raw Response →", response);
+      console.log("📥 Raw Response →", response);
 
-    const data = await response.json();
-    console.log("📥 Parsed Response Body →", data);
+      const data = await response.json();
+      console.log("📥 Parsed Response Body →", data);
 
-    if (data.success === true) {
-      Toast.show({
-        type: 'success',
-        text1: 'OTP Sent',
-        text2: 'OTP sent again to your email',
-      });
-    } else {
-      console.log("❌ Backend Error Message →", data.message);
-      setErrorMessage(data.message || 'Failed to resend OTP');
+      if (data.success === true) {
+        Toast.show({
+          type: 'success',
+          text1: 'OTP Sent',
+          text2: 'OTP sent again to your email',
+        });
+      } else {
+        console.log("❌ Backend Error Message →", data.message);
+        setErrorMessage(data.message || 'Failed to resend OTP');
+      }
+    } catch (error) {
+      console.log("❌ Network Error Occurred →", error);
+      setErrorMessage('Network error. Please try again.');
     }
-  } catch (error) {
-    console.log("❌ Network Error Occurred →", error);
-    setErrorMessage('Network error. Please try again.');
-  }
-};
-
+  };
 
   const handleVerifyOtp = async userEnteredOtp => {
+    if (loading) return;
+
     setLoading(true);
     setErrorMessage('');
 
-    const {userData} = route.params || {};
-    if (!userData) {
-      Toast.show({
-        type: 'error',
-        text1: 'Internal Error',
-        text2: 'Missing user data. Restart signup.',
-      });
+    const email = route.params?.userData?.email;
+
+    if (!email) {
+      setErrorMessage('Email not found. Please restart signup.');
+      setLoading(false);
       return;
     }
 
-    const payload = {
-      username: userData.username,
-      email: userData.email,
-      password: userData.password,
-      gender: userData.gender.toLowerCase(),
-      dateOfBirth: String(userData.dateOfBirth),
-      otp: userEnteredOtp,
-    };
-
     try {
-      const res = await fetch('http://43.204.167.118:3000/api/auth/signup', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(payload),
-      });
+      const res = await fetch(
+        'http://43.204.167.118:3000/api/auth/verify-signup-otp',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email,
+            otp: userEnteredOtp,
+          }),
+        },
+      );
 
       const body = await res.json();
 
-      if (!res.ok) {
-        setErrorMessage(body?.message || 'Invalid OTP');
+      // ❌ ANY OTP ERROR → show API message ONLY
+      if (!res.ok || body.success === false) {
+        setErrorMessage(body.message || 'Invalid OTP');
+
+        // clear OTP so user can retype
+        setOtp(['', '', '', '', '', '']);
+        inputs.current[0]?.focus();
+
         setLoading(false);
         return;
       }
 
-      if (body?.token) {
-        await AsyncStorage.setItem('authToken', body.token);
-      }
-
-      Toast.show({
-        type: 'success',
-        text1: 'Success',
-        text2: 'Registration successful!',
+      // ✅ OTP verified → next screen (NO ERROR TOAST)
+      navigation.replace('CompleteSignup', {
+        userData: route.params.userData,
       });
 
-      navigation.navigate('NotificationPermissionScreen');
     } catch (err) {
-      Toast.show({
-        type: 'error',
-        text1: 'Network Error',
-        text2: 'Something went wrong.',
-      });
-
-      setErrorMessage('Something went wrong. Try again.');
+      setErrorMessage('Network error. Please try again.');
     } finally {
       setLoading(false);
     }
   };
-
 
   return (
     <KeyboardAvoidingView
@@ -218,7 +207,7 @@ export default function EmailVerification() {
             maxLength={1}
             value={digit}
             onChangeText={text => handleChange(text, index)}
-            onKeyPress={({nativeEvent}) =>
+            onKeyPress={({ nativeEvent }) =>
               handleBackspace(nativeEvent.key, index)
             }
           />

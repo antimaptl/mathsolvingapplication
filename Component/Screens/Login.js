@@ -430,13 +430,13 @@ export default function Login() {
 
 
   useEffect(() => {
-  const backHandler = BackHandler.addEventListener(
-    "hardwareBackPress",
-    () => true // ❌ block back
-  );
+    const backHandler = BackHandler.addEventListener(
+      "hardwareBackPress",
+      () => true // ❌ block back
+    );
 
-  return () => backHandler.remove();
-}, []);
+    return () => backHandler.remove();
+  }, []);
 
   const validateEmail = (email) => {
     const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -444,58 +444,58 @@ export default function Login() {
   };
 
 
-const handleForgotPassword = async () => {
-  if (!email.trim()) {
-    setEmailError("This field is required");
-    return;
-  }
+  const handleForgotPassword = async () => {
+    if (!email.trim()) {
+      setEmailError("This field is required");
+      return;
+    }
 
-  if (!validateEmail(email.trim())) {
-    setEmailError("Please enter a valid email");
-    return;
-  }
+    if (!validateEmail(email.trim())) {
+      setEmailError("Please enter a valid email");
+      return;
+    }
 
-  setEmailError("");
+    setEmailError("");
 
-  try {
-    const response = await fetch(
-      "http://43.204.167.118:3000/api/auth/sendForgotPassOtp",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+    try {
+      const response = await fetch(
+        "http://43.204.167.118:3000/api/auth/sendForgotPassOtp",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email }),
+        }
+      );
+
+      const result = await response.json();
+
+      if (response.ok) {
+        Toast.show({
+          type: "success",
+          text1: "OTP Sent",
+          text2: `OTP sent to ${email}`,
+        });
+
+        navigation.navigate("ForgetPassword", { email });
+      } else {
+        Toast.show({
+          type: "error",
+          text1: "Failed",
+          text2: result.message || "Something went wrong!",
+        });
       }
-    );
-
-    const result = await response.json();
-
-    if (response.ok) {
-      Toast.show({
-        type: "success",
-        text1: "OTP Sent",
-        text2: `OTP sent to ${email}`,
-      });
-
-      navigation.navigate("ForgetPassword", { email });
-    } else {
+    } catch (error) {
+      console.error(error);
       Toast.show({
         type: "error",
-        text1: "Failed",
-        text2: result.message || "Something went wrong!",
+        text1: "Network Error",
+        text2: "Please try again later.",
       });
     }
-  } catch (error) {
-    console.error(error);
-    Toast.show({
-      type: "error",
-      text1: "Network Error",
-      text2: "Please try again later.",
-    });
-  }
-};
+  };
 
 
-   const handleLogin = async () => {
+  const handleLogin = async () => {
     let valid = true;
 
     if (email.trim() === '') {
@@ -522,8 +522,8 @@ const handleForgotPassword = async () => {
         'http://43.204.167.118:3000/api/auth/login',
         {
           method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({email, password}),
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
         },
       );
 
@@ -531,7 +531,7 @@ const handleForgotPassword = async () => {
       console.log('Login Response:', data);
 
       if (response.ok) {
-        const {token, player: user} = data;
+        const { token, player: user } = data;
         if (token && user) {
           await AsyncStorage.setItem('authToken', token);
           await AsyncStorage.setItem('userData', JSON.stringify(user));
@@ -554,15 +554,15 @@ const handleForgotPassword = async () => {
 
 
   return (
-   
-      <SafeAreaView style={[styles.container,{paddingTop: insets.top + 30}]}>
-       <LinearGradient colors={['#0f162b', '#0f162b']} style={styles.formContainer}>
+
+    <SafeAreaView style={[styles.container, { paddingTop: insets.top + 30 }]}>
+      <LinearGradient colors={['#0f162b', '#0f162b']} style={styles.formContainer}>
         <Text style={styles.title}>Sign - In</Text>
-         {loginError !== '' && (
+        {loginError !== '' && (
           <View style={styles.loginErrorBox}>
-             <Text style={styles.loginErrorText}>{loginError}</Text>
-           </View>
-         )}
+            <Text style={styles.loginErrorText}>{loginError}</Text>
+          </View>
+        )}
         <Toast />
         <View style={[styles.inputContainer, emailError ? styles.errorBorder : null]}>
 
@@ -624,13 +624,13 @@ const handleForgotPassword = async () => {
 
         <View style={styles.socialContainer}>
           <TouchableOpacity style={styles.socialButton} onPress={() => Alert.alert('Info', 'Google login coming soon')}>
-             <Icon6 name="google" size={normalize(20)} color="#fff" />
+            <Icon6 name="google" size={normalize(20)} color="#fff" />
           </TouchableOpacity>
-           <TouchableOpacity style={styles.socialButton} onPress={() => Alert.alert('Info', 'Twitter login coming soon')}>
-             <Icon6 name="x-twitter" size={normalize(20)} color="#fff" />
+          <TouchableOpacity style={styles.socialButton} onPress={() => Alert.alert('Info', 'Twitter login coming soon')}>
+            <Icon6 name="x-twitter" size={normalize(20)} color="#fff" />
           </TouchableOpacity>
           <TouchableOpacity style={styles.socialButton} onPress={() => Alert.alert('Info', 'Facebook login coming soon')}>
-            <Icon6 name="google" size={normalize(20)} color="#fff" />
+            <Icon6 name="facebook" size={normalize(20)} color="#fff" />
           </TouchableOpacity>
         </View>
 
@@ -639,10 +639,10 @@ const handleForgotPassword = async () => {
             Not a member? <Text style={styles.registerLink}>Register now</Text>
           </Text>
         </TouchableOpacity>
-     
-     </LinearGradient>
-      </SafeAreaView>
-    
+
+      </LinearGradient>
+    </SafeAreaView>
+
   );
 }
 
@@ -651,13 +651,13 @@ const styles = StyleSheet.create({
     flex: 1,
     // justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor:"#0f162b",
+    backgroundColor: "#0f162b",
   },
   formContainer: {
     width: width > 500 ? 500 : width * 0.9,
     padding: normalize(20),
     // paddingTop:60
-  },                                                                                                                                                                                                                     
+  },
   title: {
     fontSize: normalize(32),
     fontWeight: '600',
@@ -752,19 +752,19 @@ const styles = StyleSheet.create({
     color: '#ff8c00',
   },
   loginErrorBox: {
-  width: "100%",
-  // backgroundColor: "white",
-  // borderWidth: 1,
-  // borderColor: "red",
-  paddingVertical: normalize(6),
-  paddingHorizontal: normalize(10),
-  marginBottom: normalize(15),
-  borderRadius: 5,
-},
-loginErrorText: {
-  color: "red",
-  fontSize: normalize(14),
-  fontStyle: "italic",
-},
+    width: "100%",
+    // backgroundColor: "white",
+    // borderWidth: 1,
+    // borderColor: "red",
+    paddingVertical: normalize(6),
+    paddingHorizontal: normalize(10),
+    marginBottom: normalize(15),
+    borderRadius: 5,
+  },
+  loginErrorText: {
+    color: "red",
+    fontSize: normalize(14),
+    fontStyle: "italic",
+  },
 
 });

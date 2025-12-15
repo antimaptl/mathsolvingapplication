@@ -12,12 +12,12 @@ import {
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import {useNavigation} from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import LinearGradient from 'react-native-linear-gradient';
-import {useTheme} from '../Globalfile/ThemeContext';
+import { useTheme } from '../Globalfile/ThemeContext';
 
-const {width, height} = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 const scale = size => (width / 375) * size;
 const scaleFont = size => size * PixelRatio.getFontScale();
 
@@ -28,16 +28,16 @@ const menuItems = [
     route: 'GameNotifications',
     lib: 'MaterialIcons',
   },
-  {icon: 'person-circle-outline', label: 'PROFILE', route: 'ProfileScreen'},
-  {icon: 'person-add-outline', label: 'FRIENDS', route: 'AddUserScreen'},
-  {icon: 'time-outline', label: 'HISTORY', route: 'CommingSoon'},
-  {icon: 'stats-chart-outline', label: 'STATS', route: 'CommingSoon'},
-  {icon: 'trophy-outline', label: 'ACHIEVEMENTS', route: 'CommingSoon'},
-  {icon: 'bar-chart-outline', label: 'LEADERBOARD', route: 'CommingSoon'},
-  {icon: 'settings', label: 'SETTINGS', route: 'SettingsScreen'},
-  {icon: 'color-palette-outline', label: 'THEME', route: 'ThemeSelectorScreen'},
-  {icon: 'volume-medium-outline', label: 'SOUND', route: 'SoundScreen'},
-  {icon: 'language', label: 'LANGUAGE', route: 'CommingSoon'},
+  { icon: 'person-circle-outline', label: 'PROFILE', route: 'ProfileScreen' },
+  { icon: 'person-add-outline', label: 'FRIENDS', route: 'AddUserScreen' },
+  { icon: 'time-outline', label: 'HISTORY', route: 'NotificationPermissionScreen' },
+  { icon: 'stats-chart-outline', label: 'STATS', route: 'CommingSoon' },
+  { icon: 'trophy-outline', label: 'ACHIEVEMENTS', route: 'CommingSoon' },
+  { icon: 'bar-chart-outline', label: 'LEADERBOARD', route: 'CommingSoon' },
+  { icon: 'settings', label: 'SETTINGS', route: 'SettingsScreen' },
+  { icon: 'color-palette-outline', label: 'THEME', route: 'ThemeSelectorScreen' },
+  { icon: 'volume-medium-outline', label: 'SOUND', route: 'SoundScreen' },
+  { icon: 'language', label: 'LANGUAGE', route: 'CommingSoon' },
   {
     icon: 'support-agent',
     label: 'SUPPORT',
@@ -48,16 +48,16 @@ const menuItems = [
 
 const More = () => {
   const navigation = useNavigation();
-  const {theme} = useTheme(); 
+  const { theme } = useTheme();
   const [showLogoutModal, setShowLogoutModal] = React.useState(false);
 
   const handleLogout = async () => {
-  await AsyncStorage.removeItem('authToken');
-  navigation.reset({
-    index: 0,
-    routes: [{ name: 'Login' }],
-  });
-};
+    await AsyncStorage.removeItem('authToken');
+    navigation.reset({
+      index: 0,
+      routes: [{ name: 'Login' }],
+    });
+  };
 
   const Content = () => (
     <SafeAreaView style={[styles.container]}>
@@ -69,7 +69,7 @@ const More = () => {
             color={theme.text || '#808080'}
           />
         </TouchableOpacity>
-        <Text style={[styles.menuTitle, {color: theme.text || '#fff'}]}>
+        <Text style={[styles.menuTitle, { color: theme.text || '#fff' }]}>
           MORE
         </Text>
       </View>
@@ -79,7 +79,7 @@ const More = () => {
           bottom: '1%',
           borderColor: '#94A3B8',
           opacity: 0.5,
-           marginHorizontal: -width * 0.05,
+          marginHorizontal: -width * 0.05,
         }}></View>
       <ScrollView contentContainerStyle={styles.menuList}>
         {menuItems.map((item, index) => {
@@ -104,7 +104,7 @@ const More = () => {
                 color={theme.text || '#fff'}
                 style={styles.icon}
               />
-              <Text style={[styles.menuText, {color: theme.text || '#fff'}]}>
+              <Text style={[styles.menuText, { color: theme.text || '#fff' }]}>
                 {item.label}
               </Text>
             </TouchableOpacity>
@@ -113,13 +113,13 @@ const More = () => {
       </ScrollView>
 
       {/* ✅ Themed Logout Button */}
-      <View style={{paddingHorizontal: width * 0.06}}>
+      <View style={{ paddingHorizontal: width * 0.06 }}>
         <LinearGradient
           colors={[theme.primary || '#FB923C', theme.primary || '#FF7F50']}
           style={styles.logoutButton}>
           <TouchableOpacity
             onPress={() => setShowLogoutModal(true)}
-            style={{width: '100%', alignItems: 'center'}}>
+            style={{ width: '100%', alignItems: 'center' }}>
             <Text style={styles.logoutText}>Logout</Text>
           </TouchableOpacity>
         </LinearGradient>
@@ -130,13 +130,13 @@ const More = () => {
           <View
             style={[
               styles.centerModal,
-              {backgroundColor: theme.cardBackground || '#1E293B'},
+              { backgroundColor: theme.cardBackground || '#1E293B' },
             ]}>
-            <Text style={[styles.centerTitle, {color: theme.text || '#fff'}]}>
+            <Text style={[styles.centerTitle, { color: theme.text || '#fff' }]}>
               Logout
             </Text>
 
-            <Text style={[styles.centerMessage, {color: theme.text || '#fff'}]}>
+            <Text style={[styles.centerMessage, { color: theme.text || '#fff' }]}>
               Are you sure you want to logout?
             </Text>
 
@@ -163,11 +163,11 @@ const More = () => {
   );
 
   return theme.backgroundGradient ? (
-    <LinearGradient colors={theme.backgroundGradient} style={{flex: 1}}>
+    <LinearGradient colors={theme.backgroundGradient} style={{ flex: 1 }}>
       <Content />
     </LinearGradient>
   ) : (
-    <View style={{flex: 1, backgroundColor: '#0F172A'}}>
+    <View style={{ flex: 1, backgroundColor: '#0F172A' }}>
       <Content />
     </View>
   );
@@ -179,7 +179,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: width * 0.02,
-     paddingTop: height * 0.03,
+    paddingTop: height * 0.03,
   },
   topBar: {
     flexDirection: 'row',
@@ -229,78 +229,78 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
 
- centerOverlay: {
-  position: 'absolute',
-  top: 0,
-  bottom: 0,
-  left: 0,
-  right: 0,
-  backgroundColor: 'rgba(0,0,0,0.5)',
-  justifyContent: 'center',
-  alignItems: 'center',
-  paddingHorizontal: 20,
-},
+  centerOverlay: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
 
-centerModal: {
-  width: '80%',
-  paddingVertical: 25,
-  paddingHorizontal: 20,
-  borderRadius: 15,
-  elevation: 10,
-  shadowColor: '#000',
-  shadowOpacity: 0.3,
-  shadowRadius: 8,
-  alignItems: 'center',
-},
+  centerModal: {
+    width: '80%',
+    paddingVertical: 25,
+    paddingHorizontal: 20,
+    borderRadius: 15,
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    alignItems: 'center',
+  },
 
-centerTitle: {
-  fontSize: scaleFont(18),
-  fontWeight: '700',
-  marginBottom: 10,
-},
+  centerTitle: {
+    fontSize: scaleFont(18),
+    fontWeight: '700',
+    marginBottom: 10,
+  },
 
-centerMessage: {
-  fontSize: scaleFont(14),
-  opacity: 0.8,
-  textAlign: 'center',
-  marginBottom: 25,
-},
+  centerMessage: {
+    fontSize: scaleFont(14),
+    opacity: 0.8,
+    textAlign: 'center',
+    marginBottom: 25,
+  },
 
-centerButtons: {
-  flexDirection: 'row',
-  justifyContent: 'space-between',
-  width: '100%',
-},
+  centerButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
 
-centerCancelBtn: {
-  flex: 1,
-  marginRight: 10,
-  paddingVertical: 10,
-  borderRadius: 10,
-  borderWidth: 1,
-  borderColor: '#94A3B8',
-  alignItems: 'center',
-},
+  centerCancelBtn: {
+    flex: 1,
+    marginRight: 10,
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#94A3B8',
+    alignItems: 'center',
+  },
 
-centerCancelTxt: {
-  fontSize: scaleFont(14),
-  color: '#94A3B8',
-  fontWeight: '600',
-},
+  centerCancelTxt: {
+    fontSize: scaleFont(14),
+    color: '#94A3B8',
+    fontWeight: '600',
+  },
 
-centerLogoutBtn: {
-  flex: 1,
-  marginLeft: 10,
-  paddingVertical: 10,
-  borderRadius: 10,
-  backgroundColor: '#EF4444',
-  alignItems: 'center',
-},
+  centerLogoutBtn: {
+    flex: 1,
+    marginLeft: 10,
+    paddingVertical: 10,
+    borderRadius: 10,
+    backgroundColor: '#EF4444',
+    alignItems: 'center',
+  },
 
-centerLogoutTxt: {
-  fontSize: scaleFont(14),
-  color: '#fff',
-  fontWeight: '700',
-},
+  centerLogoutTxt: {
+    fontSize: scaleFont(14),
+    color: '#fff',
+    fontWeight: '700',
+  },
 
 });

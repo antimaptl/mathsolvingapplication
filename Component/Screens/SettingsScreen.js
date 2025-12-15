@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,22 +9,28 @@ import {
   Dimensions,
   Vibration,
   PixelRatio,
+  AppState,
+  Linking,
+  Alert,
+  Platform,
 } from 'react-native';
+
 
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import {useNavigation} from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
-import {useTheme} from '../Globalfile/ThemeContext';
+import { useTheme } from '../Globalfile/ThemeContext';
 import { useSound } from '../../Context/SoundContext';
 import messaging from '@react-native-firebase/messaging';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const {width, height} = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 const scaleFont = size => size * PixelRatio.getFontScale();
 
 const SettingsScreen = () => {
   const navigation = useNavigation();
-  const {theme} = useTheme(); // Theme Hook
+  const { theme } = useTheme(); // Theme Hook
   const { isSoundOn, toggleSound, setIsSoundOn } = useSound();
 
 
@@ -36,72 +42,174 @@ const SettingsScreen = () => {
   });
 
   // ---------- Handle Toggle Change ----------
-  const handleToggle = key => {
-  const newValue = !settings[key];
+  // ✅ Check & Sync Notification Status
+  const checkNotificationStatus = async () => {
+    console.log("🔍 Checking notification status...");
 
-  if (key === "sound") {
-    setIsSoundOn(newValue);   // 🔥 Global Sound Update
-  }
+    try {
+      const storedValue = await AsyncStorage.getItem('notification');
+      console.log("📦 Stored notification value:", storedValue);
 
-  if (key === "vibrate" && newValue) {
-    Vibration.vibrate(300);
-  }
+      const parsed = storedValue === "true";
+      console.log("🔄 Parsed value:", parsed);
 
-  setSettings(prev => ({ ...prev, [key]: newValue }));
-};
+      // Firebase permission (deprecated warning आए तो कोई issue नहीं)
+      const permissionStatus = await messaging().hasPermission();
+      console.log("📱 System permission raw:", permissionStatus);
 
+      const isSystemAllowed =
+        permissionStatus === messaging.AuthorizationStatus.AUTHORIZED ||
+        permissionStatus === messaging.AuthorizationStatus.PROVISIONAL;
+
+      console.log("🔐 System allowed:", isSystemAllowed);
+
+      const finalStatus = parsed && isSystemAllowed;
+
+      console.log("✅ FINAL NOTIFICATION STATUS:", finalStatus);
+
+      setSettings(prev => ({ ...prev, notification: finalStatus }));
+    } catch (error) {
+      console.log("❌ Error checking notification status:", error);
+    }
+  };
+
+  // const checkNotificationStatus = async () => {
+  //   try {
+  //     if (Platform.OS === 'ios') {
+  //       const authStatus = await messaging().requestPermission();
+  //       const enabled =
+  //         authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
+  //         authStatus === messaging.AuthorizationStatus.PROVISIONAL;
+
+  //       console.log("iOS PERMISSION STATUS →", enabled ? "GRANTED" : "DENIED");
+
+  //       if (enabled) {
+  //         showStyledAlert('✅ Permission Granted! You will receive notifications.');
+  //       } else {
+  //         showStyledAlert('❌ Permission Denied! Notifications are disabled.');
+  //       }
+  //     } else {
+  //       // ANDROID
+  //       if (Platform.Version >= 33) {
+  //         const granted = await PermissionsAndroid.request(
+  //           PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
+  //           {
+  //             title: 'Notification Permission',
+  //             message: 'This app would like to send you notifications.',
+  //             buttonPositive: 'Allow',
+  //             buttonNegative: "Don’t Allow",
+  //           },
+  //         );
+
+  //         console.log("ANDROID PERMISSION STATUS →", granted);
+
+  //         if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+  //           console.log("ANDROID → PERMISSION ALLOWED");
+  //           showStyledAlert('✅ Permission Granted! You will receive notifications.');
+  //         } else {
+  //           console.log("ANDROID → PERMISSION DENIED");
+  //           showStyledAlert('❌ Permission Denied! Notifications are disabled.');
+  //         }
+  //       } else {
+  //         console.log("ANDROID VERSION < 33 → Permission not required");
+  //         // navigation.replace('ChooseThemeIntroScreen');
+  //       }
+  //     }
+  //   } catch (error) {
+  //     console.log('Permission request error:', error);
+  //     showStyledAlert('⚠️ Error requesting permission.');
+  //   }
+  // };
+
+
+  // ✅ Initial Load & AppState Listener
+  useEffect(() => {
+    checkNotificationStatus();
+
+    const subscription = AppState.addEventListener('change', nextAppState => {
+      if (nextAppState === 'active') {
+        checkNotificationStatus(); // Re-check when app comes to foreground
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, []);
+
+  // ---------- Handle Toggle Change ----------
+  const handleToggle = async (value) => {
+    console.log("🔄 User toggled:", value);
+
+    // Always redirect to system settings for both ON and OFF
+    console.log("⚙ Always opening system notification settings...");
+    if (Platform.OS === "android") {
+      Linking.openSettings();
+    }
+
+    // UI state update only (system actual ON/OFF settings se hoga)
+    if (value === true) {
+      console.log("📨 UI: Notification turned ON (system will decide actual state)");
+      await AsyncStorage.setItem("notification", "true");
+      setSettings(prev => ({ ...prev, notification: true }));
+    } else {
+      console.log("🚫 UI: Notification turned OFF (system will decide actual state)");
+      await AsyncStorage.setItem("notification", "false");
+      setSettings(prev => ({ ...prev, notification: false }));
+    }
+  };
 
   // ✅ Setting Card with Icon
   const SettingCard = ({ label, stateKey, iconName }) => {
-  const isSoundCard = stateKey === "sound";
+    const isSoundCard = stateKey === "sound";
 
-  return (
-    <View style={[
-      styles.settingCard,
-      {
-        backgroundColor: theme.cardBackground || '#fff',
-        borderColor: theme.borderColor || '#334155',
-      }
-    ]}>
-      
-      <View style={styles.iconLabelContainer}>
-        <MaterialCommunityIcons
-          name={iconName}
-          size={scaleFont(22)}
-          color={theme.primaryColor || '#10B981'}
-          style={styles.settingIcon}
-        />
-        <Text style={[styles.label, { color: theme.text || '#000' }]}>
-          {label}
-        </Text>
+    return (
+      <View style={[
+        styles.settingCard,
+        {
+          backgroundColor: theme.cardBackground || '#fff',
+          borderColor: theme.borderColor || '#334155',
+        }
+      ]}>
+
+        <View style={styles.iconLabelContainer}>
+          <MaterialCommunityIcons
+            name={iconName}
+            size={scaleFont(22)}
+            color={theme.primaryColor || '#10B981'}
+            style={styles.settingIcon}
+          />
+          <Text style={[styles.label, { color: theme.text || '#000' }]}>
+            {label}
+          </Text>
+        </View>
+
+        {/* 🔥 SOUND TOGGLE REAL CONTEXT VALUE */}
+        {isSoundCard ? (
+          <Switch
+            trackColor={{
+              false: theme.secondaryColor || '#D1D5DB',
+              true: theme.primaryColor || '#10B981',
+            }}
+            thumbColor={isSoundOn ? '#fff' : theme.thumbColor || '#71717A'}
+            value={isSoundOn}
+            onValueChange={toggleSound}
+          />
+        ) : (
+          <Switch
+            trackColor={{
+              false: theme.secondaryColor || '#D1D5DB',
+              true: theme.primaryColor || '#10B981',
+            }}
+            thumbColor={settings[stateKey] ? '#fff' : theme.thumbColor || '#71717A'}
+            value={settings[stateKey]}
+            onValueChange={(value) => handleToggle(value)}
+          />
+        )}
+
       </View>
-
-      {/* 🔥 SOUND TOGGLE REAL CONTEXT VALUE */}
-      {isSoundCard ? (
-        <Switch
-          trackColor={{
-            false: theme.secondaryColor || '#D1D5DB',
-            true: theme.primaryColor || '#10B981',
-          }}
-          thumbColor={isSoundOn ? '#fff' : theme.thumbColor || '#71717A'}
-          value={isSoundOn}
-          onValueChange={toggleSound}
-        />
-      ) : (
-        <Switch
-          trackColor={{
-            false: theme.secondaryColor || '#D1D5DB',
-            true: theme.primaryColor || '#10B981',
-          }}
-          thumbColor={settings[stateKey] ? '#fff' : theme.thumbColor || '#71717A'}
-          value={settings[stateKey]}
-          onValueChange={() => handleToggle(stateKey)}
-        />
-      )}
-
-    </View>
-  );
-};
+    );
+  };
 
   const Content = () => (
     <SafeAreaView style={styles.container}>
@@ -121,7 +229,7 @@ const SettingsScreen = () => {
         <Text
           style={[
             styles.headerTitle,
-            {color: theme.text || 'black'},
+            { color: theme.text || 'black' },
           ]}>
           SETTINGS
         </Text>
@@ -129,7 +237,7 @@ const SettingsScreen = () => {
         <View style={styles.rightPlaceholder} />
       </View>
 
-     
+
       <View style={styles.headerSeparator} />
 
 
@@ -145,7 +253,7 @@ const SettingsScreen = () => {
           stateKey="sound"
           iconName="volume-high"
         />
-        <SettingCard
+        {/* <SettingCard
           label="Vibrate"
           stateKey="vibrate"
           iconName="vibrate"
@@ -154,19 +262,19 @@ const SettingsScreen = () => {
           label="Music"
           stateKey="music"
           iconName="music"
-        />
+        /> */}
       </View>
     </SafeAreaView>
   );
 
   // Background Theme
   return theme.backgroundGradient ? (
-    <LinearGradient colors={theme.backgroundGradient} style={{flex: 1}}>
+    <LinearGradient colors={theme.backgroundGradient} style={{ flex: 1 }}>
       <Content />
     </LinearGradient>
   ) : (
     <View
-      style={{flex: 1, backgroundColor: theme.backgroundColor || '#fff'}}>
+      style={{ flex: 1, backgroundColor: theme.backgroundColor || '#fff' }}>
       <Content />
     </View>
   );
@@ -186,17 +294,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingTop: height * 0.01,
-    paddingBottom: height * 0.01, 
+    paddingBottom: height * 0.01,
   },
 
- 
+
   headerSeparator: {
-    height: 1, 
-    backgroundColor: '#94A3B8', 
+    height: 1,
+    backgroundColor: '#94A3B8',
     opacity: 0.5,
-    top:30,
+    top: 30,
     marginHorizontal: -width * 0.05,
-    marginBottom: height * 0.04, 
+    marginBottom: height * 0.04,
   },
 
   backButton: {
@@ -230,7 +338,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: height * 0.02,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 1},
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 1,
     elevation: 2,

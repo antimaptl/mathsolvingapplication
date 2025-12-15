@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -14,16 +14,16 @@ import {
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Toast from 'react-native-toast-message';
-import {useNavigation} from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import Geolocation from 'react-native-geolocation-service';
-import {check, request, PERMISSIONS, RESULTS} from 'react-native-permissions';
+import { check, request, PERMISSIONS, RESULTS } from 'react-native-permissions';
 import Icon from 'react-native-vector-icons/Ionicons';
 import Icon6 from 'react-native-vector-icons/FontAwesome6';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-const {width, height} = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 // ✅ Enhanced normalize for full responsiveness
 const scale = width / 375;
@@ -34,7 +34,7 @@ const normalize = size => Math.round(moderateScale(size));
 
 export default function SignUp() {
   const navigation = useNavigation();
-   const insets = useSafeAreaInsets();
+  const insets = useSafeAreaInsets();
   const [username, setUserName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -51,6 +51,7 @@ export default function SignUp() {
   const [isTicked, setIsTicked] = useState(false);
   const [tncError, setTncError] = useState(false);
 
+
   useEffect(() => {
     getUserLocation();
   }, []);
@@ -66,22 +67,22 @@ export default function SignUp() {
       if (permission === RESULTS.GRANTED) {
         Geolocation.getCurrentPosition(
           async position => {
-            const {latitude, longitude} = position.coords;
+            const { latitude, longitude } = position.coords;
+
             const response = await fetch(
               `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`,
             );
             const data = await response.json();
 
             if (data) {
-              const city = data.city || data.locality || '';
               const countryName = data.countryName || '';
               const countryCode = data.countryCode || '';
-              const flag = getFlagEmoji(countryCode);
+              // const flag = getFlagEmoji(countryCode);
 
-              const locationText =
-                city && countryName ? `${city}, ${countryName}` : countryName;
-              setCountry(locationText);
-              setCountryFlag(flag);
+              // ❌ NO CITY  
+              // ONLY COUNTRY
+              setCountry(countryName);
+              // setCountryFlag(flag);
             }
           },
           error => {
@@ -92,7 +93,7 @@ export default function SignUp() {
               text2: 'Unable to fetch your location automatically',
             });
           },
-          {enableHighAccuracy: true, timeout: 15000, maximumAge: 10000},
+          { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 },
         );
       } else {
         Toast.show({
@@ -106,12 +107,12 @@ export default function SignUp() {
     }
   };
 
-  const getFlagEmoji = countryCode => {
-    if (!countryCode) return '';
-    return countryCode
-      .toUpperCase()
-      .replace(/./g, char => String.fromCodePoint(127397 + char.charCodeAt(0)));
-  };
+  // const getFlagEmoji = countryCode => {
+  //   if (!countryCode) return '';
+  //   return countryCode
+  //     .toUpperCase()
+  //     .replace(/./g, char => String.fromCodePoint(127397 + char.charCodeAt(0)));
+  // };
 
   const validateEmail = email => {
     const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -121,31 +122,25 @@ export default function SignUp() {
   const handleSignUp = async () => {
     let tempErrors = {};
 
+    // ✅ T&C validation
     if (!isTicked) {
       setTncError(true);
-      Toast.show({
-        type: 'error',
-        text1: 'T&C Required',
-        text2: 'Please accept Terms & Conditions',
-      });
       return;
     } else {
       setTncError(false);
     }
 
-    if (!username.trim()) tempErrors.username = 'This field is required';
-    if (!email.trim()) tempErrors.email = 'This field is required';
+    // ✅ Frontend validations
+    if (!username.trim()) tempErrors.username = 'Username is required';
+    if (!email.trim()) tempErrors.email = 'Email is required';
     else if (!validateEmail(email))
-      tempErrors.email = 'Please enter a valid email';
-    if (!password.trim()) tempErrors.password = 'This field is required';
+      tempErrors.email = 'Invalid email format';
+
+    if (!password.trim())
+      tempErrors.password = 'Password is required';
 
     if (Object.keys(tempErrors).length > 0) {
       setErrors(tempErrors);
-      Toast.show({
-        type: 'error',
-        text1: 'Form Error',
-        text2: 'Please fill required fields',
-      });
       return;
     }
 
@@ -153,56 +148,93 @@ export default function SignUp() {
 
     try {
       const response = await fetch(
-        'http://43.204.167.118:3000/api/auth/verifymail',
+        'http://43.204.167.118:3000/api/auth/signup',
         {
           method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({email}),
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email,
+            username,
+            password,
+          }),
         },
       );
 
       const data = await response.json();
-      if (data.success === true) {
-        Toast.show({
-          type: 'success',
-          text1: 'OTP Sent',
-          text2: `OTP sent to ${email}`,
-        });
-        navigation.navigate('EmailVerification', {
-          userData: {
-            username,
-            email,
-            password,
-            country,
-            countryFlag,
-            dateOfBirth,
-            gender,
-          },
-        });
-      } else {
-        Toast.show({
-          type: 'error',
-          text1: 'Failed',
-          text2: data.message || 'Something went wrong!',
-        });
+
+      // ❌ Backend validation errors
+      if (!response.ok || data.success === false) {
+        handleApiErrors(data);
+        return;
       }
+
+      // ✅ SUCCESS → OTP SENT
+      Toast.show({
+        type: 'success',
+        text1: 'OTP Sent',
+        text2: `OTP sent to ${email}`,
+      });
+
+      navigation.navigate('EmailVerification', {
+        userData: {
+          username,
+          email,
+          password,
+          country,
+          countryFlag,
+          dateOfBirth,
+          gender,
+        },
+      });
+
     } catch (error) {
       Toast.show({
         type: 'error',
         text1: 'Network Error',
-        text2: 'Please try again later.',
+        text2: 'Please try again later',
       });
     }
   };
 
+  const handleApiErrors = (data) => {
+    let fieldErrors = {};
+
+    // 🔹 Example backend responses handling
+    if (data.message) {
+      const msg = data.message.toLowerCase();
+
+      if (msg.includes('username')) {
+        fieldErrors.username = data.message;
+      }
+
+      if (msg.includes('email')) {
+        fieldErrors.email = data.message;
+      }
+
+      if (msg.includes('password')) {
+        fieldErrors.password = data.message;
+      }
+    }
+
+    // 🔹 If backend sends error object
+    if (data.errors) {
+      Object.keys(data.errors).forEach(key => {
+        fieldErrors[key] = data.errors[key];
+      });
+    }
+
+    setErrors(fieldErrors);
+  };
+
+
   return (
     <KeyboardAvoidingView
-      style={{flex: 1}}
+      style={{ flex: 1 }}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={normalize(20)}>
       <LinearGradient colors={['#0f162b', '#0f162b']} style={styles.container}>
         <ScrollView
-          contentContainerStyle={[styles.scrollContainer ,{paddingTop: insets.top + 30}]}
+          contentContainerStyle={[styles.scrollContainer, { paddingTop: insets.top + 30 }]}
           keyboardShouldPersistTaps="handled">
           <View style={styles.formContainer}>
             <TouchableOpacity
@@ -229,7 +261,13 @@ export default function SignUp() {
               icon={require('../Screens/Image/face.png')}
               placeholder="Email *"
               value={email}
-              onChangeText={setEmail}
+              onChangeText={text => {
+                setEmail(text);
+                if (validateEmail(text) && errors.email) {
+                  setErrors(prev => ({ ...prev, email: undefined }));
+                }
+              }}
+
               keyboardType="email-address"
               error={errors.email}
             />
@@ -250,7 +288,13 @@ export default function SignUp() {
                 placeholder="Enter your Password *"
                 placeholderTextColor="#94A3B8"
                 value={password}
-                onChangeText={setPassword}
+                onChangeText={text => {
+                  setPassword(text);
+
+                  if (text.length >= 6 && errors.password) {
+                    setErrors(prev => ({ ...prev, password: undefined }));
+                  }
+                }}
                 secureTextEntry={!showPassword}
               />
               <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
@@ -283,7 +327,7 @@ export default function SignUp() {
                   <Text
                     style={[
                       styles.input1,
-                      {color: gender ? 'white' : '#94A3B8'},
+                      { color: gender ? 'white' : '#94A3B8' },
                     ]}>
                     {gender || 'Select Gender'}
                   </Text>
@@ -389,7 +433,7 @@ export default function SignUp() {
               <TouchableOpacity
                 style={styles.socialButton}
                 onPress={() =>
-                  Toast.show({type: 'info', text1: 'Google login coming soon'})
+                  Toast.show({ type: 'info', text1: 'Google login coming soon' })
                 }>
                 <Icon6 name="google" size={normalize(20)} color="#fff" />
               </TouchableOpacity>
@@ -431,7 +475,7 @@ export default function SignUp() {
 }
 
 // Input Field Component
-const InputField = ({icon, error, ...props}) => (
+const InputField = ({ icon, error, ...props }) => (
   <>
     <View style={[styles.inputContainer, error && styles.errorBorder]}>
       <Image style={styles.inputIcon} source={icon} />
@@ -473,8 +517,8 @@ const styles = StyleSheet.create({
     color: '#fff',
     borderRadius: 4,
   },
-  tickChecked: {backgroundColor: '#fff', color: 'black'},
-  tncText: {color: 'red', fontSize: normalize(12)},
+  tickChecked: { backgroundColor: '#fff', color: 'black' },
+  tncText: { color: 'red', fontSize: normalize(12) },
   scrollContainer: {
     flexGrow: 1,
     justifyContent: 'center',
@@ -610,6 +654,6 @@ const styles = StyleSheet.create({
     fontSize: normalize(12),
     marginBottom: normalize(10),
     marginLeft: normalize(5),
-   alignSelf:"flex-end"
+    alignSelf: "flex-end"
   },
 });

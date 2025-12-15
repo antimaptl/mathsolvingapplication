@@ -45,12 +45,15 @@ const NotificationPermissionScreen = () => {
           authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
           authStatus === messaging.AuthorizationStatus.PROVISIONAL;
 
+        console.log("iOS PERMISSION STATUS →", enabled ? "GRANTED" : "DENIED");
+
         if (enabled) {
           showStyledAlert('✅ Permission Granted! You will receive notifications.');
         } else {
           showStyledAlert('❌ Permission Denied! Notifications are disabled.');
         }
       } else {
+        // ANDROID
         if (Platform.Version >= 33) {
           const granted = await PermissionsAndroid.request(
             PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
@@ -62,14 +65,18 @@ const NotificationPermissionScreen = () => {
             },
           );
 
+          console.log("ANDROID PERMISSION STATUS →", granted);
+
           if (granted === PermissionsAndroid.RESULTS.GRANTED) {
-            
+            console.log("ANDROID → PERMISSION ALLOWED");
             showStyledAlert('✅ Permission Granted! You will receive notifications.');
           } else {
+            console.log("ANDROID → PERMISSION DENIED");
             showStyledAlert('❌ Permission Denied! Notifications are disabled.');
           }
         } else {
-           navigation.replace('ChooseThemeIntroScreen');
+          console.log("ANDROID VERSION < 33 → Permission not required");
+          navigation.replace('ChooseThemeIntroScreen');
         }
       }
     } catch (error) {

@@ -1,5 +1,5 @@
-import {useNavigation} from '@react-navigation/native';
-import React, {useEffect, useState} from 'react';
+import { useNavigation } from '@react-navigation/native';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -17,9 +17,9 @@ import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/Ionicons';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {useTheme} from '../Globalfile/ThemeContext'; // ✅ Theme hook
+import { useTheme } from '../Globalfile/ThemeContext'; // ✅ Theme hook
 
-const {width, height} = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 const scaleFont = size => size * PixelRatio.getFontScale();
 const scale = width / 375;
 const normalize = size =>
@@ -27,10 +27,19 @@ const normalize = size =>
 
 const ProfileScreen = () => {
   const Navigation = useNavigation();
-  const {theme} = useTheme(); // ✅ Theme from context
+  const { theme } = useTheme();
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showEditModal, setShowEditModal] = useState(false);
+
+
+
+  useEffect(() => {
+    if (userData?.country) {
+      console.log("Country Code on Page Load:", userData.country);
+      console.log("Flag:", getFlagEmoji(userData.country));
+    }
+  }, [userData]);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -67,7 +76,10 @@ const ProfileScreen = () => {
     fetchUserData();
   }, []);
 
-  // console.log('UserData', userData);
+
+
+
+  console.log('UserData', userData);
   const formatDate = dateString => {
     if (!dateString) return 'N/A';
     const date = new Date(dateString);
@@ -95,17 +107,36 @@ const ProfileScreen = () => {
     return `${day}-${month}-${year}`;
   };
 
-  const getFlagEmoji = countryCode => {
+  const mapCountryNameToCode = (name) => {
+    if (!name) return '';
+
+    const mapping = {
+      "india": "IN",
+      "united states": "US",
+      "united kingdom": "UK",
+      "canada": "CA",
+      "australia": "AU",
+      "germany": "DE",
+      "france": "FR",
+    };
+
+    return mapping[name.toLowerCase().trim()] || '';
+  };
+
+
+
+  const getFlagEmoji = (countryCode) => {
     if (!countryCode) return '';
-    return countryCode
-      .toUpperCase()
-      .replace(/./g, char => String.fromCodePoint(127397 + char.charCodeAt(0)));
+    const code = countryCode.toUpperCase();
+    return code.replace(/./g, char =>
+      String.fromCodePoint(char.charCodeAt(0) + 127397)
+    );
   };
 
   // ✅ Main screen content separated for cleaner theme wrapping
   const Content = () => (
     <SafeAreaView style={[styles.container]}>
-     
+
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}>
@@ -117,11 +148,11 @@ const ProfileScreen = () => {
           <Text style={styles.headerTitle}>PROFILE</Text>
 
           <TouchableOpacity
-             onPress={() =>{
+            onPress={() => {
               Navigation.navigate("UpdateProfile")
-             }}>
+            }}>
             <FontAwesome5 name="user-edit" size={normalize(16)} color="#fff" />
-          </TouchableOpacity>        
+          </TouchableOpacity>
         </View>
         <View style={styles.headerSeparator} />
 
@@ -129,7 +160,7 @@ const ProfileScreen = () => {
           <ActivityIndicator
             size="large"
             color="#fff"
-            style={{marginTop: 50}}
+            style={{ marginTop: 50 }}
           />
         ) : (
           <View style={styles.profileSection}>
@@ -170,7 +201,7 @@ const ProfileScreen = () => {
                 Gender: {userData?.gender || 'N/A'}
               </Text>
               <Text style={styles.detail}>
-                Country: {getFlagEmoji(userData?.country)}
+                Country: {getFlagEmoji(mapCountryNameToCode(userData?.country))}
               </Text>
             </View>
 
@@ -195,8 +226,8 @@ const ProfileScreen = () => {
             <View style={styles.rankContainer}>
               <Text style={styles.rankText}>Current Rank: 10,456</Text>
               <View style={styles.rankBar}>
-                <View style={[styles.rankBarFillGreen, {width: '50%'}]} />
-                <View style={[styles.rankBarFillRed, {width: '45%'}]} />
+                <View style={[styles.rankBarFillGreen, { width: '50%' }]} />
+                <View style={[styles.rankBarFillRed, { width: '45%' }]} />
               </View>
             </View>
 
@@ -226,7 +257,7 @@ const ProfileScreen = () => {
                 </TouchableOpacity>
 
                 <Text style={styles.modalTitle}>PROFILE</Text>
-                <View style={{width: normalize(20)}} />
+                <View style={{ width: normalize(20) }} />
               </View>
 
               {/* Profile Image + Upload */}
@@ -237,7 +268,7 @@ const ProfileScreen = () => {
               </View>
 
               {/* Inputs */}
-              <View style={{marginTop: normalize(15)}}>
+              <View style={{ marginTop: normalize(15) }}>
                 <Text style={styles.label}>First Name:</Text>
                 <Text style={styles.label}>Last Name:</Text>
                 <Text style={styles.label}>Year of Birth: ____</Text>
@@ -265,7 +296,7 @@ const ProfileScreen = () => {
 
   // ✅ Apply theme background here
   return theme.backgroundGradient ? (
-    <LinearGradient colors={theme.backgroundGradient} style={{flex: 1}}>
+    <LinearGradient colors={theme.backgroundGradient} style={{ flex: 1 }}>
       <Content />
     </LinearGradient>
   ) : (
@@ -280,7 +311,7 @@ const ProfileScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {flex: 1, padding: normalize(10)},
+  container: { flex: 1, padding: normalize(10) },
   scrollContent: {
     paddingBottom: normalize(30),
     paddingHorizontal: normalize(16),
@@ -292,8 +323,8 @@ const styles = StyleSheet.create({
     marginTop: normalize(20),
     marginBottom: normalize(15),
   },
-  headerTitle: {color: '#fff', fontSize: normalize(18), fontWeight: '700'},
-    headerSeparator: {
+  headerTitle: { color: '#fff', fontSize: normalize(18), fontWeight: '700' },
+  headerSeparator: {
     height: 1,
     backgroundColor: '#94A3B8',
     opacity: 0.5,
@@ -302,7 +333,7 @@ const styles = StyleSheet.create({
     marginBottom: height * 0.02,
     bottom: '1%',
   },
-  profileSection: {marginVertical: normalize(10)},
+  profileSection: { marginVertical: normalize(10) },
   profileTop: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -319,17 +350,17 @@ const styles = StyleSheet.create({
     height: normalize(70),
     // borderRadius: normalize(40),
   },
-  profileText: {marginLeft: normalize(30)},
+  profileText: { marginLeft: normalize(30) },
   userName: {
     color: '#fff',
     fontSize: normalize(18),
     fontWeight: '600',
     marginBottom: normalize(4),
   },
-  joinDate: {color: '#999', fontSize: normalize(12)},
-  userInfo: {marginTop: normalize(10), alignItems: 'flex-start'},
-  email: {color: '#bbb', fontSize: normalize(14), marginBottom: normalize(2)},
-  emailText: {color: '#4da6ff'},
+  joinDate: { color: '#999', fontSize: normalize(12) },
+  userInfo: { marginTop: normalize(10), alignItems: 'flex-start' },
+  email: { color: '#bbb', fontSize: normalize(14), marginBottom: normalize(2) },
+  emailText: { color: '#4da6ff' },
   detail: {
     color: '#ccc',
     fontSize: normalize(14),
@@ -348,10 +379,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#1b1b3a',
     borderRadius: normalize(6),
   },
-  activeTab: {backgroundColor: '#4e54c8'},
-  tabText: {color: '#bbb', fontSize: normalize(14)},
-  activeTabText: {color: '#fff', fontWeight: '600'},
-  rankContainer: {marginTop: normalize(28)},
+  activeTab: { backgroundColor: '#4e54c8' },
+  tabText: { color: '#bbb', fontSize: normalize(14) },
+  activeTabText: { color: '#fff', fontWeight: '600' },
+  rankContainer: { marginTop: normalize(28) },
   rankText: {
     color: '#fff',
     fontSize: normalize(13),
@@ -364,16 +395,16 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     overflow: 'hidden',
   },
-  rankBarFillGreen: {backgroundColor: '#4CAF50'},
-  rankBarFillRed: {backgroundColor: '#F44336'},
-  achievementsContainer: {marginTop: normalize(25)},
+  rankBarFillGreen: { backgroundColor: '#4CAF50' },
+  rankBarFillRed: { backgroundColor: '#F44336' },
+  achievementsContainer: { marginTop: normalize(25) },
   achievementTitle: {
     color: '#fff',
     fontSize: normalize(14),
     marginBottom: normalize(10),
     textAlign: 'center',
   },
-  achievementRow: {flexDirection: 'row', justifyContent: 'space-between'},
+  achievementRow: { flexDirection: 'row', justifyContent: 'space-between' },
   achievementBox: {
     flex: 1,
     backgroundColor: '#1e1e40',
@@ -382,8 +413,8 @@ const styles = StyleSheet.create({
     borderRadius: normalize(8),
     alignItems: 'center',
   },
-  achievementText: {color: '#ddd', fontSize: normalize(12)},
-   modalOverlay: {
+  achievementText: { color: '#ddd', fontSize: normalize(12) },
+  modalOverlay: {
     position: 'absolute',
     top: 0, left: 0, right: 0, bottom: 0,
     backgroundColor: 'rgba(0,0,0,0.6)',
