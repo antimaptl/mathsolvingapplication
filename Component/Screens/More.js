@@ -30,7 +30,7 @@ const menuItems = [
   },
   { icon: 'person-circle-outline', label: 'PROFILE', route: 'ProfileScreen' },
   { icon: 'person-add-outline', label: 'FRIENDS', route: 'AddUserScreen' },
-  { icon: 'time-outline', label: 'HISTORY', route: 'NotificationPermissionScreen' },
+  { icon: 'time-outline', label: 'HISTORY', route: 'CommingSoon' },
   { icon: 'stats-chart-outline', label: 'STATS', route: 'CommingSoon' },
   { icon: 'trophy-outline', label: 'ACHIEVEMENTS', route: 'CommingSoon' },
   { icon: 'bar-chart-outline', label: 'LEADERBOARD', route: 'CommingSoon' },

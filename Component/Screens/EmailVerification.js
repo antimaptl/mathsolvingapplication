@@ -26,7 +26,7 @@ export default function EmailVerification() {
   const inputs = useRef([]);
   const route = useRoute();
   const navigation = useNavigation();
-  // const {userData} = route.params;
+  const { userData } = route.params;
 
   useEffect(() => {
     const enteredOtp = otp.join('');
@@ -149,7 +149,23 @@ export default function EmailVerification() {
       }
 
       // ✅ OTP verified → next screen (NO ERROR TOAST)
-      navigation.replace('CompleteSignup', {
+
+      // ---------------------------------------------------------
+      // 🔥 FIX: Store Token & User Data (Same as Login Flow)
+      // ---------------------------------------------------------
+      if (body.token) {
+        await AsyncStorage.setItem('authToken', body.token);
+        await AsyncStorage.setItem('fullLoginResponse', JSON.stringify(body));
+
+        // Try to get user from response, otherwise fallback to route params
+        const userObj = body.player || body.user || route.params?.userData;
+        if (userObj) {
+          await AsyncStorage.setItem('userData', JSON.stringify(userObj));
+        }
+        console.log('✅ Signup Token & Data saved to AsyncStorage');
+      }
+
+      navigation.replace('NotificationPermissionScreen', {
         userData: route.params.userData,
       });
 

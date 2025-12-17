@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -16,20 +16,20 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {useIsFocused, useNavigation} from '@react-navigation/native';
+import { useIsFocused, useNavigation } from '@react-navigation/native';
 import Toast from 'react-native-toast-message';
 import messaging from '@react-native-firebase/messaging';
 import LinearGradient from 'react-native-linear-gradient';
-import {useTheme} from '../Globalfile/ThemeContext';
+import { useTheme } from '../Globalfile/ThemeContext';
 
-const {width, height} = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 const scale = size => (width / 375) * size;
 const scaleFont = size => size * (width / 375);
 
 const AddUserScreen = () => {
   const navigation = useNavigation();
   const isFocused = useIsFocused();
-  const {theme} = useTheme();
+  const { theme } = useTheme();
 
   const [refreshing, setRefreshing] = useState(false);
   const [users, setUsers] = useState([]);
@@ -53,7 +53,7 @@ const AddUserScreen = () => {
       const response = await axios.get(
         'http://43.204.167.118:3000/api/friend/friend-request',
         {
-          headers: {Authorization: `Bearer ${token}`},
+          headers: { Authorization: `Bearer ${token}` },
         },
       );
       setPendingCount(response.data.total);
@@ -69,9 +69,9 @@ const AddUserScreen = () => {
       const response = await axios.get(
         'http://43.204.167.118:3000/api/friend/alluser-list',
         {
-          headers: {Authorization: `Bearer ${token}`},
+          headers: { Authorization: `Bearer ${token}` },
         },
-        console.log("All User" , response)
+        console.log("All User", response)
       );
 
       if (response.data.success) {
@@ -94,7 +94,7 @@ const AddUserScreen = () => {
       const token = await AsyncStorage.getItem('authToken');
       const response = await axios.post(
         'http://43.204.167.118:3000/api/friend/search-user-list',
-        {searchText: text},
+        { searchText: text },
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -146,7 +146,7 @@ const AddUserScreen = () => {
         });
         setFilteredUsers(prev =>
           prev.map(u =>
-            u._id === recipientId ? {...u, friendshipStatus: 'pending'} : u,
+            u._id === recipientId ? { ...u, friendshipStatus: 'pending' } : u,
           ),
         );
       } else {
@@ -175,14 +175,14 @@ const AddUserScreen = () => {
     }
   };
 
-  const renderItem = ({item}) => {
+  const renderItem = ({ item }) => {
     const status = item.friendshipStatus;
 
     return (
       <View
         style={[
           styles.friendRow,
-          {backgroundColor: theme.backgroundGradient || '#1E293B'},
+          { backgroundColor: theme.backgroundGradient || '#1E293B' },
         ]}>
         <View style={styles.friendInfo}>
           <Image
@@ -190,27 +190,27 @@ const AddUserScreen = () => {
             style={styles.avatar}
           />
           <View>
-            <View style={{flexDirection: 'row'}}>
-              <Text style={[styles.usernameText, {color: theme.subText}]}>
+            <View style={{ flexDirection: 'row' }}>
+              <Text style={[styles.usernameText, { color: theme.subText }]}>
                 Username:{' '}
               </Text>
-              <Text style={[styles.usernameText1, {color: theme.text}]}>
+              <Text style={[styles.usernameText1, { color: theme.text }]}>
                 {item.username}
               </Text>
             </View>
-            <View style={{flexDirection: 'row'}}>
-              <Text style={[styles.nameText, {color: theme.subText}]}>
+            <View style={{ flexDirection: 'row' }}>
+              <Text style={[styles.nameText, { color: theme.subText }]}>
                 Name:{' '}
               </Text>
-              <Text style={[styles.usernameText1, {color: theme.text}]}>
+              <Text style={[styles.usernameText1, { color: theme.text }]}>
                 John Doe
               </Text>
             </View>
-            <View style={{flexDirection: 'row'}}>
-              <Text style={[styles.ratingText, {color: theme.subText}]}>
+            <View style={{ flexDirection: 'row' }}>
+              <Text style={[styles.ratingText, { color: theme.subText }]}>
                 Rating:{' '}
               </Text>
-              <Text style={[styles.usernameText1, {color: theme.text}]}>
+              <Text style={[styles.usernameText1, { color: theme.text }]}>
                 1200
               </Text>
             </View>
@@ -221,7 +221,7 @@ const AddUserScreen = () => {
           <View
             style={[
               styles.addButton,
-              {backgroundColor: theme.secondary || '#64748B'},
+              { backgroundColor: theme.secondary || '#64748B' },
             ]}>
             <Text style={styles.addText}>Pending</Text>
           </View>
@@ -229,7 +229,7 @@ const AddUserScreen = () => {
           <TouchableOpacity
             style={[
               styles.addButton,
-              {backgroundColor: theme.primary || '#17677F'},
+              { backgroundColor: theme.primary || '#17677F' },
             ]}
             onPress={() => handleAddFriend(item._id)}>
             <Text style={styles.addText}>+</Text>
@@ -248,7 +248,7 @@ const AddUserScreen = () => {
 
   useEffect(() => {
     const unsubscribe = messaging().onMessage(async remoteMessage => {
-      const {data} = remoteMessage;
+      const { data } = remoteMessage;
       if (!data) return;
 
       const userData = await AsyncStorage.getItem('fullLoginResponse');
@@ -256,7 +256,7 @@ const AddUserScreen = () => {
       const myUserId = parsedData?.player?.id;
       if (!myUserId) return;
 
-      const {requester, recipient, type} = data;
+      const { requester, recipient, type } = data;
 
       if (type === 'FRIEND_ACCEPTED' || type === 'FRIEND_REJECTED') {
         setFilteredUsers(prev =>
@@ -276,7 +276,7 @@ const AddUserScreen = () => {
   return (
     <LinearGradient
       colors={theme.backgroundGradient || ['#0F172A', '#1E293B']}
-      style={{flex: 1,}}>
+      style={{ flex: 1, }}>
       <View style={[styles.container]}>
         <View style={styles.headerRow}>
           <View style={styles.leftHeader}>
@@ -289,7 +289,7 @@ const AddUserScreen = () => {
                 color={theme.text || '#fff'}
               />
             </TouchableOpacity>
-            <Text style={[styles.header, {color: theme.text}]}>Friends</Text>
+            <Text style={[styles.header, { color: theme.text }]}>Friends</Text>
           </View>
 
           <View style={styles.notificationContainer}>
@@ -304,7 +304,7 @@ const AddUserScreen = () => {
             <View
               style={[
                 styles.badge,
-                {backgroundColor: theme.error || '#EF4444'},
+                { backgroundColor: theme.error || '#EF4444' },
               ]}>
               <Text style={styles.badgeText}>{pendingCount || 0}</Text>
             </View>
@@ -318,100 +318,100 @@ const AddUserScreen = () => {
             backgroundColor: '#94A3B8',
             opacity: 0.3,
             marginBottom: height * 0.02,
-            borderColor:  '#94A3B8',
-            borderWidth:1,
-             marginHorizontal: -width * 0.05,
-            top:10
+            borderColor: '#94A3B8',
+            borderWidth: 1,
+            marginHorizontal: -width * 0.05,
+            top: 10
           }}
         />
 
         {/* 🔍 Search */}
-        <View style={{top:20}}>
-        <View
-          style={[
-            styles.searchContainer,
-            {backgroundColor: theme.cardBackground || '#1E293B'},
-          ]}>
-          <Icon
-            name="search"
-            size={scale(22)}
-            color={theme.subText || '#94A3B8'}
-          />
-          <TextInput
-            placeholder="Search Contacts"
-            placeholderTextColor={theme.subText || '#94A3B8'}
-            style={[styles.searchInput, {color: theme.text}]}
-            value={searchText}
-            onChangeText={handleSearch}
-          />
-        </View>
+        <View style={{ top: 20 }}>
+          <View
+            style={[
+              styles.searchContainer,
+              { backgroundColor: theme.cardBackground || '#1E293B' },
+            ]}>
+            <Icon
+              name="search"
+              size={scale(22)}
+              color={theme.subText || '#94A3B8'}
+            />
+            <TextInput
+              placeholder="Search Contacts"
+              placeholderTextColor={theme.subText || '#94A3B8'}
+              style={[styles.searchInput, { color: theme.text }]}
+              value={searchText}
+              onChangeText={handleSearch}
+            />
+          </View>
 
-        {loading ? (
-          <ActivityIndicator
-            size="large"
-            color={theme.primary || '#FB923C'}
-            style={{marginTop: height * 0.05}}
-          />
-        ) : (
-          <>
-            <View
-              style={[
-                styles.inviteSection,
-                {backgroundColor: theme.cardBackground || '#1E293B'},
-              ]}>
-              <Text style={[styles.sectionTitle, {color: theme.text}]}>
-                Invite & Connect
-              </Text>
-
-              <TouchableOpacity
-                style={[styles.inviteButton1, {backgroundColor: '#25D366'}]}>
-                <FontAwesome
-                  name="whatsapp"
-                  size={scale(20)}
-                  color="#fff"
-                  style={styles.iconLeft}
-                />
-                <Text style={styles.inviteText}>
-                  Invite Friends via WhatsApp or SMS
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
+          {loading ? (
+            <ActivityIndicator
+              size="large"
+              color={theme.primary || '#FB923C'}
+              style={{ marginTop: height * 0.05 }}
+            />
+          ) : (
+            <>
+              <View
                 style={[
-                  styles.inviteButton,
-                  {backgroundColor: theme.cardBackground || '#1E293B'},
+                  styles.inviteSection,
+                  { backgroundColor: theme.cardBackground || '#1E293B' },
                 ]}>
-                <View style={styles.fbIconCircle}>
-                  <FontAwesome name="facebook" size={scale(22)} color="#fff" />
-                </View>
-                <Text style={[styles.inviteText, {color: theme.text}]}>
-                  Facebook Friends
+                <Text style={[styles.sectionTitle, { color: theme.text }]}>
+                  Invite & Connect
                 </Text>
-              </TouchableOpacity>
-            </View>
 
-            <Text style={[styles.sectionTitle, {color: theme.text}]}>
-              Friends ({filteredUsers.length})
-            </Text>
-            <ScrollView
-              refreshControl={
-                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-              }
-              showsVerticalScrollIndicator={false}>
-              <FlatList
-                data={filteredUsers}
-                keyExtractor={item => item._id}
-                renderItem={renderItem}
-                scrollEnabled={false}
-                contentContainerStyle={{paddingBottom: height * 0.1}}
-              />
-            </ScrollView>
-          </>
-        )}
+                <TouchableOpacity
+                  style={[styles.inviteButton1, { backgroundColor: '#25D366' }]}>
+                  <FontAwesome
+                    name="whatsapp"
+                    size={scale(20)}
+                    color="#fff"
+                    style={styles.iconLeft}
+                  />
+                  <Text style={styles.inviteText}>
+                    Invite Friends via WhatsApp or SMS
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.inviteButton,
+                    { backgroundColor: theme.cardBackground || '#1E293B' },
+                  ]}>
+                  <View style={styles.fbIconCircle}>
+                    <FontAwesome name="facebook" size={scale(22)} color="#fff" />
+                  </View>
+                  <Text style={[styles.inviteText, { color: theme.text }]}>
+                    Facebook Friends
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              <Text style={[styles.sectionTitle, { color: theme.text }]}>
+                Friends ({filteredUsers.length})
+              </Text>
+              <ScrollView
+                refreshControl={
+                  <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+                }
+                showsVerticalScrollIndicator={false}>
+                <FlatList
+                  data={filteredUsers}
+                  keyExtractor={item => item._id}
+                  renderItem={renderItem}
+                  scrollEnabled={false}
+                  contentContainerStyle={{ paddingBottom: height * 0.1 }}
+                />
+              </ScrollView>
+            </>
+          )}
         </View>
       </View>
     </LinearGradient>
-    
+
   );
 };
 

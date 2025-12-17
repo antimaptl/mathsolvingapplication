@@ -1,3 +1,4 @@
+
 import { useNavigation } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
 import {
@@ -11,16 +12,18 @@ import {
   ScrollView,
   ActivityIndicator,
   SafeAreaView,
-  StatusBar,
+  Platform,
+  Alert,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/Ionicons';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useTheme } from '../Globalfile/ThemeContext'; // ✅ Theme hook
+import { useTheme } from '../Globalfile/ThemeContext';
+import Geolocation from 'react-native-geolocation-service';
+import { request, PERMISSIONS, RESULTS } from 'react-native-permissions';
 
 const { width, height } = Dimensions.get('window');
-const scaleFont = size => size * PixelRatio.getFontScale();
 const scale = width / 375;
 const normalize = size =>
   Math.round(PixelRatio.roundToNearestPixel(size * scale));
@@ -28,110 +31,137 @@ const normalize = size =>
 const ProfileScreen = () => {
   const Navigation = useNavigation();
   const { theme } = useTheme();
+
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [showEditModal, setShowEditModal] = useState(false);
 
-
-
-  useEffect(() => {
-    if (userData?.country) {
-      console.log("Country Code on Page Load:", userData.country);
-      console.log("Flag:", getFlagEmoji(userData.country));
-    }
-  }, [userData]);
-
+  /* ================= FETCH USER ================= */
   useEffect(() => {
     const fetchUserData = async () => {
       try {
         const token = await AsyncStorage.getItem('authToken');
         if (!token) {
-          console.log('Token not found');
           setLoading(false);
           return;
         }
+
         const response = await fetch(
           'http://43.204.167.118:3000/api/auth/getUser',
           {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`,
-            },
+            headers: { Authorization: `Bearer ${token}` },
           },
         );
 
         const result = await response.json();
         if (result.success) {
           setUserData(result.user);
-        } else {
-          console.log('Failed to fetch user:', result);
         }
-      } catch (error) {
-        console.error('Error fetching user data:', error);
+      } catch (e) {
+        console.log(e);
       } finally {
         setLoading(false);
       }
     };
+
     fetchUserData();
   }, []);
 
+  /* ================= AUTO LOCATION ON LOAD ================= */
+  useEffect(() => {
+    if (userData && !userData.country) {
+      getUserLocation();
+    }
+  }, [userData]);
 
+  /* ================= LOCATION ================= */
+  const getUserLocation = async () => {
+    try {
+      const permission = await request(
+        Platform.OS === 'android'
+          ? PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION
+          : PERMISSIONS.IOS.LOCATION_WHEN_IN_USE,
+      );
 
+      if (permission !== RESULTS.GRANTED) {
+        Alert.alert(
+          'Location Required',
+          'Please allow location to show your country',
+        );
+        return;
+      }
 
-  console.log('UserData', userData);
-  const formatDate = dateString => {
-    if (!dateString) return 'N/A';
-    const date = new Date(dateString);
+      Geolocation.getCurrentPosition(
+        async position => {
+          const { latitude, longitude } = position.coords;
 
-    const day = date.getDate().toString().padStart(2, '0');
+          const res = await fetch(
+            `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`,
+          );
+          const data = await res.json();
 
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    const month = months[date.getMonth()];
+          const countryName = data.countryName || '';
+          if (!countryName) return;
 
-    const year = date.getFullYear().toString().slice(-2);
+          // 🔥 save to backend
+          const token = await AsyncStorage.getItem('authToken');
+          await fetch('http://43.204.167.118:3000/api/auth/profile', {
+            method: 'PUT',
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ country: countryName }),
+          });
 
-    return `${day}-${month}-${year}`;
+          // 🔥 update UI
+          setUserData(prev => ({
+            ...prev,
+            country: countryName,
+          }));
+        },
+        error => {
+          console.log(error);
+          Alert.alert('Error', 'Unable to fetch location');
+        },
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 },
+      );
+    } catch (e) {
+      console.log(e);
+    }
   };
 
-  const mapCountryNameToCode = (name) => {
+  /* ================= HELPERS ================= */
+  const formatDate = d => {
+    if (!d) return 'N/A';
+    const date = new Date(d);
+    return `${date.getDate().toString().padStart(2, '0')}-${date.toLocaleString(
+      'en',
+      { month: 'short' },
+    )}-${date.getFullYear().toString().slice(-2)}`;
+  };
+
+  const mapCountryNameToCode = name => {
     if (!name) return '';
-
-    const mapping = {
-      "india": "IN",
-      "united states": "US",
-      "united kingdom": "UK",
-      "canada": "CA",
-      "australia": "AU",
-      "germany": "DE",
-      "france": "FR",
+    const map = {
+      india: 'IN',
+      'united states': 'US',
+      'united kingdom': 'UK',
+      canada: 'CA',
+      australia: 'AU',
+      germany: 'DE',
+      france: 'FR',
     };
-
-    return mapping[name.toLowerCase().trim()] || '';
+    return map[name.toLowerCase()] || '';
   };
 
-
-
-  const getFlagEmoji = (countryCode) => {
-    if (!countryCode) return '';
-    const code = countryCode.toUpperCase();
-    return code.replace(/./g, char =>
-      String.fromCodePoint(char.charCodeAt(0) + 127397)
-    );
-  };
+  const getFlagEmoji = code =>
+    code
+      ? code
+        .toUpperCase()
+        .replace(/./g, c =>
+          String.fromCodePoint(127397 + c.charCodeAt()),
+        )
+      : '';
 
   // ✅ Main screen content separated for cleaner theme wrapping
   const Content = () => (
@@ -168,9 +198,14 @@ const ProfileScreen = () => {
             <View style={styles.profileTop}>
               <View style={styles.imageContainer}>
                 <Image
-                  source={require('../Screens/Image/dummyProfile.jpg')}
+                  source={
+                    userData?.profileImage
+                      ? { uri: userData.profileImage }
+                      : require('../Screens/Image/dummyProfile.jpg')
+                  }
                   style={styles.profileImage}
                 />
+
               </View>
               <View style={styles.profileText}>
                 <Text style={styles.userName}>
@@ -189,20 +224,39 @@ const ProfileScreen = () => {
                 <Text style={styles.emailText}>{userData?.email || 'N/A'}</Text>
               </Text>
               <Text style={styles.detail}>
-                First Name: {userData?.username || 'N/A'}
+                First Name: {userData?.firstName || 'N/A'}
               </Text>
               <Text style={styles.detail}>
                 Last Name: {userData?.lastName || 'N/A'}
               </Text>
               <Text style={styles.detail}>
-                Year of Birth : {userData?.yearOfBirth || 'N/A'}
+                <Text style={styles.detail}>
+                  Year of Birth : {formatDate(userData?.dateOfBirth)}
+                </Text>
+
               </Text>
               <Text style={styles.detail}>
                 Gender: {userData?.gender || 'N/A'}
               </Text>
-              <Text style={styles.detail}>
-                Country: {getFlagEmoji(mapCountryNameToCode(userData?.country))}
-              </Text>
+              {/* 🔥 LOCATION DISPLAY (ADDED) */}
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Text style={styles.detail}>Country:</Text>
+
+                {userData?.country ? (
+                  <View style={{ marginStart: 12, marginTop: -2 }}>
+                    <Text style={{ fontSize: normalize(18) }}>
+                      {getFlagEmoji(mapCountryNameToCode(userData.country))}
+                    </Text>
+                  </View>
+                ) : (
+                  <TouchableOpacity onPress={getUserLocation}>
+                    <Text style={{ color: '#4da6ff', marginStart: 10 }}>
+                      Enable Location
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+
             </View>
 
             {/* Rank Tabs */}
@@ -240,52 +294,6 @@ const ProfileScreen = () => {
                     <Text style={styles.achievementText}>{item}</Text>
                   </View>
                 ))}
-              </View>
-            </View>
-          </View>
-        )}
-        {showEditModal && (
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContainer}>
-              <View style={styles.modalHeaderRow}>
-                <TouchableOpacity onPress={() => setShowEditModal(false)}>
-                  <Icon
-                    name="caret-back-outline"
-                    size={normalize(20)}
-                    color="#333"
-                  />
-                </TouchableOpacity>
-
-                <Text style={styles.modalTitle}>PROFILE</Text>
-                <View style={{ width: normalize(20) }} />
-              </View>
-
-              {/* Profile Image + Upload */}
-              <View style={styles.modalImageRow}>
-                <View style={styles.modalImageBox}></View>
-
-                <Text style={styles.uploadText}>Upload/ Camera/ Icons</Text>
-              </View>
-
-              {/* Inputs */}
-              <View style={{ marginTop: normalize(15) }}>
-                <Text style={styles.label}>First Name:</Text>
-                <Text style={styles.label}>Last Name:</Text>
-                <Text style={styles.label}>Year of Birth: ____</Text>
-                <Text style={styles.label}>Gender: ____</Text>
-              </View>
-
-              {/* Buttons */}
-              <View style={styles.modalBtnRow}>
-                <TouchableOpacity
-                  onPress={() => setShowEditModal(false)}
-                  style={styles.discardBtn}>
-                  <Text style={styles.discardText}>Discard</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.saveBtn}>
-                  <Text style={styles.saveText}>Save</Text>
-                </TouchableOpacity>
               </View>
             </View>
           </View>

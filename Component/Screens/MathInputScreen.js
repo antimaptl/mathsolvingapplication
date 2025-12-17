@@ -1,4 +1,4 @@
-import React, {useState, useEffect, useRef, useCallback} from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -14,42 +14,36 @@ import {
 import Icon from 'react-native-vector-icons/Ionicons';
 import LinearGradient from 'react-native-linear-gradient';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   useFocusEffect,
   useNavigation,
   useRoute,
 } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {stopBackgroundMusic} from '../Globalfile/playBackgroundMusic';
+import { stopBackgroundMusic } from '../Globalfile/playBackgroundMusic';
 import {
   initSound,
   playEffect,
   stopEffect,
   releaseAll,
 } from '../Globalfile/SoundManager';
-import {useTheme} from '../Globalfile/ThemeContext';
+import { useTheme } from '../Globalfile/ThemeContext';
 import { useSound } from '../../Context/SoundContext';
+import { KEYPAD_LAYOUTS } from '../Globalfile/keyboardLayouts';
 
-const {width, height} = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 const scaleFont = size => size * PixelRatio.getFontScale();
 
-const numPad = [
-  ['7', '8', '9', '-'],
-  ['4', '5', '6', '.'],
-  ['1', '2', '3', 'na'],
-  ['Clear', '0', '⌫', 'skip'],
-];
-
 const getMathSymbol = word =>
-  ({
-    Sum: '+',
-    Difference: '-',
-    Product: '*',
-    Quotient: '/',
-    Modulus: '%',
-    Exponent: '^',
-  }[word] || word);
+({
+  Sum: '+',
+  Difference: '-',
+  Product: '*',
+  Quotient: '/',
+  Modulus: '%',
+  Exponent: '^',
+}[word] || word);
 
 const MathInputScreen = () => {
   const appState = useRef(AppState.currentState);
@@ -57,8 +51,11 @@ const MathInputScreen = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const route = useRoute();
-  const {theme} = useTheme();
-  const {difficulty, symbol, timer, qm} = route.params;
+  const { theme, keyboardTheme } = useTheme();
+  const { difficulty, symbol, timer, qm } = route.params;
+
+  const currentLayout = KEYPAD_LAYOUTS[keyboardTheme] || KEYPAD_LAYOUTS.default;
+  const isCustomKeyboard = keyboardTheme === 'type1' || keyboardTheme === 'type2';
 
   const [input, setInput] = useState('');
   const [question, setQuestion] = useState('');
@@ -69,7 +66,6 @@ const MathInputScreen = () => {
   const [minutes, setMinutes] = useState(Math.floor(timer / 60));
   const [seconds, setSeconds] = useState(timer % 60);
   const [animateWatch] = useState(new Animated.Value(1));
-  // const [isSoundOn, setIsSoundOn] = useState(true);
   const { isSoundOn, toggleSound } = useSound();
   const [isThirtySecPhase, setIsThirtySecPhase] = useState(false);
 
@@ -87,136 +83,74 @@ const MathInputScreen = () => {
   const [skippedCount, setSkippedCount] = useState(0);
   const [qmState, setQmState] = useState(parseInt(qm, 10));
 
+  const getKeyButtonWidth = () => {
+    // All layouts use standard width now (4 columns primarily)
+    return width * 0.2;
+  };
 
- // 🔊 Sync Context sound → MathInput sound
-useEffect(() => {
-  isSoundOnRef.current = isSoundOn;
+  const getKeyButtonHeight = () => {
+    // 4 rows standard height
+    return height * 0.1;
+  };
 
-  if (!isSoundOn) {
-    stopEffect('ticktock');
-    stopEffect('timer');
-    last10PlayedRef.current = false;
-  }
-}, [isSoundOn]);
-
+  useEffect(() => {
+    isSoundOnRef.current = isSoundOn;
+    if (!isSoundOn) {
+      stopEffect('ticktock');
+      stopEffect('timer');
+      last10PlayedRef.current = false;
+    }
+  }, [isSoundOn]);
 
   useFocusEffect(
     useCallback(() => {
-      // stopBackgroundMusic();
       initSound('correct', 'rightanswer.mp3');
       initSound('incorrect', 'wronganswerr.mp3');
       initSound('skipped', 'skip.mp3');
-      // 🔇 Commented out keypad and beep initialization
-      // initSound('keypad', 'keypad.mp3');
       initSound('timer', 'every30second.wav');
       initSound('ticktock', 'ticktock.mp3');
-      // initSound('beep', 'beep.mp3');
     }, []),
   );
 
   useEffect(() => {
     fetchQuestion();
-
-    // Timer start time
     startTimeRef.current = Date.now();
-
     const interval = setInterval(() => {
       const now = Date.now();
       const elapsed = Math.floor((now - startTimeRef.current) / 1000);
       const remaining = timer - elapsed;
-
       totalTimeRef.current = remaining;
+      setMinutes(Math.floor(remaining / 60));
+      setSeconds(remaining % 60);
 
-      const mins = Math.floor(remaining / 60);
-      const secs = remaining % 60;
-      setMinutes(mins);
-      setSeconds(secs);
-
-      
-      // 🔔 Last 10 seconds ticktock
       if (remaining <= 10 && remaining > 0) {
         if (!last10PlayedRef.current) {
           playEffect('ticktock', isSoundOnRef.current);
           last10PlayedRef.current = true;
         }
         Animated.sequence([
-          Animated.timing(animateWatch, {
-            toValue: 1.4,
-            duration: 300,
-            useNativeDriver: true,
-          }),
-          Animated.timing(animateWatch, {
-            toValue: 1,
-            duration: 300,
-            useNativeDriver: true,
-          }),
+          Animated.timing(animateWatch, { toValue: 1.4, duration: 300, useNativeDriver: true }),
+          Animated.timing(animateWatch, { toValue: 1, duration: 300, useNativeDriver: true }),
         ]).start();
       }
 
-      // 🔔 Every 30 seconds
       if (remaining % 30 === 0 && remaining !== timer && remaining > 0) {
         setIsThirtySecPhase(true);
-
-        // ✅ Just play ONE TIME — no interval, no repeat
         playEffect('timer', isSoundOnRef.current);
-
         Animated.sequence([
-          Animated.timing(animateWatch, {
-            toValue: 1.4,
-            duration: 300,
-            useNativeDriver: true,
-          }),
-          Animated.timing(animateWatch, {
-            toValue: 1,
-            duration: 300,
-            useNativeDriver: true,
-          }),
+          Animated.timing(animateWatch, { toValue: 1.4, duration: 300, useNativeDriver: true }),
+          Animated.timing(animateWatch, { toValue: 1, duration: 300, useNativeDriver: true }),
         ]).start(() => {
           setIsThirtySecPhase(false);
         });
       }
 
-      // // 🔔 Every 30 seconds
-      // if (remaining % 30 === 0 && remaining !== timer && remaining > 0) {
-      //   setIsThirtySecPhase(true);
-      //   let repeatCount = 0;
-
-      //   const secInterval = setInterval(() => {
-      //     playEffect('timer', isSoundOnRef.current);
-
-      //     Animated.sequence([
-      //       Animated.timing(animateWatch, {
-      //         toValue: 1.4,
-      //         duration: 300,
-      //         useNativeDriver: true,
-      //       }),
-      //       Animated.timing(animateWatch, {
-      //         toValue: 1,
-      //         duration: 300,
-      //         useNativeDriver: true,
-      //       }),
-      //     ]).start();
-
-      //     repeatCount++;
-      //     if (repeatCount >= 10) {
-      //       clearInterval(secInterval);
-      //       setIsThirtySecPhase(false);
-      //     }
-      //   }, 1000);
-      // }
-
-      // ⛔ Timer finished
       if (remaining <= 0) {
         clearInterval(interval);
         stopEffect('ticktock');
-
         const incorrectCount = incorrectCountRef.current;
         const attempted = correctAnswersRef.current + incorrectCount;
-        const correctPercentage =
-          attempted > 0
-            ? Math.round((correctAnswersRef.current / attempted) * 100)
-            : 0;
-
+        const correctPercentage = attempted > 0 ? Math.round((correctAnswersRef.current / attempted) * 100) : 0;
         navigation.replace('WellDoneScreen', {
           totalScore: scoreRef.current,
           correctCount: correctAnswersRef.current,
@@ -227,26 +161,21 @@ useEffect(() => {
         });
       }
     }, 1000);
-
     return () => clearInterval(interval);
   }, []);
 
-  
-useEffect(() => {
-  const sub = AppState.addEventListener('change', state => {
-    if (state !== 'active') {
-      //  App background → ticktock 
-      stopEffect('ticktock');
-    } else {
-      // App active →  last 10 sec  → ticktock 
-      if (totalTimeRef.current <= 10 && totalTimeRef.current > 0) {
-        playEffect('ticktock', isSoundOnRef.current);
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', state => {
+      if (state !== 'active') {
+        stopEffect('ticktock');
+      } else {
+        if (totalTimeRef.current <= 10 && totalTimeRef.current > 0) {
+          playEffect('ticktock', isSoundOnRef.current);
+        }
       }
-    }
-  });
-
-  return () => sub.remove();
-}, []);
+    });
+    return () => sub.remove();
+  }, []);
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', nextState => {
@@ -254,15 +183,12 @@ useEffect(() => {
         const now = Date.now();
         const elapsed = Math.floor((now - startTimeRef.current) / 1000);
         const remaining = timer - elapsed;
-
         totalTimeRef.current = remaining;
-
         setMinutes(Math.floor(remaining / 60));
         setSeconds(remaining % 60);
       }
       appState.current = nextState;
     });
-
     return () => subscription.remove();
   }, []);
 
@@ -275,33 +201,16 @@ useEffect(() => {
         setQuestion('Authorization token missing');
         return;
       }
-      const params = new URLSearchParams({
-        difficulty,
-        symbol,
-        qm: qmState.toString(),
+      const params = new URLSearchParams({ difficulty, symbol, qm: qmState.toString() });
+      const response = await fetch(`http://43.204.167.118:3000/api/question?${params}`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       });
-      const response = await fetch(
-        `http://43.204.167.118:3000/api/question?${params}`,
-        {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      );
       if (!response.ok) throw new Error(`Status: ${response.status}`);
       const data = await response.json();
       const q = data.question;
-      console.log('mmmmmmmmmmmmmmmmmmmm', q);
-      setQuestion(
-        `${String(q.input1)} ${getMathSymbol(q.symbol)} ${String(q.input2)}`,
-      );
+      setQuestion(`${String(q.input1)} ${getMathSymbol(q.symbol)} ${String(q.input2)}`);
       setCorrectAnswer(String(q.answer));
-
-      // 🔇 Beep sound removed
-      // playEffect('beep', isSoundOnRef.current);
-      // beepPlayingRef.current = true;
     } catch {
       setQuestion('Failed to load question.');
     } finally {
@@ -311,39 +220,31 @@ useEffect(() => {
   };
 
   const handleToggleSound = () => {
-  toggleSound();  // Context sound toggle
-
-  const newVal = !isSoundOn; 
-  isSoundOnRef.current = newVal;
-
-  if (!newVal) {
-    stopEffect('ticktock'); 
-  } else {
-    if (totalTimeRef.current <= 10 && totalTimeRef.current > 0) {
-      last10PlayedRef.current = false;
-      playEffect('ticktock', true);
+    toggleSound();
+    const newVal = !isSoundOn;
+    isSoundOnRef.current = newVal;
+    if (!newVal) {
+      stopEffect('ticktock');
+    } else {
+      if (totalTimeRef.current <= 10 && totalTimeRef.current > 0) {
+        last10PlayedRef.current = false;
+        playEffect('ticktock', true);
+      }
     }
-  }
-};
-
+  };
 
   const handlePress = value => {
     if (isPaused || totalTimeRef.current <= 0 || isLoading || feedback) return;
 
-    // 🔇 Removed beep stop logic
-    // if (beepPlayingRef.current) {
-    //   stopEffect('beep');
-    //   beepPlayingRef.current = false;
-    // }
+    const key = value.toString().toLowerCase();
 
-    const key = value.toLowerCase();
-    if (key === 'clear') return setInput('');
-    if (key === '⌫') {
-      // 🔇 Removed keypad sound
-      // playEffect('keypad', isSoundOnRef.current);
+    if (key === 'clear' || key === 'clr') return setInput('');
+
+    if (key === '⌫' || key === 'del') {
       return setInput(prev => prev.slice(0, -1));
     }
-    if (key === 'skip') {
+
+    if (key === 'skip' || key === 'ref') {
       setFeedback('skipped');
       playEffect('skipped', isSoundOnRef.current);
       setSkippedCount(prev => {
@@ -356,8 +257,13 @@ useEffect(() => {
       }, 1000);
     }
 
-    // 🔇 Removed keypad sound
-    // playEffect('keypad', isSoundOnRef.current);
+    if (key === 'pm') {
+      return setInput(prev => {
+        if (prev.startsWith('-')) return prev.slice(1);
+        return '-' + prev;
+      });
+    }
+
     const newInput = input + value;
     setInput(newInput);
 
@@ -391,145 +297,85 @@ useEffect(() => {
     }
   };
 
-  // ✅ Content component
   const Content = () => (
-    <SafeAreaView style={[styles.container, {paddingTop: insets.top + 30}]}>
-      {/* Top Bar */}
-      <View
-        style={[
-          styles.topBar,
-          {backgroundColor: theme.cardBackground || '#1E293B'},
-        ]}>
-        <TouchableOpacity
-          onPress={() => {
-            // releaseAll();
-            stopEffect('ticktock'); 
-            navigation.goBack();
-          }}
-          style={styles.iconButton}>
+    <SafeAreaView style={[styles.container, { paddingTop: insets.top + 30 }]}>
+      <View style={[styles.topBar, { backgroundColor: theme.cardBackground || '#1E293B' }]}>
+        <TouchableOpacity onPress={() => { stopEffect('ticktock'); navigation.goBack(); }} style={styles.iconButton}>
           <Icon name="caret-back-outline" size={scaleFont(24)} color="#fff" />
         </TouchableOpacity>
-
         <View style={styles.timerContainer}>
-          <Animated.Image
-            source={require('../Screens/Image/Stopwatch.png')}
-            style={[
-              styles.timerIcon,
-              {
-                transform: [{scale: animateWatch}],
-                tintColor:
-                  minutes * 60 + seconds <= 10 || isThirtySecPhase
-                    ? 'red'
-                    : '#fff',
-              },
-            ]}
-          />
-          <Text style={styles.timerText}>{`${minutes}:${
-            seconds < 10 ? '0' : ''
-          }${seconds}`}</Text>
+          <Animated.Image source={require('../Screens/Image/Stopwatch.png')} style={[styles.timerIcon, { transform: [{ scale: animateWatch }], tintColor: minutes * 60 + seconds <= 10 || isThirtySecPhase ? 'red' : '#fff' }]} />
+          <Text style={styles.timerText}>{`${minutes}:${seconds < 10 ? '0' : ''}${seconds}`}</Text>
         </View>
-
         <TouchableOpacity onPress={handleToggleSound} style={styles.iconButton1}>
-          <Icon
-            name={isSoundOn ? 'volume-high' : 'volume-mute'}
-            size={24}
-            color="#fff"
-          />
+          <Icon name={isSoundOn ? 'volume-high' : 'volume-mute'} size={24} color="#fff" />
         </TouchableOpacity>
       </View>
 
-      {/* Question */}
       <Text style={styles.question}>{question}</Text>
 
-      {/* Answer Box */}
-      <View
-        style={{
-          flexDirection: 'row',
-          justifyContent: 'center',
-          marginBottom: height * 0.04,
-        }}>
-        <View
-          style={[
-            styles.answerBox,
-            {backgroundColor: theme.cardBackground || '#1E293B'},
-            feedback === 'correct'
-              ? {borderColor: 'green', borderWidth: 2}
-              : feedback === 'incorrect'
-              ? {borderColor: 'red', borderWidth: 2}
-              : feedback === 'skipped'
-              ? {borderColor: 'orange', borderWidth: 2}
-              : {},
-          ]}>
-          <Text
-            style={[
-              styles.answerText,
-              feedback === 'correct'
-                ? {color: 'green'}
-                : feedback === 'incorrect'
-                ? {color: 'red'}
-                : feedback === 'skipped'
-                ? {color: 'orange'}
-                : {},
-            ]}>
-            {input ||
-              (feedback === 'correct'
-                ? 'Correct'
-                : feedback === 'incorrect'
-                ? 'Incorrect'
-                : feedback === 'skipped'
-                ? 'Skipped'
-                : '')}
+      <View style={{ flexDirection: 'row', justifyContent: 'center', marginBottom: height * 0.04 }}>
+        <View style={[styles.answerBox, { backgroundColor: theme.cardBackground || '#1E293B' }, feedback === 'correct' ? { borderColor: 'green', borderWidth: 2 } : feedback === 'incorrect' ? { borderColor: 'red', borderWidth: 2 } : feedback === 'skipped' ? { borderColor: 'orange', borderWidth: 2 } : {}]}>
+          <Text style={[styles.answerText, feedback === 'correct' ? { color: 'green' } : feedback === 'incorrect' ? { color: 'red' } : feedback === 'skipped' ? { color: 'orange' } : {}]}>
+            {input || (feedback === 'correct' ? 'Correct' : feedback === 'incorrect' ? 'Incorrect' : feedback === 'skipped' ? 'Skipped' : '')}
           </Text>
         </View>
       </View>
 
-      {/* Keypad */}
       <View style={styles.keypadContainer}>
-        {numPad.map((row, rowIndex) => (
+        {currentLayout.map((row, rowIndex) => (
           <View key={rowIndex} style={styles.keypadRow}>
             {row.map((item, index) => {
-              const isSpecial = item.toLowerCase() === 'clear' || item === '⌫';
-              const isSkip = item.toLowerCase() === 'skip';
+              const strItem = item.toString().toLowerCase();
+              const isSpecial = ['clear', 'clr', '⌫', 'del', 'ref', 'pm'].includes(strItem);
+              const isSkip = strItem === 'skip';
+              const isNa = strItem === 'Na';
+
+              if (isNa) return <View key={index} style={{ width: getKeyButtonWidth(), height: getKeyButtonHeight() }} />;
+
+              let content;
+              // Explicitly handle all known types to ensure nothing is missed
+              if (strItem === 'del' || strItem === '⌫') {
+                content = <MaterialIcons name="backspace" size={24} color="#fff" />;
+              } else if (strItem === 'ref') {
+                content = <MaterialIcons name="refresh" size={26} color="#fff" />;
+              } else if (strItem === 'pm') {
+                content = <Text style={[styles.keyText, { color: '#fff' }]}>+/-</Text>;
+              } else if (strItem === 'clr' || strItem === 'clear') {
+                content = <Text style={[styles.keyText, { color: '#fff' }]}>Clear</Text>;
+              } else if (strItem === 'skip') {
+                content = (
+                  <View style={{ alignItems: 'center', flexDirection: 'row' }}>
+                    <Text style={[styles.keyText, { fontSize: scaleFont(14) }]}>Skip</Text>
+                    <MaterialIcons name="skip-next" size={24} color="#fff" />
+                  </View>
+                );
+              } else {
+                // Default for numbers, '.', '-', etc.
+                content = <Text style={styles.keyText}>{item.toUpperCase()}</Text>;
+              }
+
               return (
                 <TouchableOpacity
                   key={index}
                   onPress={() => handlePress(item)}
                   style={[
                     styles.keyButton,
-                    isSpecial ? styles.specialKey : null,
+                    { width: getKeyButtonWidth(), height: getKeyButtonHeight() },
+                    (isSpecial || strItem === '-') ? styles.specialKey : null
                   ]}>
                   {isSkip ? (
-                    <LinearGradient
-                      colors={theme.buttonGradient || ['#FFAD90', '#FF4500']}
-                      style={[styles.gradientButton, {opacity: 0.8}]}>
-                      <View
-                        style={{alignItems: 'center', flexDirection: 'row'}}>
-                        <Text
-                          style={[styles.keyText, {fontSize: scaleFont(14)}]}>
-                          Skip
-                        </Text>
-                        <MaterialIcons
-                          name="skip-next"
-                          size={25}
-                          color="#fff"
-                        />
-                      </View>
+                    <LinearGradient colors={theme.buttonGradient || ['#FFAD90', '#FF4500']} style={[styles.gradientButton, { opacity: 0.8 }]}>
+                      {content}
                     </LinearGradient>
-                  ) : !isSpecial ? (
-                    <LinearGradient
-                      colors={
-                        theme.buttonGradient || [
-                          theme.primaryColor || '#595CFF',
-                          theme.secondaryColor || '#87AEE9',
-                        ]
-                      }
-                      style={styles.gradientButton}>
-                      <Text style={styles.keyText}>{item.toUpperCase()}</Text>
+                  ) : (!isSpecial && strItem !== '-') ? (
+                    <LinearGradient colors={theme.buttonGradient || [theme.primaryColor || '#595CFF', theme.secondaryColor || '#87AEE9']} style={styles.gradientButton}>
+                      {content}
                     </LinearGradient>
                   ) : (
-                    <Text style={[styles.keyText, {color: '#fff'}]}>
-                      {item}
-                    </Text>
+                    <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+                      {content}
+                    </View>
                   )}
                 </TouchableOpacity>
               );
@@ -538,13 +384,8 @@ useEffect(() => {
         ))}
       </View>
 
-      {/* Play Button */}
-      <LinearGradient
-        colors={theme.buttonGradient || ['#FB923C', '#FF7F50']}
-        style={styles.playButton}>
-        <TouchableOpacity
-          onPress={() => console.log('Play pressed')}
-          style={{width: '100%', alignItems: 'center'}}>
+      <LinearGradient colors={theme.buttonGradient || ['#FB923C', '#FF7F50']} style={styles.playButton}>
+        <TouchableOpacity onPress={() => console.log('Play pressed')} style={{ width: '100%', alignItems: 'center' }}>
           <Text style={styles.playButtonText}>Play</Text>
         </TouchableOpacity>
       </LinearGradient>
@@ -552,12 +393,11 @@ useEffect(() => {
   );
 
   return theme.backgroundGradient ? (
-    <LinearGradient colors={theme.backgroundGradient} style={{flex: 1}}>
+    <LinearGradient colors={theme.backgroundGradient} style={{ flex: 1 }}>
       <Content />
     </LinearGradient>
   ) : (
-    <View
-      style={{flex: 1, backgroundColor: theme.backgroundColor || '#0B1220'}}>
+    <View style={{ flex: 1, backgroundColor: theme.backgroundColor || '#0B1220' }}>
       <Content />
     </View>
   );
@@ -566,7 +406,7 @@ useEffect(() => {
 export default MathInputScreen;
 
 const styles = StyleSheet.create({
-  container: {flex: 1},
+  container: { flex: 1 },
   topBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -591,14 +431,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  timerContainer: {flexDirection: 'row', alignItems: 'center', gap: 5},
+  timerContainer: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   timerText: {
     color: '#fff',
     fontSize: scaleFont(13),
     fontWeight: '600',
     opacity: 0.7,
   },
-  timerIcon: {width: 18, height: 18},
+  timerIcon: { width: 18, height: 18 },
   question: {
     fontSize: scaleFont(22),
     color: '#fff',
@@ -617,8 +457,8 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     marginBottom: '27%',
   },
-  answerText: {fontSize: scaleFont(18), color: '#fff', fontWeight: '600'},
-  keypadContainer: {width: '100%'},
+  answerText: { fontSize: scaleFont(18), color: '#fff', fontWeight: '600' },
+  keypadContainer: { width: '100%' },
   keypadRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -633,7 +473,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     backgroundColor: '#1C2433',
   },
-  specialKey: {backgroundColor: '#1C2433'},
+  specialKey: { backgroundColor: '#1C2433' },
   gradientButton: {
     width: '100%',
     height: '100%',
@@ -641,7 +481,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 10,
   },
-  keyText: {fontSize: scaleFont(18), color: '#fff', fontWeight: '600'},
+  keyText: { fontSize: scaleFont(18), color: '#fff', fontWeight: '600' },
   playButton: {
     marginTop: height * 0.04,
     width: width * 0.5,
@@ -649,5 +489,5 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     paddingVertical: height * 0.015,
   },
-  playButtonText: {color: '#fff', fontSize: scaleFont(18), fontWeight: 'bold'},
+  playButtonText: { color: '#fff', fontSize: scaleFont(18), fontWeight: 'bold' },
 });

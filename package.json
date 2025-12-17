@@ -42,6 +42,8 @@
     "react-native-geolocation-service": "^5.3.1",
     "react-native-gesture-handler": "^2.25.0",
     "react-native-gifted-charts": "^1.4.59",
+    "react-native-image-crop-picker": "^0.51.1",
+    "react-native-image-picker": "^8.2.1",
     "react-native-linear-gradient": "^2.8.3",
     "react-native-localize": "^3.6.0",
     "react-native-logs": "^5.3.0",

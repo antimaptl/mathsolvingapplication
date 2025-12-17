@@ -53,7 +53,7 @@ const SettingsScreen = () => {
       const parsed = storedValue === "true";
       console.log("🔄 Parsed value:", parsed);
 
-      // Firebase permission (deprecated warning आए तो कोई issue नहीं)
+     
       const permissionStatus = await messaging().hasPermission();
       console.log("📱 System permission raw:", permissionStatus);
 
@@ -141,13 +141,13 @@ const SettingsScreen = () => {
   const handleToggle = async (value) => {
     console.log("🔄 User toggled:", value);
 
-    // Always redirect to system settings for both ON and OFF
+    
     console.log("⚙ Always opening system notification settings...");
     if (Platform.OS === "android") {
       Linking.openSettings();
     }
 
-    // UI state update only (system actual ON/OFF settings se hoga)
+    
     if (value === true) {
       console.log("📨 UI: Notification turned ON (system will decide actual state)");
       await AsyncStorage.setItem("notification", "true");
