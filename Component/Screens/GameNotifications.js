@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,90 +8,149 @@ import {
   Dimensions,
   PixelRatio,
   ScrollView,
+  ActivityIndicator,
+  LayoutAnimation,
+  Platform,
+  UIManager,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import {useNavigation} from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
-import {useTheme} from '../Globalfile/ThemeContext';
+import { useTheme } from '../Globalfile/ThemeContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
+import Toast from 'react-native-toast-message';
 
-const {width, height} = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 const scaleFont = size => size * PixelRatio.getFontScale();
 
-
-const dummyNotifications = [
-  {
-    id: 1,
-    user: 'Username',
-    time: '1 d ago',
-    type: 'general',
-    message: 'Short Description about the game update.',
-    detail: 'Tap to view details',
-  },
-  {
-    id: 2,
-    user: 'Username',
-    time: '3 d ago',
-    type: 'friend_request', 
-    message: 'Sent you a Friend Request',
-    actions: ['Accept', 'Reject'],
-  },
-  {
-    id: 3,
-    user: 'mATHLETICS',
-    time: '1 m ago',
-    type: 'system',
-    message: 'Welcome to mATHLETICS!',
-    detail: 'Click to explore the new features.',
-  },
-  {
-    id: 4,
-    user: 'Username',
-    time: '3 d ago',
-    type: 'poke',
-    message: 'Poked You',
-    actions: ['Poke Back'],
-  },
-];
+// Enable LayoutAnimation for Android
+if (Platform.OS === 'android') {
+  if (UIManager.setLayoutAnimationEnabledExperimental) {
+    UIManager.setLayoutAnimationEnabledExperimental(true);
+  }
+}
 
 const GameNotifications = () => {
   const navigation = useNavigation();
-  const {theme} = useTheme();
+  const { theme } = useTheme();
 
-  // ---------- Action Buttons Renderer ----------
-  const ActionButton = ({type, action}) => {
-    // Friend Request Actions
+  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [expandedId, setExpandedId] = useState(null); // ID of currently expanded item
+
+  // 1. Fetch Notifications (Friend Requests)
+  const fetchNotifications = async () => {
+    try {
+      setLoading(true);
+      const token = await AsyncStorage.getItem('authToken');
+      if (!token) return;
+
+      const res = await axios.get(
+        'http://43.204.167.118:3000/api/friend/friend-request',
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+
+      if (res.data.success) {
+        // Map API data to UI structure
+        const mappedData = (res.data.requests || []).map(req => ({
+          id: req.requester._id, // Use requester ID as unique key for actions
+          user: req.requester.username,
+          time: req.createdAt, // ISO String
+          type: 'friend_request',
+          message: 'Has sent you a friend request.',
+          fullMessage: `User ${req.requester.username} wants to be your friend. Access their profile to see more details.`,
+          actions: ['Accept', 'Reject'],
+          recipient: req.recipient, // Needed for API action
+        }));
+        setNotifications(mappedData);
+      }
+    } catch (error) {
+      console.log('Fetch Notif Error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchNotifications();
+  }, []);
+
+  // 2. Helper: Relative Time
+  const getRelativeTime = (isoString) => {
+    const now = new Date();
+    const past = new Date(isoString);
+    const diffInSeconds = Math.floor((now - past) / 1000);
+
+    if (diffInSeconds < 60) return 'Just now';
+    const diffInMinutes = Math.floor(diffInSeconds / 60);
+    if (diffInMinutes < 60) return `${diffInMinutes} min ago`;
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    if (diffInHours < 24) return `${diffInHours} hr ago`;
+    const diffInDays = Math.floor(diffInHours / 24);
+    if (diffInDays < 30) return `${diffInDays} d ago`;
+
+    return past.toLocaleDateString(); // Fallback for old dates
+  };
+
+  // 3. Handle Expand/Collapse
+  const toggleExpand = (id) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setExpandedId(prev => (prev === id ? null : id));
+  };
+
+  // 4. Handle Actions (Accept/Reject)
+  const handleAction = async (notification, actionType) => {
+    try {
+      const token = await AsyncStorage.getItem('authToken');
+      const url = actionType === 'Accept'
+        ? 'http://43.204.167.118:3000/api/friend/accept-friend'
+        : 'http://43.204.167.118:3000/api/friend/reject-friend';
+
+      // Optimistic Update: Remove from list immediately
+      setNotifications(prev => prev.filter(n => n.id !== notification.id));
+
+      const res = await axios.post(
+        url,
+        { requester: notification.id, recipient: notification.recipient },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (res.data.success) {
+        Toast.show({
+          type: 'success',
+          text1: actionType === 'Accept' ? 'Request Accepted' : 'Request Rejected',
+        });
+      } else {
+        // Revert if failed (optional, simplified here)
+        Toast.show({ type: 'error', text1: 'Action Failed', text2: res.data.message });
+        fetchNotifications(); // Refresh entire list to be safe
+      }
+    } catch (e) {
+      console.log('Action Error:', e);
+      Toast.show({ type: 'error', text1: 'Network Error' });
+      fetchNotifications();
+    }
+  };
+
+
+  // ---------- Components ----------
+
+  const ActionButton = ({ type, action, notification }) => {
     if (type === 'friend_request') {
       const isAccept = action === 'Accept';
       return (
-        <TouchableOpacity style={styles.actionIconWrapper}>
+        <TouchableOpacity
+          onPress={() => handleAction(notification, action)}
+          style={styles.actionIconWrapper}
+        >
           <MaterialCommunityIcons
             name={isAccept ? 'check-circle' : 'close-circle'}
-            size={scaleFont(24)}
+            size={scaleFont(30)} // Slightly larger for better touch target
             color={isAccept ? theme.successColor || '#10B981' : theme.dangerColor || '#EF4444'}
-          />
-        </TouchableOpacity>
-      );
-    }
-
-    // Poke Back Action
-    if (type === 'poke' && action === 'Poke Back') {
-      return (
-        <TouchableOpacity style={styles.actionPokeButton}>
-          <Ionicons
-            name="arrow-back-sharp"
-            size={scaleFont(14)}
-            color={theme.text || '#000'}
-            style={{marginRight: 4}}
-          />
-          <Text style={[styles.actionText, {color: theme.text || '#000'}]}>
-            {action}
-          </Text>
-          <Ionicons
-            name="arrow-forward-sharp"
-            size={scaleFont(14)}
-            color={theme.text || '#000'}
-            style={{marginLeft: 4}}
           />
         </TouchableOpacity>
       );
@@ -99,90 +158,67 @@ const GameNotifications = () => {
     return null;
   };
 
-  // ---------- Notification Card Component ----------
-  const NotificationCard = ({data}) => {
-    // Trailing Arrow/Icon for the far right side
-    const TrailingArrow = ({isSystem}) => (
-      <MaterialCommunityIcons
-        name={isSystem ? 'arrow-down' : 'arrow-up'}
-        size={scaleFont(20)}
-        color={isSystem ? theme.primaryColor : theme.text}
-        style={{opacity: isSystem ? 1 : 0.6}}
-      />
-    );
-
-    const cardBackgroundColor = theme.cardBackground || '#fff';
+  const NotificationCard = ({ data }) => {
+    const isExpanded = expandedId === data.id;
+    const isSystem = data.type === 'system';
 
     return (
-      <View
+      <TouchableOpacity
+        activeOpacity={0.9}
+        onPress={() => toggleExpand(data.id)}
         style={[
           styles.notificationCard,
           {
-            backgroundColor: cardBackgroundColor,
+            backgroundColor: theme.cardBackground || '#1E293B',
             borderColor: theme.borderColor || '#334155',
           },
         ]}>
-        {/* Row 1: User/System Name, Time, and Trailing Icon */}
+
+        {/* Header: User & Time */}
         <View style={styles.cardHeader}>
-          <View style={styles.headerLeft}>
-            <Text
-              style={[
-                styles.username,
-                {
-                  color: data.type === 'system' ? theme.primaryColor : theme.text,
-                  opacity: data.type === 'system' ? 1 : 0.9,
-                },
-              ]}>
-              {data.user}
-            </Text>
-          </View>
+          <Text style={[styles.username, { color: theme.text }]}>
+            {data.user}
+          </Text>
           <View style={styles.headerRight}>
-            <Text style={[styles.time, {color: theme.text || '#000'}]}>
-              {data.time}
+            <Text style={[styles.time, { color: theme.subText || '#94A3B8' }]}>
+              {getRelativeTime(data.time)}
             </Text>
-            {/* Trailing Arrow for general/system notifs */}
-            {(data.type === 'general' || data.type === 'system') && (
-              <TrailingArrow isSystem={data.type === 'system'} />
-            )}
-            {/* Trailing Arrow for action notifs */}
-            {(data.type === 'friend_request' || data.type === 'poke') && (
-              <TrailingArrow isSystem={false} />
-            )}
+            <MaterialCommunityIcons
+              name={isExpanded ? 'chevron-up' : 'chevron-down'}
+              size={scaleFont(20)}
+              color={theme.text}
+            />
           </View>
         </View>
 
-        {/* Row 2: Message and Action Buttons */}
+        {/* Body: Message */}
         <View style={styles.cardBody}>
-          <Text
-            style={[
-              styles.message,
-              {
-                color: theme.text || '#000',
-                opacity: 0.8,
-                
-                maxWidth: data.actions ? '65%' : '90%', 
-              },
-            ]}>
+          <Text style={[styles.message, { color: theme.text }]}>
             {data.message}
           </Text>
 
-          {/* Action Buttons Container */}
-          {data.actions && (
-            <View
-              style={
-                data.type === 'friend_request'
-                  ? styles.friendRequestActions
-                  : styles.pokeActions
-              }>
-              {data.actions.map((action, index) => (
-                <ActionButton key={index} type={data.type} action={action} />
+          {/* Action Buttons (Always visible for friend requests for quick access) */}
+          {data.type === 'friend_request' && (
+            <View style={styles.actionsRow}>
+              {data.actions.map((act, idx) => (
+                <ActionButton key={idx} type={data.type} action={act} notification={data} />
               ))}
             </View>
           )}
         </View>
-      </View>
+
+        {/* Expanded Content */}
+        {isExpanded && (
+          <View style={styles.expandedContent}>
+            <Text style={[styles.detailText, { color: theme.subText || '#ccc' }]}>
+              {data.fullMessage}
+            </Text>
+          </View>
+        )}
+      </TouchableOpacity>
     );
   };
+
 
   const Content = () => (
     <SafeAreaView style={styles.container}>
@@ -197,38 +233,38 @@ const GameNotifications = () => {
             color={theme.text || 'black'}
           />
         </TouchableOpacity>
-
-        <Text
-          style={[
-            styles.headerTitle,
-            {color: theme.text || 'black'},
-          ]}>
+        <Text style={[styles.headerTitle, { color: theme.text || 'black' }]}>
           NOTIFICATIONS
         </Text>
         <View style={styles.rightPlaceholder} />
       </View>
       <View style={styles.headerSeparator} />
-      {/* --- Notification List --- */}
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        style={styles.notificationsList}>
-        {dummyNotifications.map(notification => (
-          <NotificationCard key={notification.id} data={notification} />
-        ))}
-        {/* Scroll Margin */}
-        <View style={{height: 30}} />
-      </ScrollView>
+
+      {/* List */}
+      {loading ? (
+        <ActivityIndicator size="large" color={theme.primary} style={{ marginTop: 50 }} />
+      ) : (
+        <ScrollView showsVerticalScrollIndicator={false} style={styles.notificationsList}>
+          {notifications.length === 0 ? (
+            <Text style={[styles.emptyText, { color: theme.subText }]}>
+              No new notifications
+            </Text>
+          ) : (
+            notifications.map(n => <NotificationCard key={n.id} data={n} />)
+          )}
+          <View style={{ height: 30 }} />
+        </ScrollView>
+      )}
+      <Toast />
     </SafeAreaView>
   );
 
-  // Background Theme
   return theme.backgroundGradient ? (
-    <LinearGradient colors={theme.backgroundGradient} style={{flex: 1}}>
+    <LinearGradient colors={theme.backgroundGradient} style={{ flex: 1 }}>
       <Content />
     </LinearGradient>
   ) : (
-    <View
-      style={{flex: 1, backgroundColor: theme.backgroundColor || '#f4f4f4'}}>
+    <View style={{ flex: 1, backgroundColor: theme.backgroundColor || '#f4f4f4' }}>
       <Content />
     </View>
   );
@@ -242,8 +278,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: width * 0.05,
     paddingTop: height * 0.03,
   },
-
-  // --- Header Styles ---
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -256,7 +290,6 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     flex: 1,
     textAlign: 'center',
-    // marginLeft: -width * 0.08,
   },
   backButton: {
     paddingRight: 15,
@@ -280,11 +313,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 12,
     marginBottom: height * 0.02,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 4,
+    overflow: 'hidden', // for animation
   },
   cardHeader: {
     flexDirection: 'row',
@@ -292,14 +321,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 5,
   },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
   headerRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8, 
+    gap: 5
   },
   username: {
     fontSize: scaleFont(16),
@@ -307,41 +332,38 @@ const styles = StyleSheet.create({
   },
   time: {
     fontSize: scaleFont(12),
-    opacity: 0.7,
   },
   cardBody: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start', 
+    alignItems: 'center',
     marginTop: 5,
   },
   message: {
     fontSize: scaleFont(14),
-    fontWeight: '400',
-    flexShrink: 1,
+    flex: 1,
+    marginRight: 10,
   },
-  
-  friendRequestActions: {
+  actionsRow: {
     flexDirection: 'row',
-    gap: 15, 
+    gap: 15,
   },
   actionIconWrapper: {
     padding: 2,
   },
-  pokeActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  expandedContent: {
+    marginTop: 15,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.1)',
   },
-  actionPokeButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 5,
-    borderRadius: 8,
-   
-    backgroundColor: 'rgba(0, 0, 0, 0.05)', 
-  },
-  actionText: {
+  detailText: {
     fontSize: scaleFont(13),
-    fontWeight: '600',
+    fontStyle: 'italic',
+  },
+  emptyText: {
+    textAlign: 'center',
+    marginTop: 50,
+    fontSize: scaleFont(16),
   },
 });
