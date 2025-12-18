@@ -40,6 +40,7 @@ const ProfileScreen = () => {
     const fetchUserData = async () => {
       try {
         const token = await AsyncStorage.getItem('authToken');
+        console.log("NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN", token);
         if (!token) {
           setLoading(false);
           return;

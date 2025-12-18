@@ -1,9 +1,9 @@
-import {StyleSheet} from 'react-native';
-import React, {useEffect, useRef} from 'react';
-import {NavigationContainer} from '@react-navigation/native';
-import {createNativeStackNavigator} from '@react-navigation/native-stack';
+import { StyleSheet } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {AppState} from 'react-native';
+import { AppState } from 'react-native';
 import SignUp from './Component/Screens/SignUp';
 import SkipScreen from './Component/Screens/SkipScreen';
 import BottomTab from './Component/Screens/BottomTab';
@@ -32,23 +32,23 @@ import DataScreen from './Component/Screens/DataScreen';
 import StateData from './Component/Screens/StateData';
 import Lobby from './Component/Screens/Lobby';
 import MultiPlayerGame from './Component/Screens/MultiPlayerGame';
-import {Socket} from './Context/Socket';
+import { Socket } from './Context/Socket';
 import CommingSoon from './Component/Screens/CommingSoon';
 import ForgetPassword from './Component/Screens/ForgetPassword';
 import Login from './Component/Screens/Login';
 import More from './Component/Screens/More';
 import AddUserScreen from './Component/Screens/AddUserScreen';
-import {AuthProvider} from './Component/Globalfile/AuthProvider';
+import { AuthProvider } from './Component/Globalfile/AuthProvider';
 import FriendRequestScreen from './Component/Screens/FriendRequestScreen';
 import Toast from 'react-native-toast-message';
 import Notification from './Component/Screens/Notification';
-import {navigationRef} from './Component/Globalfile/navigationRef ';
+import { navigationRef } from './Component/Globalfile/navigationRef';
 import ProfileScreen from './Component/Screens/ProfileScreen';
-import {ThemeProvider} from './Component/Globalfile/ThemeContext';
+import { ThemeProvider } from './Component/Globalfile/ThemeContext';
 import ThemeSelectorScreen from './Component/Screens/ThemeSelectorScreen';
-import {KeyboardProvider} from './Component/Globalfile/KeyboardContext';
+import { KeyboardProvider } from './Component/Globalfile/KeyboardContext';
 import LanguageSelectionScreen from './Component/Screens/LanguageSelectionScreen';
-import {I18nextProvider} from 'react-i18next';
+import { I18nextProvider } from 'react-i18next';
 import i18n from './Component/Globalfile/localization/i18n';
 import LanguageConfirmationScreen from './Component/Screens/LanguageConfirmationScreen';
 import AuthLandingScreen from './Component/Screens/AuthLandingScreen';
@@ -61,7 +61,7 @@ import MultiplayerResultScreen from './Component/Screens/MultiplayerResultScreen
 import SettingsScreen from './Component/Screens/SettingsScreen';
 import SoundScreen from './Component/Screens/SoundScreen';
 import GameNotifications from './Component/Screens/GameNotifications';
-import {SoundProvider} from './Context/SoundContext';
+import { SoundProvider } from './Context/SoundContext';
 import i18next from 'i18next';
 import UpdateProfile from './Component/Screens/UpdateProfile';
 
@@ -126,7 +126,7 @@ const App = () => {
               <Notification />
               <SoundProvider>
                 <NavigationContainer ref={navigationRef}>
-                  <Stack.Navigator screenOptions={{headerShown: false}}>
+                  <Stack.Navigator screenOptions={{ headerShown: false }}>
                     <Stack.Screen name="Splash" component={Splash} />
                     <Stack.Screen name="OnBoarding" component={OnBoarding} />
                     <Stack.Screen

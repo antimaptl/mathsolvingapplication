@@ -37,7 +37,7 @@ const menuItems = [
   { icon: 'settings', label: 'SETTINGS', route: 'SettingsScreen' },
   { icon: 'color-palette-outline', label: 'THEME', route: 'ThemeSelectorScreen' },
   { icon: 'volume-medium-outline', label: 'SOUND', route: 'SoundScreen' },
-  { icon: 'language', label: 'LANGUAGE', route: 'CommingSoon' },
+  /* { icon: 'language', label: 'LANGUAGE', route: 'CommingSoon' }, REMOVED */
   {
     icon: 'support-agent',
     label: 'SUPPORT',

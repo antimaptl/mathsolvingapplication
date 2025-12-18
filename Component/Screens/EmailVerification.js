@@ -27,6 +27,7 @@ export default function EmailVerification() {
   const route = useRoute();
   const navigation = useNavigation();
   const { userData } = route.params;
+  const { login } = React.useContext(require('../Globalfile/AuthProvider').AuthContext);
 
   useEffect(() => {
     const enteredOtp = otp.join('');
@@ -75,7 +76,7 @@ export default function EmailVerification() {
     try {
       const email = route.params?.userData?.email;
 
-      console.log("📤 Resend OTP API Triggered for email:", email);
+      // console.log("📤 Resend OTP API Triggered for email:", email);
 
       const response = await fetch(
         'http://43.204.167.118:3000/api/auth/resend-signup-otp',
@@ -86,10 +87,10 @@ export default function EmailVerification() {
         },
       );
 
-      console.log("📥 Raw Response →", response);
+      // console.log("📥 Raw Response →", response);
 
       const data = await response.json();
-      console.log("📥 Parsed Response Body →", data);
+      // console.log("📥 Parsed Response Body →", data);
 
       if (data.success === true) {
         Toast.show({
@@ -112,8 +113,26 @@ export default function EmailVerification() {
 
     setLoading(true);
     setErrorMessage('');
+    const userDataFromParams = route.params?.userData || {};
 
-    const email = route.params?.userData?.email;
+    const {
+      username,
+      email,
+      password,
+      dateOfBirth,
+      country,
+      gender
+    } = userDataFromParams;
+
+    console.log('📤 Sending to API →', {
+      email,
+      username,
+      password,
+      gender,
+      dateOfBirth,
+      country,
+    });
+
 
     if (!email) {
       setErrorMessage('Email not found. Please restart signup.');
@@ -128,8 +147,13 @@ export default function EmailVerification() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            email,
+            email,                // email: email
             otp: userEnteredOtp,
+            username,             // username: username
+            password,
+            gender: gender,
+            dateOfBirth,
+            country
           }),
         },
       );
@@ -154,15 +178,12 @@ export default function EmailVerification() {
       // 🔥 FIX: Store Token & User Data (Same as Login Flow)
       // ---------------------------------------------------------
       if (body.token) {
-        await AsyncStorage.setItem('authToken', body.token);
-        await AsyncStorage.setItem('fullLoginResponse', JSON.stringify(body));
-
         // Try to get user from response, otherwise fallback to route params
         const userObj = body.player || body.user || route.params?.userData;
-        if (userObj) {
-          await AsyncStorage.setItem('userData', JSON.stringify(userObj));
-        }
-        console.log('✅ Signup Token & Data saved to AsyncStorage');
+        console.log("📥 Parsed Response Body →", res);
+        // 🔹 Use context login which handles storage and state update
+        await login(body.token, userObj, body);
+        console.log('✅ Signup Token & Data synced via AuthProvider');
       }
 
       navigation.replace('NotificationPermissionScreen', {

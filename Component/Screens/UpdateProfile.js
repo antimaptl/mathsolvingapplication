@@ -110,8 +110,8 @@ const UpdateProfile = () => {
       // Note: User's Postman screenshot showed 'firstname' (lowercase).
       // Matching that casing to be safe, though camelCase likely works if backend is standard.
       // But 500 often means strict validation or parsing crash.
-      formData.append('firstname', firstName);
-      formData.append('lastname', lastName);
+      formData.append('firstName', firstName);
+      formData.append('lastName', lastName);
 
       // Sending other fields as they are
       formData.append('dateOfBirth', formatDateForAPI(dateOfBirth));
@@ -127,8 +127,8 @@ const UpdateProfile = () => {
       }
 
       console.log('📤 Sending FormData Update:', JSON.stringify({
-        firstname: firstName,
-        lastname: lastName,
+        firstName: firstName,
+        lastName: lastName,
         dob: formatDateForAPI(dateOfBirth),
         gender,
         hasImage: !!(profileImage && profileImage.startsWith('file'))
@@ -333,7 +333,7 @@ const UpdateProfile = () => {
 
                     {showGenderOptions && (
                       <View style={styles.dropdownOptions}>
-                        {['Male', 'Female', 'Other'].map(option => (
+                        {['male', 'female', 'other'].map(option => (
                           <TouchableOpacity
                             key={option}
                             onPress={() => {

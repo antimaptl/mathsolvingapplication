@@ -3,7 +3,7 @@ import { Platform, PermissionsAndroid } from 'react-native';
 import messaging from '@react-native-firebase/messaging';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-import { navigate } from '../Globalfile/navigationRef ';
+import { navigate } from '../Globalfile/navigationRef';
 import notifee, { AndroidImportance } from '@notifee/react-native';
 
 const Notification = () => {
@@ -30,30 +30,52 @@ const Notification = () => {
 
   const getFcmToken = async () => {
     try {
-      const token = await messaging().getToken();
-      await AsyncStorage.setItem('fcmToken', token);
-      sendTokenToServer(token);
+      const auth = messaging();
+      const token = await auth.getToken();
+      if (token) {
+        console.log('🔥 Generated FCM Token:', token);
+        await AsyncStorage.setItem('fcmToken', token);
+        sendTokenToServer(token);
+      } else {
+        console.log('⚠️ Failed to generate FCM Token');
+      }
     } catch (e) {
-      console.log('FCM token error:', e);
+      console.log('❌ FCM token error:', e);
     }
   };
 
+  // 🔹 Use Auth Context to detect login
+  const { token } = React.useContext(require('../Globalfile/AuthProvider').AuthContext);
+
+  // Trigger sync when token changes
+  useEffect(() => {
+    if (token) {
+      console.log('✅ Auth Token detected in Notification.js, syncing FCM...');
+      getFcmToken();
+    }
+  }, [token]);
+
   const sendTokenToServer = async fcmToken => {
-    console.log('Sending FCM token to server:', fcmToken);
+    console.log('📤 Sending FCM token to server:', fcmToken);
     try {
-      const token = await AsyncStorage.getItem('authToken');
-      if (!token) return;
+      // Use token from context or storage
+      const authToken = token || await AsyncStorage.getItem('authToken');
+      if (!authToken) {
+        console.log('⚠️ No Auth Token available to send FCM token');
+        return;
+      }
+
       const res = await axios.patch(
         'http://43.204.167.118:3000/api/auth/save-fcmToken',
         { fcmToken },
         {
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${authToken}`,
             'Content-Type': 'application/json',
           },
         },
       );
-      console.log('FCM token sent to server:', res)
+      console.log('FCM token sent to server result:', res.status)
     } catch (e) {
       console.log('Send token error:', e);
     }
@@ -98,18 +120,16 @@ const Notification = () => {
   };
 
   useEffect(() => {
-    requestUserPermission();
+    const auth = messaging();
+    const unsubscribeForeground = auth.onMessage(showBanner);
+    const unsubscribeBackground = auth.onNotificationOpenedApp(handleNavigation);
 
-    const unsubscribeForeground = messaging().onMessage(showBanner);
-    const unsubscribeBackground = messaging().onNotificationOpenedApp(handleNavigation);
-
-    messaging()
-      .getInitialNotification()
+    auth.getInitialNotification()
       .then(remoteMessage => {
         if (remoteMessage) handleNavigation(remoteMessage);
       });
 
-    const unsubscribeToken = messaging().onTokenRefresh(token => sendTokenToServer(token));
+    const unsubscribeToken = auth.onTokenRefresh(token => sendTokenToServer(token));
 
     return () => {
       unsubscribeForeground();

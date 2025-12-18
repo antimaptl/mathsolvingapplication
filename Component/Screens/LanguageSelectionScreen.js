@@ -7,12 +7,10 @@ import {
   Dimensions,
   PixelRatio,
   SafeAreaView,
-  StatusBar,
   Image,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
-import { useTheme } from '../Globalfile/ThemeContext';
 import { useTranslation } from 'react-i18next';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import i18n from '../Globalfile/localization/i18n';
@@ -22,9 +20,12 @@ const scaleFont = size => size * PixelRatio.getFontScale();
 
 const LanguageSelectionScreen = () => {
   const navigation = useNavigation();
-  const { theme } = useTheme();
   const { t } = useTranslation();
   const [selectedLang, setSelectedLang] = useState(null);
+
+  // Default Color Setup (Theme remove hone ke baad)
+  const primaryColor = '#FB923C';
+  const bgGradient = ['#0f172a', '#1e293b']; // Default dark gradient
 
   const languages = [
     { id: 1, label: 'English', code: 'en' },
@@ -33,88 +34,90 @@ const LanguageSelectionScreen = () => {
     { id: 4, label: '中文', code: 'zh' },
   ];
 
-useEffect(() => {
-  const setFirstLaunchFlag = async () => {
-    await AsyncStorage.setItem('firstLaunch', 'false');
-  };
-  setFirstLaunchFlag();
-}, []);
-
-  const primaryColor = theme?.primary || '#FB923C';
+  useEffect(() => {
+    const setFirstLaunchFlag = async () => {
+      try {
+        await AsyncStorage.setItem('firstLaunch', 'false');
+      } catch (e) {
+        console.log("Error saving flag", e);
+      }
+    };
+    setFirstLaunchFlag();
+  }, []);
 
   const handleLanguageSelect = async lang => {
     setSelectedLang(lang.id);
     await AsyncStorage.setItem('appLanguage', lang.code);
-    i18n.changeLanguage(lang.code); // 🔹 instantly change
+    i18n.changeLanguage(lang.code);
   };
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      {theme.backgroundGradient ? (
-        <LinearGradient colors={theme.backgroundGradient} style={styles.container}>
-          {/* 🌍 Header */}
-          <View style={styles.headerContainer}>
-            <Image
-              source={require('../Screens/Image/language1.png')}
-              style={styles.languageIcon}
-            />
-            <Text style={styles.title}>{t('Select your preferred language')}</Text>
-          </View>
+      <LinearGradient colors={bgGradient} style={styles.container}>
 
-          {/* 🌐 Language List */}
-          <View style={styles.languageContainer}>
-            {languages.map(lang => (
-              <TouchableOpacity
-                key={lang.id}
-                onPress={() => handleLanguageSelect(lang)}
-                activeOpacity={0.7}
+        {/* 🌍 Header */}
+        <View style={styles.headerContainer}>
+          <Image
+            source={require('../Screens/Image/language1.png')}
+            style={styles.languageIcon}
+          />
+          <Text style={styles.title}>{t('Select your preferred language')}</Text>
+        </View>
+
+        {/* 🌐 Language List */}
+        <View style={styles.languageContainer}>
+          {languages.map(lang => (
+            <TouchableOpacity
+              key={lang.id}
+              onPress={() => handleLanguageSelect(lang)}
+              activeOpacity={0.7}
+              style={[
+                styles.langButton,
+                {
+                  borderColor: selectedLang === lang.id ? primaryColor : '#ffffff40',
+                  backgroundColor: selectedLang === lang.id ? '#ffffff20' : 'transparent',
+                },
+              ]}>
+              <Text
                 style={[
-                  styles.langButton,
+                  styles.langText,
                   {
-                    borderColor:
-                      selectedLang === lang.id ? primaryColor : '#ffffff40',
-                    backgroundColor:
-                      selectedLang === lang.id ? '#ffffff20' : 'transparent',
+                    color: selectedLang === lang.id ? '#fff' : '#e0e0e0',
                   },
                 ]}>
-                <Text
-                  style={[
-                    styles.langText,
-                    {
-                      color: selectedLang === lang.id ? '#fff' : '#e0e0e0',
-                    },
-                  ]}>
-                  {lang.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+                {lang.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
 
-          {/* 🚀 Continue */}
-          <TouchableOpacity
-            disabled={!selectedLang}
-            activeOpacity={0.8}
-            onPress={() => navigation.navigate('LanguageConfirmationScreen', { selectedLanguage: languages.find(l => l.id === selectedLang).label })}
-            style={[
-              styles.continueButton,
-              { backgroundColor: primaryColor, opacity: selectedLang ? 1 : 0.6 },
-            ]}>
-            <Text style={styles.continueText}>{t('CONTINUE')}</Text>
-          </TouchableOpacity>
-        </LinearGradient>
-      ) : (
-        <View style={[styles.container, { backgroundColor: theme.backgroundColor || '#0B1220' }]} />
-      )}
+        {/* 🚀 Continue */}
+        <TouchableOpacity
+          disabled={!selectedLang}
+          activeOpacity={0.8}
+          onPress={() =>
+            navigation.navigate('LanguageConfirmationScreen', {
+              selectedLanguage: languages.find(l => l.id === selectedLang)?.label
+            })
+          }
+          style={[
+            styles.continueButton,
+            { backgroundColor: primaryColor, opacity: selectedLang ? 1 : 0.6 },
+          ]}>
+          <Text style={styles.continueText}>{t('CONTINUE')}</Text>
+        </TouchableOpacity>
+
+      </LinearGradient>
     </SafeAreaView>
   );
 };
 
 export default LanguageSelectionScreen;
 
-// ✅ Make sure this part is BELOW the component
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
+    backgroundColor: '#0f172a',
   },
   container: {
     flex: 1,

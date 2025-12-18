@@ -18,36 +18,39 @@ export default function SplashScreen() {
   const { theme } = useTheme();
 
   useEffect(() => {
-  const checkAuth = async () => {
-    try {
-      const token = await AsyncStorage.getItem('authToken');
-      const firstLaunch = await AsyncStorage.getItem('firstLaunch');
+    const checkAuth = async () => {
+      try {
+        const token = await AsyncStorage.getItem('authToken');
+        const firstLaunch = await AsyncStorage.getItem('firstLaunch');
 
-      if (firstLaunch === null) {
-        // First time opening the app
-        await AsyncStorage.setItem('firstLaunch', 'false');
-        navigation.replace('LanguageSelectionScreen');
-        return;
-      }
+        // 3 second ka wait logic ke sath
+        setTimeout(async () => {
+          if (firstLaunch === null) {
+            // Pehli baar setup
+            // await AsyncStorage.setItem('firstLaunch', 'false');
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'LanguageSelectionScreen' }],
+            });
+          } else if (token) {
+            navigation.replace('BottomTab');
+          } else {
+            navigation.replace('Login');
+          }
+        }, 3000);
 
-      if (token) {
-        navigation.replace('BottomTab');
-      } else {
+      } catch (error) {
+        console.log('Error checking auth:', error);
         navigation.replace('Login');
       }
+    };
 
-    } catch (error) {
-      console.log('Error checking auth:', error);
-      navigation.replace('Login');
-    }
-  };
-
-  setTimeout(checkAuth, 3000);
-}, []);
+    checkAuth();
+  }, [navigation]);
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      
+
       {/* <StatusBar hidden={true} /> */}
       {theme.backgroundGradient ? (
         <LinearGradient

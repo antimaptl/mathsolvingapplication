@@ -38,13 +38,14 @@ export default function Login() {
   const insets = useSafeAreaInsets();
   const passwordInputRef = useRef(null);
   const navigation = useNavigation();
+  const { login } = React.useContext(require('../Globalfile/AuthProvider').AuthContext); // 🔹 Import context
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [loginError, setLoginError] = useState('');
-
 
   useEffect(() => {
     const backHandler = BackHandler.addEventListener(
@@ -59,7 +60,6 @@ export default function Login() {
     const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return regex.test(email);
   };
-
 
   const handleForgotPassword = async () => {
     if (!email.trim()) {
@@ -150,12 +150,8 @@ export default function Login() {
       if (response.ok) {
         const { token, player: user } = data;
         if (token && user) {
-          await AsyncStorage.setItem('authToken', token);
-          await AsyncStorage.setItem('userData', JSON.stringify(user));
-          await AsyncStorage.setItem('fullLoginResponse', JSON.stringify(data));
-          console.log('user', user.id);
-          console.log('authToken', token);
-          console.log('✅ Token and full response saved in AsyncStorage');
+          await login(token, user, data); // 🔹 Use context login
+          console.log('✅ Logged in via AuthProvider');
           navigation.navigate('BottomTab');
         } else {
           Alert.alert('Login Failed', 'Token or user data not received');

@@ -1,6 +1,6 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
-import * as RNLocalize from 'react-native-localize';
+
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // 🔹 Language Resources
@@ -45,12 +45,8 @@ const initI18n = async () => {
     // Get saved language from AsyncStorage
     const storedLang = await AsyncStorage.getItem('appLanguage');
 
-    // Detect device language if none stored
-    const fallback = { languageTag: 'en', isRTL: false };
-    const { languageTag } =
-      RNLocalize.findBestAvailableLanguage(Object.keys(resources)) || fallback;
-
-    const selectedLang = storedLang || languageTag;
+    // 🔹 Default to English since RNLocalize is removed
+    const selectedLang = storedLang || 'en';
 
     // Initialize i18next
     await i18n.use(initReactI18next).init({
@@ -59,6 +55,9 @@ const initI18n = async () => {
       lng: selectedLang,
       fallbackLng: 'en',
       interpolation: { escapeValue: false },
+      react: {
+        useSuspense: false,
+      },
     });
 
     console.log('✅ i18n initialized with language:', selectedLang);

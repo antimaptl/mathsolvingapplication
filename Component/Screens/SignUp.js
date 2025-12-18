@@ -156,6 +156,10 @@ export default function SignUp() {
             email,
             username,
             password,
+            country,
+            countryFlag,
+            dateOfBirth,
+            gender,
           }),
         },
       );
@@ -175,6 +179,7 @@ export default function SignUp() {
         text2: `OTP sent to ${email}`,
       });
 
+      console.log("GenderHHHHHHHHHHHHHHHHHHHHHHh", gender)
       navigation.navigate('EmailVerification', {
         userData: {
           username,
@@ -345,7 +350,7 @@ export default function SignUp() {
               </TouchableOpacity>
               {showGenderOptions && (
                 <View style={styles.dropdownOptions}>
-                  {['Male', 'Female', 'Other'].map(option => (
+                  {['male', 'female', 'other'].map(option => (
                     <TouchableOpacity
                       key={option}
                       onPress={() => {

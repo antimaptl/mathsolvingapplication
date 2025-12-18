@@ -10,14 +10,13 @@ import {
   StatusBar,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import {useTheme} from '../Globalfile/ThemeContext';
-import {useTranslation} from 'react-i18next';
-import {useNavigation} from '@react-navigation/native';
-const {width, height} = Dimensions.get('window');
+import { useTheme } from '../Globalfile/ThemeContext';
+import { useNavigation } from '@react-navigation/native';
+
+const { width, height } = Dimensions.get('window');
 
 const AuthLandingScreen = () => {
-  const {theme} = useTheme();
-  const {t} = useTranslation();
+  const { theme } = useTheme();
   const navigation = useNavigation();
   const primaryColor = theme?.primary || '#FB923C';
 
@@ -25,16 +24,16 @@ const AuthLandingScreen = () => {
     <SafeAreaView style={styles.safeArea}>
       <LinearGradient
         colors={theme.backgroundGradient || ['#00F5FF', '#00C3FF', '#006BFF']}
-        start={{x: 0, y: 0}}
-        end={{x: 1, y: 1}}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
         style={styles.gradient}>
-        
+
         {/* Background Logo Image */}
         <ImageBackground
-          source={require('../Screens/Image/logo.png')} 
+          source={require('../Screens/Image/logo.png')}
           resizeMode="contain"
           style={styles.logoBg}
-          imageStyle={{opacity: 0.5}} // low transparency
+          imageStyle={{ opacity: 0.5 }} // low transparency
         />
 
         {/* Bottom Buttons */}
@@ -43,18 +42,18 @@ const AuthLandingScreen = () => {
             <TouchableOpacity
               activeOpacity={0.8}
               onPress={() => navigation.navigate('SignUp')}
-              style={[styles.btn, {borderColor: primaryColor}]}>
-              <Text style={[styles.btnText, {color: primaryColor}]}>
-                {t('Sign-Up') || 'Sign - Up'}
+              style={[styles.btn, { borderColor: primaryColor }]}>
+              <Text style={[styles.btnText, { color: primaryColor }]}>
+                Sign - Up
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               activeOpacity={0.8}
               onPress={() => navigation.navigate('Login')}
-              style={[styles.btn, {backgroundColor: primaryColor}]}>
-              <Text style={[styles.btnText, {color: '#fff'}]}>
-                {t('Sign-In') || 'Sign - In'}
+              style={[styles.btn, { backgroundColor: primaryColor }]}>
+              <Text style={[styles.btnText, { color: '#fff' }]}>
+                Sign - In
               </Text>
             </TouchableOpacity>
           </View>
@@ -63,7 +62,7 @@ const AuthLandingScreen = () => {
             activeOpacity={0.8}
             onPress={() => navigation.navigate('GuestHome')}>
             <Text style={styles.guestText}>
-              {t('Continue as Guest') || 'Continue as Guest'}
+              Continue as Guest
             </Text>
           </TouchableOpacity>
         </View>
@@ -75,7 +74,7 @@ const AuthLandingScreen = () => {
 export default AuthLandingScreen;
 
 const styles = StyleSheet.create({
-  safeArea: {flex: 1},
+  safeArea: { flex: 1 },
   gradient: {
     flex: 1,
     justifyContent: 'flex-end',

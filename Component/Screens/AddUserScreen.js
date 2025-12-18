@@ -70,9 +70,9 @@ const AddUserScreen = () => {
         'http://43.204.167.118:3000/api/friend/alluser-list',
         {
           headers: { Authorization: `Bearer ${token}` },
-        },
-        console.log("All User", response)
+        }
       );
+      console.log("All User", response);
 
       if (response.data.success) {
         const filtered = response.data.users.filter(
@@ -120,7 +120,29 @@ const AddUserScreen = () => {
       if (!token || !user) return;
 
       const parsedUser = JSON.parse(user);
-      const requesterId = parsedUser?.id;
+      console.log('DEBUG: Parsed User Data from AsyncStorage:', parsedUser);
+
+      // Fix: Check for both 'id' and '_id'
+      const requesterId = parsedUser?.id || parsedUser?._id;
+
+      console.log(`DEBUG: Requester ID: ${requesterId}, Recipient ID: ${recipientId}`);
+
+      if (!requesterId || !recipientId) {
+        console.error('❌ Missing Requester or Recipient ID');
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: 'Missing user information. Please login again.',
+        });
+        return;
+      }
+
+      const payload = {
+        requester: requesterId,
+        recipient: recipientId,
+      };
+
+      console.log('DEBUG: Sending Frontend Payload (Refixed):', JSON.stringify(payload, null, 2));
 
       const response = await fetch(
         'http://43.204.167.118:3000/api/friend/add-friend',
@@ -130,14 +152,13 @@ const AddUserScreen = () => {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({
-            requester: requesterId,
-            recipient: recipientId,
-          }),
+          body: JSON.stringify(payload),
         },
       );
 
+      console.log('DEBUG: Response Status:', response.status);
       const data = await response.json();
+      console.log('DEBUG: Backend Response Data:', data);
 
       if (data.success) {
         Toast.show({
@@ -165,7 +186,6 @@ const AddUserScreen = () => {
       });
     }
   };
-
   const handleSearch = text => {
     setSearchText(text);
     if (text.trim() === '') {
@@ -247,8 +267,11 @@ const AddUserScreen = () => {
   }, [isFocused]);
 
   useEffect(() => {
-    const unsubscribe = messaging().onMessage(async remoteMessage => {
+    // 🔹 Modular style usage for onMessage
+    const auth = messaging();
+    const unsubscribe = auth.onMessage(async remoteMessage => {
       const { data } = remoteMessage;
+      // ... existing logic ...
       if (!data) return;
 
       const userData = await AsyncStorage.getItem('fullLoginResponse');
