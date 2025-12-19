@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import LinearGradient from 'react-native-linear-gradient';
+import Feather from 'react-native-vector-icons/Feather';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -54,10 +55,11 @@ const MathInputScreen = () => {
   const { theme, keyboardTheme } = useTheme();
   const { difficulty, symbol, timer, qm } = route.params;
 
-  const currentLayout = KEYPAD_LAYOUTS[keyboardTheme] || KEYPAD_LAYOUTS.default;
+  const currentLayout = KEYPAD_LAYOUTS[keyboardTheme] || KEYPAD_LAYOUTS.type1;
   const isCustomKeyboard = keyboardTheme === 'type1' || keyboardTheme === 'type2';
 
   const [input, setInput] = useState('');
+  const [isReverse, setIsReverse] = useState(false);
   const [question, setQuestion] = useState('');
   const [correctAnswer, setCorrectAnswer] = useState('');
   const [feedback, setFeedback] = useState(null);
@@ -244,7 +246,11 @@ const MathInputScreen = () => {
       return setInput(prev => prev.slice(0, -1));
     }
 
-    if (key === 'skip' || key === 'ref') {
+    if (key === 'reverse' || key === 'rev') {
+      return setIsReverse(prev => !prev);
+    }
+
+    if (key === 'skip') {
       setFeedback('skipped');
       playEffect('skipped', isSoundOnRef.current);
       setSkippedCount(prev => {
@@ -264,7 +270,7 @@ const MathInputScreen = () => {
       });
     }
 
-    const newInput = input + value;
+    const newInput = isReverse ? value + input : input + value;
     setInput(newInput);
 
     if (newInput.length >= correctAnswer.length) {
@@ -327,7 +333,7 @@ const MathInputScreen = () => {
           <View key={rowIndex} style={styles.keypadRow}>
             {row.map((item, index) => {
               const strItem = item.toString().toLowerCase();
-              const isSpecial = ['clear', 'clr', '⌫', 'del', 'ref', 'pm'].includes(strItem);
+              const isSpecial = ['clear', 'clr', '⌫', 'del', 'ref', 'pm', 'skip', '.', 'reverse'].includes(strItem);
               const isSkip = strItem === 'skip';
               const isNa = strItem === 'Na';
 
@@ -337,8 +343,14 @@ const MathInputScreen = () => {
               // Explicitly handle all known types to ensure nothing is missed
               if (strItem === 'del' || strItem === '⌫') {
                 content = <MaterialIcons name="backspace" size={24} color="#fff" />;
-              } else if (strItem === 'ref') {
-                content = <MaterialIcons name="refresh" size={26} color="#fff" />;
+              } else if (strItem === 'ref' || strItem === 'reverse') {
+                content = (
+                  <Feather
+                    name={isReverse ? "refresh-ccw" : "refresh-cw"}
+                    size={26}
+                    color="#fff"
+                  />
+                );
               } else if (strItem === 'pm') {
                 content = <Text style={[styles.keyText, { color: '#fff' }]}>+/-</Text>;
               } else if (strItem === 'clr' || strItem === 'clear') {
@@ -358,17 +370,13 @@ const MathInputScreen = () => {
               return (
                 <TouchableOpacity
                   key={index}
-                  onPress={() => handlePress(item)}
+                  onPress={() => handlePress(strItem === 'ref' ? 'reverse' : item)}
                   style={[
                     styles.keyButton,
                     { width: getKeyButtonWidth(), height: getKeyButtonHeight() },
                     (isSpecial || strItem === '-') ? styles.specialKey : null
                   ]}>
-                  {isSkip ? (
-                    <LinearGradient colors={theme.buttonGradient || ['#FFAD90', '#FF4500']} style={[styles.gradientButton, { opacity: 0.8 }]}>
-                      {content}
-                    </LinearGradient>
-                  ) : (!isSpecial && strItem !== '-') ? (
+                  {!isSpecial && strItem !== '-' ? (
                     <LinearGradient colors={theme.buttonGradient || [theme.primaryColor || '#595CFF', theme.secondaryColor || '#87AEE9']} style={styles.gradientButton}>
                       {content}
                     </LinearGradient>

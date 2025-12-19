@@ -349,7 +349,7 @@ const AddUserScreen = () => {
         />
 
         {/* 🔍 Search */}
-        <View style={{ top: 20 }}>
+        <View style={{ top: 20, flex: 1 }}>
           <View
             style={[
               styles.searchContainer,

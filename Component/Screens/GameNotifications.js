@@ -56,16 +56,18 @@ const GameNotifications = () => {
 
       if (res.data.success) {
         // Map API data to UI structure
-        const mappedData = (res.data.requests || []).map(req => ({
-          id: req.requester._id, // Use requester ID as unique key for actions
-          user: req.requester.username,
-          time: req.createdAt, // ISO String
-          type: 'friend_request',
-          message: 'Has sent you a friend request.',
-          fullMessage: `User ${req.requester.username} wants to be your friend. Access their profile to see more details.`,
-          actions: ['Accept', 'Reject'],
-          recipient: req.recipient, // Needed for API action
-        }));
+        const mappedData = (res.data.requests || [])
+          .filter(req => req.requester && req.requester._id) // Filter out invalid items
+          .map(req => ({
+            id: req.requester._id, // Use requester ID as unique key for actions
+            user: req.requester.username || 'Unknown User',
+            time: req.createdAt, // ISO String
+            type: 'friend_request',
+            message: 'Has sent you a friend request.',
+            fullMessage: `User ${req.requester.username || 'Unknown'} wants to be your friend. Access their profile to see more details.`,
+            actions: ['Accept', 'Reject'],
+            recipient: req.recipient, // Needed for API action
+          }));
         setNotifications(mappedData);
       }
     } catch (error) {

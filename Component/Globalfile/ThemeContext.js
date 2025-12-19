@@ -24,7 +24,7 @@ export const themes = {
 }
 export const ThemeProvider = ({ children }) => {
     const [theme, setTheme] = useState(themes.dark);
-    const [keyboardTheme, setKeyboardTheme] = useState('default');
+    const [keyboardTheme, setKeyboardTheme] = useState('type1');
 
     useEffect(() => {
         (async () => {

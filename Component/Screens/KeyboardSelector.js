@@ -63,7 +63,6 @@ const KeyboardSelector = () => {
   const { keyboardTheme, changeKeyboardTheme, theme } = useTheme();
 
   const options = [
-    { id: 'default', label: 'Default Keypad', layout: KEYPAD_LAYOUTS.default },
     { id: 'type1', label: 'Type 1 (Standard)', layout: KEYPAD_LAYOUTS.type1 },
     { id: 'type2', label: 'Type 2 (Reverse)', layout: KEYPAD_LAYOUTS.type2 },
   ];
