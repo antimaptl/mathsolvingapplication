@@ -196,7 +196,20 @@ const AddUserScreen = () => {
   };
 
   const renderItem = ({ item }) => {
+    // console.log(
+    //   '🖼️ Profile Image Check:',
+    //   item.username,
+    //   item.profileImage ? item.profileImage : '❌ NO IMAGE'
+    // );
     const status = item.friendshipStatus;
+
+    const fullName =
+      item.firstName || item.lastName
+        ? `${item.firstName || ''} ${item.lastName || ''}`.trim()
+        : `null`;
+
+    const practicePR = item.pr?.find(p => p.mode === 'practice');
+    const rating = practicePR?.medium || 0;
 
     return (
       <View
@@ -205,10 +218,16 @@ const AddUserScreen = () => {
           { backgroundColor: theme.backgroundGradient || '#1E293B' },
         ]}>
         <View style={styles.friendInfo}>
+
           <Image
-            source={require('../Screens/Image/avater.png')}
+            source={
+              item.profileImage
+                ? { uri: item.profileImage }
+                : require('../Screens/Image/avater.png')
+            }
             style={styles.avatar}
           />
+
           <View>
             <View style={{ flexDirection: 'row' }}>
               <Text style={[styles.usernameText, { color: theme.subText }]}>
@@ -218,20 +237,22 @@ const AddUserScreen = () => {
                 {item.username}
               </Text>
             </View>
+
             <View style={{ flexDirection: 'row' }}>
               <Text style={[styles.nameText, { color: theme.subText }]}>
                 Name:{' '}
               </Text>
               <Text style={[styles.usernameText1, { color: theme.text }]}>
-                John Doe
+                {fullName}
               </Text>
             </View>
+
             <View style={{ flexDirection: 'row' }}>
               <Text style={[styles.ratingText, { color: theme.subText }]}>
                 Rating:{' '}
               </Text>
               <Text style={[styles.usernameText1, { color: theme.text }]}>
-                1200
+                {rating}
               </Text>
             </View>
           </View>
@@ -258,6 +279,7 @@ const AddUserScreen = () => {
       </View>
     );
   };
+
 
   useEffect(() => {
     if (isFocused) {
@@ -551,6 +573,7 @@ const styles = StyleSheet.create({
     width: scale(50),
     height: scale(50),
     marginRight: width * 0.03,
+    borderRadius: 10
   },
   addButton: {
     borderRadius: 6,

@@ -19,7 +19,7 @@ import {
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { CommonActions, useNavigation, useRoute } from '@react-navigation/native';
 import { useTheme } from '../Globalfile/ThemeContext';
 import ImagePicker from 'react-native-image-crop-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -169,15 +169,15 @@ const UpdateProfile = () => {
             {
               text: 'OK',
               onPress: () => {
-                navigation.reset({
-                  index: 0,
-                  routes: [
-                    {
-                      name: 'ProfileScreen',
-                      params: { updatedUser: result.user },
-                    },
-                  ],
-                });
+                navigation.dispatch(
+                  CommonActions.reset({
+                    index: 1,
+                    routes: [
+                      { name: 'More' },
+                      { name: 'ProfileScreen' },
+                    ],
+                  })
+                );
               },
             },
           ],

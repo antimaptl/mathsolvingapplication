@@ -1,4 +1,4 @@
-import React, {useEffect, useState, useRef} from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -14,12 +14,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import Icon from 'react-native-vector-icons/Ionicons';
 import MaterialIcons from 'react-native-vector-icons/FontAwesome';
-import {useNavigation} from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import Toast from 'react-native-toast-message';
 import LinearGradient from 'react-native-linear-gradient';
-import {useTheme} from '../Globalfile/ThemeContext';
+import { useTheme } from '../Globalfile/ThemeContext';
 
-const {width, height} = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 const guidelineBaseWidth = 375;
 const guidelineBaseHeight = 812;
 
@@ -33,7 +33,7 @@ const FriendRequestScreen = () => {
   const [loading, setLoading] = useState(false);
   const navigation = useNavigation();
   const fetchCalled = useRef(false);
-  const {theme} = useTheme();
+  const { theme } = useTheme();
 
   const fetchFriendRequests = async () => {
     try {
@@ -93,13 +93,13 @@ const FriendRequestScreen = () => {
 
       setRequests(prev =>
         prev.map(req =>
-          req.requester._id === requesterId ? {...req, processing: true} : req,
+          req.requester._id === requesterId ? { ...req, processing: true } : req,
         ),
       );
 
       const response = await axios.post(
         url,
-        {requester: requesterId, recipient: recipientId},
+        { requester: requesterId, recipient: recipientId },
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -127,7 +127,7 @@ const FriendRequestScreen = () => {
         setRequests(prev =>
           prev.map(req =>
             req.requester._id === requesterId
-              ? {...req, processing: false}
+              ? { ...req, processing: false }
               : req,
           ),
         );
@@ -141,7 +141,7 @@ const FriendRequestScreen = () => {
       console.log('Error handling request:', error);
       setRequests(prev =>
         prev.map(req =>
-          req.requester._id === requesterId ? {...req, processing: false} : req,
+          req.requester._id === requesterId ? { ...req, processing: false } : req,
         ),
       );
     }
@@ -154,76 +154,88 @@ const FriendRequestScreen = () => {
     }
   }, []);
 
-  const renderItem = ({item}) => (
-    <View
-      style={[
-        styles.card,
-        {backgroundColor: theme.cardBackground || '#1E293B'},
-      ]}>
-      <View style={styles.row}>
-        <View
-          style={[
-            styles.leftBox,
-            {borderColor: theme.border || '#94A3B8'},
-          ]}>
-          <Image
-            source={require('../Screens/Image/avater.png')}
-            style={styles.avatar}
-          />
-        </View>
+  const renderItem = ({ item }) => {
+    const user = item.requester;
 
-        <View style={styles.infoBox}>
-          <View style={styles.infoRow}>
-            <Text style={[styles.label, {color: theme.subText}]}>
-              User Name:{' '}
-            </Text>
-            <Text style={[styles.label, {color: theme.text}]}>
-              {item.requester?.username}
-            </Text>
+    const fullName =
+      user.firstName || user.lastName
+        ? `${user.firstName || ''} ${user.lastName || ''}`.trim()
+        : user.username;
+    return (
+      <View
+        style={[
+          styles.card,
+          { backgroundColor: theme.cardBackground || '#1E293B' },
+        ]}>
+        <View style={styles.row}>
+          <View
+            style={[
+              styles.leftBox,
+              { borderColor: theme.border || '#94A3B8' },
+            ]}>
+            <Image
+              source={
+                user.profileImage
+                  ? { uri: user.profileImage }
+                  : require('../Screens/Image/avater.png')
+              }
+              style={styles.avatar}
+            />
           </View>
-          <View style={styles.infoRow}>
-            <Text style={[styles.label, {color: theme.subText}]}>Name: </Text>
-            <Text style={[styles.label, {color: theme.text}]}>John</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Text style={[styles.label, {color: theme.subText}]}>Rating: </Text>
-            <Text style={[styles.label, {color: theme.text}]}>1000</Text>
-          </View>
-        </View>
 
-        <View style={styles.iconBox}>
-          <TouchableOpacity
-            disabled={item.processing}
-            onPress={() =>
-              handleAction(item.requester._id, item.recipient, 'accepted')
-            }>
-            <MaterialIcons
-              name="check"
-              size={scaleFont(24)}
-              color={'#177f57ff'}
-              style={{marginBottom: verticalScale(6)}}
-            />
-          </TouchableOpacity>
-          <TouchableOpacity
-            disabled={item.processing}
-            onPress={() =>
-              handleAction(item.requester._id, item.recipient, 'rejected')
-            }>
-            <MaterialIcons
-              name="close"
-              size={scaleFont(24)}
-              color={'#EF4444'}
-            />
-          </TouchableOpacity>
+          <View style={styles.infoBox}>
+            <View style={styles.infoRow}>
+              <Text style={[styles.label, { color: theme.subText }]}>
+                User Name:{' '}
+              </Text>
+              <Text style={[styles.label, { color: theme.text }]}>
+                {item.requester?.username}
+              </Text>
+            </View>
+            <View style={styles.infoRow}>
+              <Text style={[styles.label, { color: theme.subText }]}>Name: </Text>
+              <Text style={[styles.label, { color: theme.text }]}> {fullName}</Text>
+            </View>
+            <View style={styles.infoRow}>
+              <Text style={[styles.label, { color: theme.subText }]}>Rating: </Text>
+              <Text style={[styles.label, { color: theme.text }]}>1000</Text>
+            </View>
+          </View>
+
+          <View style={styles.iconBox}>
+            <TouchableOpacity
+              disabled={item.processing}
+              onPress={() =>
+                handleAction(item.requester._id, item.recipient, 'accepted')
+              }>
+              <MaterialIcons
+                name="check"
+                size={scaleFont(24)}
+                color={'#177f57ff'}
+                style={{ marginBottom: verticalScale(6) }}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity
+              disabled={item.processing}
+              onPress={() =>
+                handleAction(item.requester._id, item.recipient, 'rejected')
+              }>
+              <MaterialIcons
+                name="close"
+                size={scaleFont(24)}
+                color={'#EF4444'}
+              />
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
-    </View>
-  );
+    );
+  }
 
   return (
     <LinearGradient
       colors={theme.backgroundGradient || ['#0F172A', '#1E293B']}
-      style={{flex: 1}}>
+      style={{ flex: 1 }}>
       <View style={styles.container}>
         <View style={styles.headerRow}>
           <TouchableOpacity
@@ -236,10 +248,10 @@ const FriendRequestScreen = () => {
             />
           </TouchableOpacity>
           <View>
-            <Text style={[styles.headerText, {color: theme.text}]}>
+            <Text style={[styles.headerText, { color: theme.text }]}>
               Pending
             </Text>
-            <Text style={[styles.headerText, {color: theme.text}]}>
+            <Text style={[styles.headerText, { color: theme.text }]}>
               Requests
             </Text>
           </View>
@@ -248,16 +260,16 @@ const FriendRequestScreen = () => {
         <View
           style={[
             styles.divider,
-            {borderColor:'#94A3B8'},
+            { borderColor: '#94A3B8' },
           ]}
         />
 
         <View
           style={[
             styles.titleContainer,
-            {backgroundColor: theme.cardBackground || '#1E293B'},
+            { backgroundColor: theme.cardBackground || '#1E293B' },
           ]}>
-          <Text style={[styles.titleText, {color: theme.text}]}>
+          <Text style={[styles.titleText, { color: theme.text }]}>
             Pending Requests ({requests.length})
           </Text>
         </View>
@@ -266,7 +278,7 @@ const FriendRequestScreen = () => {
           <ActivityIndicator
             color={theme.primary || '#FB923C'}
             size="large"
-            style={{marginTop: verticalScale(40)}}
+            style={{ marginTop: verticalScale(40) }}
           />
         ) : (
           <FlatList
@@ -274,11 +286,11 @@ const FriendRequestScreen = () => {
             keyExtractor={item => item._id}
             renderItem={renderItem}
             ListEmptyComponent={
-              <Text style={[styles.emptyText, {color: theme.subText}]}>
+              <Text style={[styles.emptyText, { color: theme.subText }]}>
                 No pending friend requests.
               </Text>
             }
-            contentContainerStyle={{paddingBottom: verticalScale(60)}}
+            contentContainerStyle={{ paddingBottom: verticalScale(60) }}
             showsVerticalScrollIndicator={false}
           />
         )}
@@ -297,7 +309,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: verticalScale(16),
-    gap:"31%"
+    gap: "31%"
   },
   backButton: {
     padding: scale(6),
@@ -311,7 +323,7 @@ const styles = StyleSheet.create({
     opacity: 0.3,
     marginBottom: verticalScale(45),
     borderWidth: 1,
-    top:verticalScale(24)
+    top: verticalScale(24)
   },
   titleContainer: {
     paddingVertical: verticalScale(10),
@@ -329,7 +341,7 @@ const styles = StyleSheet.create({
     marginBottom: verticalScale(12),
     padding: scale(15),
     borderColor: '#334155',
-    top:verticalScale(12)
+    top: verticalScale(12)
   },
   row: {
     flexDirection: 'row',

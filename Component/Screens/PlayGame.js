@@ -1,5 +1,5 @@
-import {useFocusEffect, useNavigation} from '@react-navigation/native';
-import React, {useCallback, useEffect, useRef, useState} from 'react';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -13,22 +13,22 @@ import {
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Sound from 'react-native-sound';
 import {
   playBackgroundMusic,
   stopBackgroundMusic,
 } from '../Globalfile/playBackgroundMusic';
-import {useTheme} from '../Globalfile/ThemeContext';
+import { useTheme } from '../Globalfile/ThemeContext';
 
-const {width, height} = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 const scaleFont = size => size * PixelRatio.getFontScale();
 
-const PlayGame = ({route}) => {
+const PlayGame = ({ route }) => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
-  const {gametype} = route.params || {};
-  const {theme} = useTheme(); // ✅ Get current theme
+  const { gametype } = route.params || {};
+  const { theme } = useTheme(); // ✅ Get current theme
   const [selectedDifficulty, setSelectedDifficulty] = useState('easy');
   const [selectedTimer, setSelectedTimer] = useState('1 Minute');
   const [selectedSymbol, setSelectedSymbol] = useState('(+), (-), (x) and (/)');
@@ -62,6 +62,9 @@ const PlayGame = ({route}) => {
     setSelectedDifficulty(diff || 'easy');
     AsyncStorage.getItem('timer').then(t => {
       setSelectedTimer(t || '1 Minute');
+      AsyncStorage.getItem('symbol').then(s => {
+        setSelectedSymbol(s || '(+), (-), (x) and (/)');
+      });
     });
   });
 
@@ -78,7 +81,7 @@ const PlayGame = ({route}) => {
         <View
           style={[
             styles.optionButton,
-            {backgroundColor: theme.cardBackground || '#1E293B'},
+            { backgroundColor: theme.cardBackground || '#1E293B' },
           ]}>
           <Text style={styles.optionText}>{label}</Text>
         </View>
@@ -120,8 +123,8 @@ const PlayGame = ({route}) => {
 
   const Content = () => (
     <ScrollView
-      contentContainerStyle={[styles.container, {paddingTop: insets.top + 40}]}>
-      <View style={{flexDirection: 'row', gap: width * 0.025}}>
+      contentContainerStyle={[styles.container, { paddingTop: insets.top + 40 }]}>
+      <View style={{ flexDirection: 'row', gap: width * 0.025 }}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
           style={styles.iconButton}>
@@ -180,13 +183,17 @@ const PlayGame = ({route}) => {
       {/* Symbol Section */}
       <Text style={styles.sectionTitle}>Symbol</Text>
       <View style={styles.row1}>
-        {renderOption('(+) and (-)', selectedSymbol === '(+) and (-)', () =>
-          setSelectedSymbol('(+) and (-)'),
-        )}
+        {renderOption('(+) and (-)', selectedSymbol === '(+) and (-)', async () => {
+          await AsyncStorage.setItem('symbol', '(+) and (-)');
+          setSelectedSymbol('(+) and (-)');
+        })}
         {renderOption(
           '(+), (-), (x) and (/)',
           selectedSymbol === '(+), (-), (x) and (/)',
-          () => setSelectedSymbol('(+) , (-), (x) and (/)'),
+          async () => {
+            await AsyncStorage.setItem('symbol', '(+), (-), (x) and (/)');
+            setSelectedSymbol('(+) , (-), (x) and (/)');
+          }
         )}
       </View>
 
@@ -196,7 +203,7 @@ const PlayGame = ({route}) => {
         style={styles.playButton}>
         <TouchableOpacity
           onPress={handlePlayPress}
-          style={{width: '100%', alignItems: 'center'}}>
+          style={{ width: '100%', alignItems: 'center' }}>
           <Text style={styles.playButtonText}>Play</Text>
         </TouchableOpacity>
       </LinearGradient>
@@ -204,11 +211,11 @@ const PlayGame = ({route}) => {
   );
 
   return theme.backgroundGradient ? (
-    <LinearGradient colors={theme.backgroundGradient} style={{flex: 1}}>
+    <LinearGradient colors={theme.backgroundGradient} style={{ flex: 1 }}>
       <Content />
     </LinearGradient>
   ) : (
-    <View style={{flex: 1, backgroundColor: '#0B1220'}}>
+    <View style={{ flex: 1, backgroundColor: '#0B1220' }}>
       <Content />
     </View>
   );
