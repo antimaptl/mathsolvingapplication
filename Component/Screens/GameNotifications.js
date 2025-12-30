@@ -21,6 +21,7 @@ import { useTheme } from '../Globalfile/ThemeContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import Toast from 'react-native-toast-message';
+import CustomHeader from '../Globalfile/CustomHeader';
 
 const { width, height } = Dimensions.get('window');
 const scaleFont = size => size * PixelRatio.getFontScale();
@@ -223,42 +224,32 @@ const GameNotifications = () => {
 
 
   const Content = () => (
-    <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}>
-          <Ionicons
-            name="caret-back-outline"
-            size={scaleFont(28)}
-            color={theme.text || 'black'}
-          />
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: theme.text || 'black' }]}>
-          NOTIFICATIONS
-        </Text>
-        <View style={styles.rightPlaceholder} />
-      </View>
-      <View style={styles.headerSeparator} />
+    // Replaced SafeAreaView with View + manual padding
+    <View style={{ flex: 1, paddingTop: height * 0.03 }}>
+      <CustomHeader
+        title="NOTIFICATIONS"
+        onBack={() => navigation.goBack()}
+      />
 
-      {/* List */}
-      {loading ? (
-        <ActivityIndicator size="large" color={theme.primary} style={{ marginTop: 50 }} />
-      ) : (
-        <ScrollView showsVerticalScrollIndicator={false} style={styles.notificationsList}>
-          {notifications.length === 0 ? (
-            <Text style={[styles.emptyText, { color: theme.subText }]}>
-              No new notifications
-            </Text>
-          ) : (
-            notifications.map(n => <NotificationCard key={n.id} data={n} />)
-          )}
-          <View style={{ height: 30 }} />
-        </ScrollView>
-      )}
-      <Toast />
-    </SafeAreaView>
+      <View style={styles.container}>
+        {/* List */}
+        {loading ? (
+          <ActivityIndicator size="large" color={theme.primary} style={{ marginTop: 50 }} />
+        ) : (
+          <ScrollView showsVerticalScrollIndicator={false} style={styles.notificationsList}>
+            {notifications.length === 0 ? (
+              <Text style={[styles.emptyText, { color: theme.subText }]}>
+                No new notifications
+              </Text>
+            ) : (
+              notifications.map(n => <NotificationCard key={n.id} data={n} />)
+            )}
+            <View style={{ height: 30 }} />
+          </ScrollView>
+        )}
+        <Toast />
+      </View>
+    </View>
   );
 
   return theme.backgroundGradient ? (

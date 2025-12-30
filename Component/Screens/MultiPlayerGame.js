@@ -377,8 +377,6 @@ const MultiPlayerGame = () => {
   /* ================= RENDER ================= */
   const Content = () => (
     <SafeAreaView style={[styles.container, { paddingTop: insets.top + 30 }]}>
-      <StatusBar barStyle="light-content" backgroundColor={theme.backgroundGradient ? 'transparent' : '#0B1220'} translucent />
-
       {/* Top Bar */}
       <View style={[styles.topBar, { backgroundColor: theme.cardBackground || '#1E293B' }]}>
         <TouchableOpacity onPress={() => { stopEffect('ticktock'); navigation.goBack(); }} style={styles.iconButton}>

@@ -9,21 +9,19 @@ import {
   Image,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import {useNavigation} from '@react-navigation/native';
-import {useTheme} from '../Globalfile/ThemeContext'; // ✅ Theme hook
+import { useNavigation } from '@react-navigation/native';
+import { useTheme } from '../Globalfile/ThemeContext'; // ✅ Theme hook
 
-const {width, height} = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 const ChooseThemeIntroScreen = () => {
   const navigation = useNavigation();
-  const {theme} = useTheme();
+  const { theme } = useTheme();
 
   return (
     <LinearGradient
       colors={theme.backgroundGradient || ['#0E1220', '#0E1220']}
       style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#0E1220" />
-
       <View style={styles.innerContainer}>
         {/* Title */}
         <Text style={styles.title}>CHOOSE THEME</Text>
@@ -45,11 +43,11 @@ const ChooseThemeIntroScreen = () => {
 
           <TouchableOpacity
             onPress={() =>
-              navigation.replace('ThemeSelectorScreen', {from: 'onboarding'})
+              navigation.replace('ThemeSelectorScreen', { from: 'onboarding' })
             }
             style={[
               styles.continueButton,
-              {backgroundColor: theme.primary || '#FB923C'},
+              { backgroundColor: theme.primary || '#FB923C' },
             ]}>
             <Text style={styles.continueText}>Continue</Text>
           </TouchableOpacity>

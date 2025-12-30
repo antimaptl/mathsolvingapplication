@@ -17,6 +17,7 @@ import { useNavigation } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
 import { useTheme } from '../Globalfile/ThemeContext';
 import { useSound } from '../../Context/SoundContext';   // 🔥 ADD THIS
+import CustomHeader from '../Globalfile/CustomHeader';
 
 const { width, height } = Dimensions.get('window');
 const scaleFont = size => size * PixelRatio.getFontScale();
@@ -99,40 +100,24 @@ const SoundScreen = () => {
   };
 
   const Content = () => (
-    <SafeAreaView style={styles.container}>
+    <View style={{ flex: 1, paddingTop: height * 0.03 }}>
+      <CustomHeader
+        title="SOUND"
+        onBack={() => navigation.goBack()}
+      />
+      <View style={styles.container}>
+        {/* Settings List */}
+        <View style={styles.settingsList}>
 
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}>
-          <Ionicons
-            name="caret-back-outline"
-            size={scaleFont(28)}
-            color={theme.text || 'black'}
-          />
-        </TouchableOpacity>
+          {/* 🔥 Sound is Global */}
+          <SettingCard label="Sound" stateKey="sound" iconName="volume-high" />
 
-        <Text style={[styles.headerTitle, { color: theme.text || 'black' }]}>
-          SOUND
-        </Text>
-
-        <View style={styles.rightPlaceholder} />
-      </View>
-
-      <View style={styles.headerSeparator} />
-
-      {/* Settings List */}
-      <View style={styles.settingsList}>
-
-        {/* 🔥 Sound is Global */}
-        <SettingCard label="Sound" stateKey="sound" iconName="volume-high" />
-
-        {/* <SettingCard label="Vibrate" stateKey="vibrate" iconName="vibrate" />
+          {/* <SettingCard label="Vibrate" stateKey="vibrate" iconName="vibrate" />
         <SettingCard label="Music" stateKey="music" iconName="music" /> */}
 
+        </View>
       </View>
-    </SafeAreaView>
+    </View>
   );
 
   return theme.backgroundGradient ? (

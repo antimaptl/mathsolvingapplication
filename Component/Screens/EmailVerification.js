@@ -11,8 +11,10 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 import Icon from 'react-native-vector-icons/Ionicons';
+import CustomHeader from '../Globalfile/CustomHeader';
 
 const { width } = Dimensions.get('window');
 const scale = width / 375;
@@ -21,36 +23,50 @@ const normalize = size => Math.round(scale * size);
 export default function EmailVerification() {
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [errorMessage, setErrorMessage] = useState('');
-  const [attemptCount, setAttemptCount] = useState(0);
   const [loading, setLoading] = useState(false);
+
+  // 🔹 New States for OTP Logic
+  const [timer, setTimer] = useState(30);
+  const [resendCount, setResendCount] = useState(0);
+
+  // Kept for tracking but not blocking inputs client-side
+  const [incorrectAttempts, setIncorrectAttempts] = useState(0);
+
   const inputs = useRef([]);
   const route = useRoute();
   const navigation = useNavigation();
   const { userData } = route.params;
   const { login } = React.useContext(require('../Globalfile/AuthProvider').AuthContext);
 
+  // 🔹 Initialize Logic
+  useEffect(() => {
+    startResendTimer();
+    // Clear any legacy blocks
+    AsyncStorage.removeItem('otp_block_until');
+    AsyncStorage.removeItem('otp_incorrect_attempts');
+  }, []);
+
+  // 🔹 Timer Countdown Effect
+  useEffect(() => {
+    let interval;
+    if (timer > 0) {
+      interval = setInterval(() => {
+        setTimer(prev => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [timer]);
+
+  const startResendTimer = () => {
+    setTimer(30);
+  };
+
   useEffect(() => {
     const enteredOtp = otp.join('');
     if (enteredOtp.length === 6 && !loading) {
       handleVerifyOtp(enteredOtp);
-      loadAttempts();
     }
   }, [otp]);
-
-  const loadAttempts = async () => {
-    const savedCount = await AsyncStorage.getItem('otpAttempts');
-    const savedTime = await AsyncStorage.getItem('otpLockedUntil');
-
-    const now = Date.now();
-
-    if (savedTime && now < Number(savedTime)) {
-      // Still locked
-      setAttemptCount(3);
-    } else {
-      // Reset
-      setAttemptCount(savedCount ? Number(savedCount) : 0);
-    }
-  };
 
   const handleChange = (text, index) => {
     const newOtp = [...otp];
@@ -68,16 +84,21 @@ export default function EmailVerification() {
   };
 
   const handleResendOtp = async () => {
-    setErrorMessage('');
+    if (timer > 0) return;
 
+    // Resend limit check (client side limit still useful for UX)
+    if (resendCount >= 3) {
+      setErrorMessage('Maximum resend limit reached. Please restart sign up.');
+      return;
+    }
+
+    setErrorMessage('');
     setOtp(['', '', '', '', '', '']);
     inputs.current[0]?.focus();
 
     try {
       const email = route.params?.userData?.email;
-
-      // console.log("📤 Resend OTP API Triggered for email:", email);
-
+      // Updated URL to mataletics-backend logic
       const response = await fetch(
         'http://43.204.167.118:3000/api/auth/resend-signup-otp',
         {
@@ -87,10 +108,7 @@ export default function EmailVerification() {
         },
       );
 
-      // console.log("📥 Raw Response →", response);
-
       const data = await response.json();
-      // console.log("📥 Parsed Response Body →", data);
 
       if (data.success === true) {
         Toast.show({
@@ -98,12 +116,17 @@ export default function EmailVerification() {
           text1: 'OTP Sent',
           text2: 'OTP sent again to your email',
         });
+
+        setResendCount(prev => prev + 1);
+        startResendTimer();
+
+        // Reset counters on Resend
+        setIncorrectAttempts(0);
+
       } else {
-        console.log("❌ Backend Error Message →", data.message);
         setErrorMessage(data.message || 'Failed to resend OTP');
       }
     } catch (error) {
-      console.log("❌ Network Error Occurred →", error);
       setErrorMessage('Network error. Please try again.');
     }
   };
@@ -124,16 +147,6 @@ export default function EmailVerification() {
       gender
     } = userDataFromParams;
 
-    console.log('📤 Sending to API →', {
-      email,
-      username,
-      password,
-      gender,
-      dateOfBirth,
-      country,
-    });
-
-
     if (!email) {
       setErrorMessage('Email not found. Please restart signup.');
       setLoading(false);
@@ -147,11 +160,11 @@ export default function EmailVerification() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            email,                // email: email
+            email,
             otp: userEnteredOtp,
-            username,             // username: username
+            username,
             password,
-            gender: gender,
+            gender: gender || undefined,
             dateOfBirth,
             country
           }),
@@ -160,30 +173,24 @@ export default function EmailVerification() {
 
       const body = await res.json();
 
-      // ❌ ANY OTP ERROR → show API message ONLY
       if (!res.ok || body.success === false) {
+        // Use exact API message
         setErrorMessage(body.message || 'Invalid OTP');
-
-        // clear OTP so user can retype
         setOtp(['', '', '', '', '', '']);
         inputs.current[0]?.focus();
+
+        // Track attempts but DO NOT BLOCK INPUTS client-side
+        const newAttempts = incorrectAttempts + 1;
+        setIncorrectAttempts(newAttempts);
 
         setLoading(false);
         return;
       }
 
-      // ✅ OTP verified → next screen (NO ERROR TOAST)
-
-      // ---------------------------------------------------------
-      // 🔥 FIX: Store Token & User Data (Same as Login Flow)
-      // ---------------------------------------------------------
+      // Success
       if (body.token) {
-        // Try to get user from response, otherwise fallback to route params
         const userObj = body.player || body.user || route.params?.userData;
-        console.log("📥 Parsed Response Body →", res);
-        // 🔹 Use context login which handles storage and state update
         await login(body.token, userObj, body);
-        console.log('✅ Signup Token & Data synced via AuthProvider');
       }
 
       navigation.replace('NotificationPermissionScreen', {
@@ -197,41 +204,59 @@ export default function EmailVerification() {
     }
   };
 
+  const insets = useSafeAreaInsets();
+
   return (
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      {/* 🔙 Back Button and Title */}
-      <View
-        style={{
-          flexDirection: 'row',
-          justifyContent: 'center',
-          alignItems: 'center',
-          width: '100%',
-          marginTop: normalize(40),
-          marginBottom: normalize(40),
-        }}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}>
-          <Icon name="caret-back-outline" size={28} color="white" />
-        </TouchableOpacity>
-        <Text style={styles.title}>Sign - Up</Text>
+
+      <View style={{ paddingTop: insets.top + 30 }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            justifyContent: 'center',
+            alignItems: 'center',
+            width: '100%',
+            marginBottom: normalize(50),
+          }}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}>
+            <Icon name="caret-back-outline" size={normalize(26)} color="white" />
+          </TouchableOpacity>
+          <Text style={styles.title}>Sign - Up</Text>
+        </View>
+
+        <View>
+          <Text
+            style={{
+              color: 'white',
+              fontSize: normalize(16),
+              width: '80%',
+              textAlign: 'center',
+              alignSelf: 'center',
+              marginBottom: normalize(40),
+            }}>
+            An OTP has been sent to your registered email address
+          </Text>
+        </View>
       </View>
 
-      {/* Info Text */}
-      <View>
+      {/* Error Message */}
+      {errorMessage ? (
         <Text
           style={{
-            color: 'white',
-            fontSize: normalize(16),
-            width: '80%',
+            color: 'red',
+            fontSize: normalize(14),
             textAlign: 'center',
-            alignSelf: 'center',
+            marginBottom: normalize(30),
+            marginTop: normalize(10),
+            paddingHorizontal: normalize(20)
           }}>
-          An OTP has been sent to your registered email address
+          {errorMessage}
         </Text>
-      </View>
+      ) : null}
 
       {/* OTP Inputs */}
       <View style={styles.otpContainer}>
@@ -239,7 +264,7 @@ export default function EmailVerification() {
           <TextInput
             key={index}
             ref={ref => (inputs.current[index] = ref)}
-            style={styles.otpInput}
+            style={[styles.otpInput]}
             keyboardType="numeric"
             maxLength={1}
             value={digit}
@@ -247,38 +272,30 @@ export default function EmailVerification() {
             onKeyPress={({ nativeEvent }) =>
               handleBackspace(nativeEvent.key, index)
             }
+            editable={!loading}
           />
         ))}
       </View>
 
-      <TouchableOpacity onPress={handleResendOtp}>
+      <TouchableOpacity
+        onPress={handleResendOtp}
+        disabled={timer > 0 || resendCount >= 3}
+      >
         <Text
           style={{
-            color: '#c4c3c3ff',
+            color: (timer > 0 || resendCount >= 3) ? '#64748B' : '#FB923C',
             alignSelf: 'flex-end',
             end: 30,
             top: -20,
+            fontWeight: '600'
           }}>
-          Resend
+          {resendCount >= 3
+            ? 'Resend Limit Reached'
+            : timer > 0
+              ? `Resend in ${timer}s`
+              : 'Resend OTP'}
         </Text>
       </TouchableOpacity>
-      {/* Verify Button */}
-      {/* <TouchableOpacity style={styles.verifyButton} onPress={handleVerifyOtp}>
-        <Text style={styles.verifyText}>Confirm</Text>
-      </TouchableOpacity> */}
-
-      {/* Error Message Display (like image) */}
-      {errorMessage ? (
-        <Text
-          style={{
-            color: 'red',
-            fontSize: normalize(14),
-            marginTop: normalize(30),
-            textAlign: 'center',
-          }}>
-          {errorMessage}
-        </Text>
-      ) : null}
 
       <Toast />
     </KeyboardAvoidingView>
@@ -290,25 +307,25 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#0f162b',
     paddingHorizontal: normalize(20),
-    paddingVertical: normalize(10),
+    paddingBottom: normalize(10),
   },
   backButton: {
     position: 'absolute',
-    top: normalize(0),
+    // top: normalize(-20),
     left: normalize(0),
   },
   title: {
-    fontSize: normalize(24),
+    fontSize: normalize(30),
     color: 'white',
-    marginBottom: normalize(60),
-    fontWeight: 'bold',
+    fontWeight: '600',
+    top: '-8%'
   },
   otpContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     width: '90%',
     marginBottom: normalize(30),
-    marginTop: normalize(100),
+    marginTop: normalize(20),
     alignSelf: 'center',
   },
   otpInput: {
@@ -320,6 +337,9 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: normalize(18),
     marginHorizontal: normalize(5),
+  },
+  disabledInput: {
+    opacity: 0.5
   },
   verifyButton: {
     backgroundColor: '#FB923C',

@@ -23,6 +23,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from 'react-native-toast-message';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon6 from 'react-native-vector-icons/FontAwesome6';
+import CustomHeader from '../Globalfile/CustomHeader';
 
 const { width } = Dimensions.get('window');
 const scale = width / 375;
@@ -227,7 +228,7 @@ export default function Login() {
         </View>
         {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
 
-        <TouchableOpacity onPress={handleForgotPassword}>
+        <TouchableOpacity onPress={handleForgotPassword} hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}>
           <Text style={styles.forgotPassword}>Forgot Password</Text>
         </TouchableOpacity>
 
@@ -253,7 +254,7 @@ export default function Login() {
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity onPress={() => navigation.navigate('SignUp')} activeOpacity={0.7}>
+        <TouchableOpacity onPress={() => navigation.navigate('SignUp')} activeOpacity={0.7} hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}>
           <Text style={styles.registerText}>
             Not a member? <Text style={styles.registerLink}>Register now</Text>
           </Text>

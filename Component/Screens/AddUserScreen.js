@@ -11,6 +11,7 @@ import {
   Dimensions,
   ActivityIndicator,
   RefreshControl,
+  Alert,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
@@ -32,8 +33,8 @@ const AddUserScreen = () => {
   const { theme } = useTheme();
 
   const [refreshing, setRefreshing] = useState(false);
-  const [users, setUsers] = useState([]);
-  const [filteredUsers, setFilteredUsers] = useState([]);
+  const [myFriends, setMyFriends] = useState([]); // Store friends separately
+  const [displayedUsers, setDisplayedUsers] = useState([]); // Users shown in list
   const [searchText, setSearchText] = useState('');
   const [loading, setLoading] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
@@ -41,11 +42,17 @@ const AddUserScreen = () => {
   const onRefresh = () => {
     setRefreshing(true);
     fetchPendingCount();
-    fetchUsers();
+    if (searchText.trim() !== '') {
+      fetchSearchedUsers(searchText);
+    } else {
+      fetchMyFriends();
+    }
     setTimeout(() => {
       setRefreshing(false);
     }, 2000);
   };
+
+  /* ================= API CALLS ================= */
 
   const fetchPendingCount = async () => {
     try {
@@ -62,36 +69,54 @@ const AddUserScreen = () => {
     }
   };
 
-  const fetchUsers = async () => {
+  // 🔹 FETCH MY FRIENDS (Default View)
+  const fetchMyFriends = async () => {
     try {
       setLoading(true);
       const token = await AsyncStorage.getItem('authToken');
+      if (!token) {
+        console.log('❌ No Auth Token found');
+        setLoading(false);
+        return;
+      }
+
       const response = await axios.get(
-        'http://43.204.167.118:3000/api/friend/alluser-list',
+        'http://43.204.167.118:3000/api/friend/my-friend-list',
         {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
         }
       );
-      console.log("All User", response);
 
       if (response.data.success) {
-        const filtered = response.data.users.filter(
-          u => u.friendshipStatus !== 'accepted',
-        );
-        setUsers(filtered);
-        setFilteredUsers(filtered);
+        console.log('🔹 My Friends API Response:', JSON.stringify(response.data, null, 2));
+        // Adjust based on actual API response structure. 
+        const friendsList = response.data.friends || [];
+        console.log('🔹 Friends List Extracted:', friendsList);
+        // Important: Ensure friendshipStatus is 'accepted' for these
+        const formattedFriends = friendsList.map(f => ({ ...f, friendshipStatus: 'accepted' }));
+
+        setMyFriends(formattedFriends);
+        if (searchText.trim() === '') {
+          setDisplayedUsers(formattedFriends);
+        }
       }
     } catch (error) {
-      console.log('❌ Error fetching users:', error.message);
+      console.log('❌ Error fetching friends:', error.message);
     } finally {
       setLoading(false);
     }
   };
 
+  // 🔹 SEARCH ALL USERS
   const fetchSearchedUsers = async text => {
     try {
       setLoading(true);
       const token = await AsyncStorage.getItem('authToken');
+      console.log('🔹 Search Text:', token);
       const response = await axios.post(
         'http://43.204.167.118:3000/api/friend/search-user-list',
         { searchText: text },
@@ -102,16 +127,19 @@ const AddUserScreen = () => {
           },
         },
       );
-      const filtered = response.data.users.filter(
-        u => u.friendshipStatus !== 'accepted',
-      );
-      setFilteredUsers(filtered);
+
+      if (response.data.success) {
+        console.log('🔍 Search API Response:', JSON.stringify(response.data, null, 2));
+        setDisplayedUsers(response.data.users);
+      }
     } catch (error) {
       console.log('❌ Error searching users:', error.message);
     } finally {
       setLoading(false);
     }
   };
+
+  /* ================= ACTIONS ================= */
 
   const handleAddFriend = async recipientId => {
     try {
@@ -120,29 +148,14 @@ const AddUserScreen = () => {
       if (!token || !user) return;
 
       const parsedUser = JSON.parse(user);
-      console.log('DEBUG: Parsed User Data from AsyncStorage:', parsedUser);
-
-      // Fix: Check for both 'id' and '_id'
       const requesterId = parsedUser?.id || parsedUser?._id;
 
-      console.log(`DEBUG: Requester ID: ${requesterId}, Recipient ID: ${recipientId}`);
-
-      if (!requesterId || !recipientId) {
-        console.error('❌ Missing Requester or Recipient ID');
-        Toast.show({
-          type: 'error',
-          text1: 'Error',
-          text2: 'Missing user information. Please login again.',
-        });
-        return;
-      }
+      if (!requesterId || !recipientId) return;
 
       const payload = {
         requester: requesterId,
         recipient: recipientId,
       };
-
-      console.log('DEBUG: Sending Frontend Payload (Refixed):', JSON.stringify(payload, null, 2));
 
       const response = await fetch(
         'http://43.204.167.118:3000/api/friend/add-friend',
@@ -156,60 +169,81 @@ const AddUserScreen = () => {
         },
       );
 
-      console.log('DEBUG: Response Status:', response.status);
       const data = await response.json();
-      console.log('DEBUG: Backend Response Data:', data);
 
       if (data.success) {
-        Toast.show({
-          type: 'success',
-          text1: 'Friend Request Sent',
-        });
-        setFilteredUsers(prev =>
+        Toast.show({ type: 'success', text1: 'Friend Request Sent' });
+        // Update specific user in the list
+        setDisplayedUsers(prev =>
           prev.map(u =>
             u._id === recipientId ? { ...u, friendshipStatus: 'pending' } : u,
           ),
         );
       } else {
-        Toast.show({
-          type: 'error',
-          text1: 'Request Failed',
-          text2: data.message || 'Something went wrong',
-        });
+        Toast.show({ type: 'error', text1: 'Request Failed', text2: data.message });
       }
     } catch (error) {
       console.log('Error sending friend request:', error);
-      Toast.show({
-        type: 'error',
-        text1: 'Error',
-        text2: error.message || 'Something went wrong. Please try again.',
-      });
     }
   };
+
+  const handleCancelRequest = async (friendId) => {
+    // console.log("🔍 UserProfile Response:", friendId);
+    try {
+      // Optimistic Update
+      setDisplayedUsers(prev =>
+        prev.map(u =>
+          u._id === friendId ? { ...u, friendshipStatus: 'none' } : u,
+        ),
+      );
+
+      const token = await AsyncStorage.getItem('authToken');
+      const response = await axios.delete(
+        'http://43.204.167.118:3000/api/friend/deleteFriendShipByUser',
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          data: { friendId } // DELETE body often needs 'data' key in axios
+        }
+      );
+
+      if (response.data.success) {
+        Toast.show({ type: 'success', text1: 'Request Cancelled' });
+      } else {
+        // Revert if failed
+        Toast.show({ type: 'error', text1: 'Failed to cancel' });
+        fetchSearchedUsers(searchText); // Refresh to get true state
+      }
+
+    } catch (error) {
+      console.log("❌ Error cancelling request:", error);
+      Toast.show({ type: 'error', text1: 'Error cancelling request' });
+    }
+  }
+
   const handleSearch = text => {
     setSearchText(text);
     if (text.trim() === '') {
-      setFilteredUsers(users);
+      fetchMyFriends();
     } else {
       fetchSearchedUsers(text);
     }
   };
 
+  /* ================= UI RENDER ================= */
+
   const renderItem = ({ item }) => {
-    // console.log(
-    //   '🖼️ Profile Image Check:',
-    //   item.username,
-    //   item.profileImage ? item.profileImage : '❌ NO IMAGE'
-    // );
-    const status = item.friendshipStatus;
+    const status = item.friendshipStatus; // 'accepted', 'pending', 'none'/null
 
     const fullName =
       item.firstName || item.lastName
         ? `${item.firstName || ''} ${item.lastName || ''}`.trim()
         : `null`;
 
-    const practicePR = item.pr?.find(p => p.mode === 'practice');
-    const rating = practicePR?.medium || 0;
+    // Only show country if available
+    const userCountry = item.country;
 
     return (
       <View
@@ -217,7 +251,10 @@ const AddUserScreen = () => {
           styles.friendRow,
           { backgroundColor: theme.backgroundGradient || '#1E293B' },
         ]}>
-        <View style={styles.friendInfo}>
+        <TouchableOpacity
+          style={styles.friendInfo}
+          onPress={() => navigation.navigate('UserProfile', { userId: item._id })}
+        >
 
           <Image
             source={
@@ -247,25 +284,43 @@ const AddUserScreen = () => {
               </Text>
             </View>
 
-            <View style={{ flexDirection: 'row' }}>
-              <Text style={[styles.ratingText, { color: theme.subText }]}>
-                Rating:{' '}
-              </Text>
-              <Text style={[styles.usernameText1, { color: theme.text }]}>
-                {rating}
-              </Text>
-            </View>
+            {/* Show PvP Rating instead of Country */}
+            {(() => {
+              const pvpStats = item.pr?.find(p => p.mode === 'pvp');
+              const pvpRating = pvpStats?.medium || 'N/A';
+              return (
+                <View style={{ flexDirection: 'row' }}>
+                  <Text style={[styles.ratingText, { color: theme.subText }]}>
+                    PvP Rating:{' '}
+                  </Text>
+                  <Text style={[styles.usernameText1, { color: theme.text }]}>
+                    {pvpRating}
+                  </Text>
+                </View>
+              );
+            })()}
           </View>
-        </View>
+        </TouchableOpacity>
 
-        {status === 'pending' ? (
+        {/* BUTTON ACTIONS */}
+        {status === 'accepted' ? (
           <View
+            style={[
+              styles.statusButton,
+              { roomId: 'transparent' }, // No background for text status or subtle
+            ]}>
+            <Text style={[styles.statusText, { color: '#4ADE80' }]}>Friend</Text>
+          </View>
+        ) : status === 'pending' ? (
+          <TouchableOpacity
             style={[
               styles.addButton,
               { backgroundColor: theme.secondary || '#64748B' },
-            ]}>
+            ]}
+            onPress={() => handleCancelRequest(item._id)}>
+            {/* Click to Cancel */}
             <Text style={styles.addText}>Pending</Text>
-          </View>
+          </TouchableOpacity>
         ) : (
           <TouchableOpacity
             style={[
@@ -283,17 +338,19 @@ const AddUserScreen = () => {
 
   useEffect(() => {
     if (isFocused) {
-      fetchUsers();
+      if (searchText.trim() === '') {
+        fetchMyFriends();
+      } else {
+        fetchSearchedUsers(searchText);
+      }
       fetchPendingCount();
     }
   }, [isFocused]);
 
   useEffect(() => {
-    // 🔹 Modular style usage for onMessage
     const auth = messaging();
     const unsubscribe = auth.onMessage(async remoteMessage => {
       const { data } = remoteMessage;
-      // ... existing logic ...
       if (!data) return;
 
       const userData = await AsyncStorage.getItem('fullLoginResponse');
@@ -304,9 +361,9 @@ const AddUserScreen = () => {
       const { requester, recipient, type } = data;
 
       if (type === 'FRIEND_ACCEPTED' || type === 'FRIEND_REJECTED') {
-        setFilteredUsers(prev =>
-          prev.filter(u => u._id !== requester && u._id !== recipient),
-        );
+        // Refresh list to show new friend or removed status
+        if (searchText.trim() !== '') fetchSearchedUsers(searchText);
+        else fetchMyFriends();
         fetchPendingCount();
       }
 
@@ -356,7 +413,7 @@ const AddUserScreen = () => {
           </View>
         </View>
 
-        {/* 🔹 Added Separator Line */}
+        {/* 🔹 Separator Line */}
         <View
           style={{
             height: 1,
@@ -372,25 +429,6 @@ const AddUserScreen = () => {
 
         {/* 🔍 Search */}
         <View style={{ top: 20, flex: 1 }}>
-          <View
-            style={[
-              styles.searchContainer,
-              { backgroundColor: theme.cardBackground || '#1E293B' },
-            ]}>
-            <Icon
-              name="search"
-              size={scale(22)}
-              color={theme.subText || '#94A3B8'}
-            />
-            <TextInput
-              placeholder="Search Contacts"
-              placeholderTextColor={theme.subText || '#94A3B8'}
-              style={[styles.searchInput, { color: theme.text }]}
-              value={searchText}
-              onChangeText={handleSearch}
-            />
-          </View>
-
           {loading ? (
             <ActivityIndicator
               size="large"
@@ -399,44 +437,65 @@ const AddUserScreen = () => {
             />
           ) : (
             <>
-              <View
-                style={[
-                  styles.inviteSection,
-                  { backgroundColor: theme.cardBackground || '#1E293B' },
-                ]}>
-                <Text style={[styles.sectionTitle, { color: theme.text }]}>
-                  Invite & Connect
-                </Text>
-
-                <TouchableOpacity
-                  style={[styles.inviteButton1, { backgroundColor: '#25D366' }]}>
-                  <FontAwesome
-                    name="whatsapp"
-                    size={scale(20)}
-                    color="#fff"
-                    style={styles.iconLeft}
-                  />
-                  <Text style={styles.inviteText}>
-                    Invite Friends via WhatsApp or SMS
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
+              {searchText.trim() === '' && (
+                <View
                   style={[
-                    styles.inviteButton,
+                    styles.inviteSection,
                     { backgroundColor: theme.cardBackground || '#1E293B' },
                   ]}>
-                  <View style={styles.fbIconCircle}>
-                    <FontAwesome name="facebook" size={scale(22)} color="#fff" />
-                  </View>
-                  <Text style={[styles.inviteText, { color: theme.text }]}>
-                    Facebook Friends
+                  <Text style={[styles.sectionTitle, { color: theme.text }]}>
+                    Invite & Connect
                   </Text>
-                </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.inviteButton1, { backgroundColor: '#25D366' }]}>
+                    <FontAwesome
+                      name="whatsapp"
+                      size={scale(20)}
+                      color="#fff"
+                      style={styles.iconLeft}
+                    />
+                    <Text style={styles.inviteText}>
+                      Invite Friends via WhatsApp or SMS
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[
+                      styles.inviteButton,
+                      { backgroundColor: theme.cardBackground || '#1E293B' },
+                    ]}>
+                    <View style={styles.fbIconCircle}>
+                      <FontAwesome name="facebook" size={scale(22)} color="#fff" />
+                    </View>
+                    <Text style={[styles.inviteText, { color: theme.text }]}>
+                      Facebook Friends
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+
+              <View
+                style={[
+                  styles.searchContainer,
+                  { backgroundColor: theme.cardBackground || '#1E293B' },
+                ]}>
+                <Icon
+                  name="search"
+                  size={scale(22)}
+                  color={theme.subText || '#94A3B8'}
+                />
+                <TextInput
+                  placeholder="Search Contacts"
+                  placeholderTextColor={theme.subText || '#94A3B8'}
+                  style={[styles.searchInput, { color: theme.text }]}
+                  value={searchText}
+                  onChangeText={handleSearch}
+                />
               </View>
 
               <Text style={[styles.sectionTitle, { color: theme.text }]}>
-                Friends ({filteredUsers.length})
+                {searchText.trim() !== '' ? 'Search Results' : `My Friends (${displayedUsers.length})`}
               </Text>
               <ScrollView
                 refreshControl={
@@ -444,11 +503,16 @@ const AddUserScreen = () => {
                 }
                 showsVerticalScrollIndicator={false}>
                 <FlatList
-                  data={filteredUsers}
+                  data={displayedUsers}
                   keyExtractor={item => item._id}
                   renderItem={renderItem}
                   scrollEnabled={false}
                   contentContainerStyle={{ paddingBottom: height * 0.1 }}
+                  ListEmptyComponent={
+                    <View style={{ alignItems: 'center', marginTop: 20 }}>
+                      <Text style={{ color: theme.subText }}>No users found.</Text>
+                    </View>
+                  }
                 />
               </ScrollView>
             </>
@@ -456,7 +520,6 @@ const AddUserScreen = () => {
         </View>
       </View>
     </LinearGradient>
-
   );
 };
 
@@ -580,10 +643,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: width * 0.05,
     paddingVertical: height * 0.006,
   },
+  statusButton: {
+    borderRadius: 6,
+    paddingHorizontal: width * 0.02,
+    paddingVertical: height * 0.006,
+  },
   addText: {
     color: '#fff',
     fontWeight: 'bold',
-    fontSize: scaleFont(18),
+    fontSize: scaleFont(14), // Resized for "Pending"
+  },
+  statusText: {
+    fontWeight: 'bold',
+    fontSize: scaleFont(14),
   },
   usernameText: {
     fontSize: scaleFont(13),

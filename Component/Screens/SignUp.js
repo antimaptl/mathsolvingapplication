@@ -16,12 +16,13 @@ import LinearGradient from 'react-native-linear-gradient';
 import Toast from 'react-native-toast-message';
 import { useNavigation } from '@react-navigation/native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import DateTimePicker from '@react-native-community/datetimepicker';
+
 import Geolocation from 'react-native-geolocation-service';
 import { check, request, PERMISSIONS, RESULTS } from 'react-native-permissions';
 import Icon from 'react-native-vector-icons/Ionicons';
 import Icon6 from 'react-native-vector-icons/FontAwesome6';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import CustomHeader from '../Globalfile/CustomHeader';
 
 const { width, height } = Dimensions.get('window');
 
@@ -43,8 +44,7 @@ export default function SignUp() {
   const [dateOfBirth, setDateOfBirth] = useState('');
   const [otp, setotp] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(new Date());
+
   const [gender, setGender] = useState('');
   const [showGenderOptions, setShowGenderOptions] = useState(false);
   const [errors, setErrors] = useState({});
@@ -159,7 +159,7 @@ export default function SignUp() {
             country,
             countryFlag,
             dateOfBirth,
-            gender,
+            gender: gender || undefined, // Send undefined if empty to omit key
           }),
         },
       );
@@ -179,7 +179,7 @@ export default function SignUp() {
         text2: `OTP sent to ${email}`,
       });
 
-      console.log("GenderHHHHHHHHHHHHHHHHHHHHHHh", gender)
+      // console.log("GenderHHHHHHHHHHHHHHHHHHHHHHh", gender)
       navigation.navigate('EmailVerification', {
         userData: {
           username,
@@ -229,6 +229,15 @@ export default function SignUp() {
     }
 
     setErrors(fieldErrors);
+
+    // 🔹 Fallback: If no specific field matched, show global error
+    if (Object.keys(fieldErrors).length === 0 && data.message) {
+      Toast.show({
+        type: 'error',
+        text1: 'Sign Up Failed',
+        text2: data.message,
+      });
+    }
   };
 
 
@@ -244,6 +253,7 @@ export default function SignUp() {
           <View style={styles.formContainer}>
             <TouchableOpacity
               style={styles.backButton}
+              hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
               onPress={() => navigation.goBack()}>
               <Icon
                 name="caret-back-outline"
@@ -334,7 +344,7 @@ export default function SignUp() {
                       styles.input1,
                       { color: gender ? 'white' : '#94A3B8' },
                     ]}>
-                    {gender || 'Select Gender'}
+                    {gender ? (gender === 'other' ? 'Others' : gender.charAt(0).toUpperCase() + gender.slice(1)) : 'Select Gender'}
                   </Text>
                 </View>
                 <MaterialIcons
@@ -350,57 +360,46 @@ export default function SignUp() {
               </TouchableOpacity>
               {showGenderOptions && (
                 <View style={styles.dropdownOptions}>
-                  {['male', 'female', 'other'].map(option => (
+                  {[
+                    { label: 'Male', value: 'male' },
+                    { label: 'Female', value: 'female' },
+                    { label: 'Others', value: 'other' }
+                  ].map(option => (
                     <TouchableOpacity
-                      key={option}
+                      key={option.value}
                       onPress={() => {
-                        setGender(option);
+                        setGender(option.value);
                         setShowGenderOptions(false);
                       }}>
-                      <Text style={styles.dropdownOptionText}>{option}</Text>
+                      <Text style={styles.dropdownOptionText}>{option.label}</Text>
                     </TouchableOpacity>
                   ))}
                 </View>
               )}
             </View>
 
-            <TouchableOpacity onPress={() => setShowDatePicker(true)}>
-              <View style={[styles.inputContainer]}>
-                <MaterialIcons
-                  name="calendar-month"
-                  size={normalize(20)}
-                  color="#94A3B8"
-                  style={styles.inputIcon}
-                />
-                <Text
-                  style={[
-                    styles.input,
-                    {
-                      paddingVertical: normalize(10),
-                      color: dateOfBirth ? 'white' : '#94A3B8',
-                    },
-                  ]}>
-                  {dateOfBirth || 'Year of Birth'}
-                </Text>
-              </View>
-            </TouchableOpacity>
-
-            {showDatePicker && (
-              <DateTimePicker
-                value={selectedDate}
-                mode="date"
-                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                maximumDate={new Date()}
-                onChange={(event, date) => {
-                  setShowDatePicker(false);
-                  if (date) {
-                    const formattedDate = date.toISOString().split('T')[0];
-                    setSelectedDate(date);
-                    setDateOfBirth(formattedDate);
+            <View style={[styles.inputContainer]}>
+              <MaterialIcons
+                name="calendar-month"
+                size={normalize(20)}
+                color="#94A3B8"
+                style={styles.inputIcon}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Year of Birth"
+                placeholderTextColor="#94A3B8"
+                value={dateOfBirth}
+                onChangeText={(text) => {
+                  // Allow only numbers and max 4 digits
+                  if (/^\d{0,4}$/.test(text)) {
+                    setDateOfBirth(text);
                   }
                 }}
+                keyboardType="numeric"
+                maxLength={4}
               />
-            )}
+            </View>
 
             <View style={styles.tickContainer}>
               <TouchableOpacity

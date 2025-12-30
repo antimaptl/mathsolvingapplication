@@ -14,7 +14,7 @@ import {
   Modal,
   Pressable,
   Platform,
-  Alert, // ✅ ADDED
+  Alert,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -22,8 +22,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CommonActions, useNavigation, useRoute } from '@react-navigation/native';
 import { useTheme } from '../Globalfile/ThemeContext';
 import ImagePicker from 'react-native-image-crop-picker';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { CountryList } from '../Globalfile/CountryList';
+import CustomHeader from '../Globalfile/CustomHeader';
 
 const { width, height } = Dimensions.get('window');
 const scale = width / 375;
@@ -35,25 +37,31 @@ const UpdateProfile = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets(); // ✅ Hook
 
   const onUpdate = route.params?.onUpdate;
 
+  // ... (skipping unchanged lines)
+
+  /* ================= STATE ================= */
   const [loading, setLoading] = useState(false);
 
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [dateOfBirth, setDateOfBirth] = useState('');
   const [gender, setGender] = useState('');
+  const [country, setCountry] = useState(''); // ✅ Country State
   const [profileImage, setProfileImage] = useState(null);
 
   const [showGenderOptions, setShowGenderOptions] = useState(false);
-  const [showDate, setShowDate] = useState(false);
+  const [showCountryPicker, setShowCountryPicker] = useState(false); // ✅ Modal State
 
   /* ================= FETCH USER ================= */
   useEffect(() => {
     const loadUser = async () => {
       setLoading(true);
       const token = await AsyncStorage.getItem('authToken');
+      console.log("ccccccccccccccccccccccccccccccc", token)
 
       const res = await fetch('http://43.204.167.118:3000/api/auth/getUser', {
         headers: { Authorization: `Bearer ${token}` },
@@ -64,8 +72,14 @@ const UpdateProfile = () => {
         const u = result.user;
         setFirstName(u.firstName || '');
         setLastName(u.lastName || '');
-        setDateOfBirth(formatDateForUI(u.dateOfBirth));
+        if (u.dateOfBirth) {
+          const d = new Date(u.dateOfBirth);
+          setDateOfBirth(!isNaN(d) ? d.getFullYear().toString() : u.dateOfBirth);
+        } else {
+          setDateOfBirth('');
+        }
         setGender(u.gender || '');
+        setCountry(u.country || ''); // ✅ Load Country
         setProfileImage(u.profileImage || null);
       }
       setLoading(false);
@@ -104,18 +118,12 @@ const UpdateProfile = () => {
       setLoading(true);
       const token = await AsyncStorage.getItem('authToken');
 
-      // 🔥 FIX: Always use FormData as per working Postman example
       const formData = new FormData();
-
-      // Note: User's Postman screenshot showed 'firstname' (lowercase).
-      // Matching that casing to be safe, though camelCase likely works if backend is standard.
-      // But 500 often means strict validation or parsing crash.
       formData.append('firstName', firstName);
       formData.append('lastName', lastName);
-
-      // Sending other fields as they are
-      formData.append('dateOfBirth', formatDateForAPI(dateOfBirth));
+      formData.append('dateOfBirth', dateOfBirth);
       formData.append('gender', gender);
+      formData.append('country', country); // ✅ Send Country
 
       if (profileImage && profileImage.startsWith('file')) {
         const imageUri = Platform.OS === 'ios' ? profileImage.replace('file://', '') : profileImage;
@@ -129,7 +137,7 @@ const UpdateProfile = () => {
       console.log('📤 Sending FormData Update:', JSON.stringify({
         firstName: firstName,
         lastName: lastName,
-        dob: formatDateForAPI(dateOfBirth),
+        dob: dateOfBirth,
         gender,
         hasImage: !!(profileImage && profileImage.startsWith('file'))
       }));
@@ -139,13 +147,11 @@ const UpdateProfile = () => {
         headers: {
           Authorization: `Bearer ${token}`,
           Accept: 'application/json',
-          // 'Content-Type': 'multipart/form-data', // ❌ STRICTLY REMOVED: Fetch generates boundary automatically
         },
         body: formData,
       });
 
       console.log('📥 Profile API Status:', res.status);
-
       const text = await res.text();
       console.log('📥 Profile API Response:', text);
 
@@ -158,10 +164,7 @@ const UpdateProfile = () => {
       }
 
       if (res.ok && result.success) {
-        // ✅ CALLBACK
         onUpdate?.(result.user);
-
-        // ✅ SUCCESS
         Alert.alert(
           'Success',
           'Profile updated successfully',
@@ -169,15 +172,7 @@ const UpdateProfile = () => {
             {
               text: 'OK',
               onPress: () => {
-                navigation.dispatch(
-                  CommonActions.reset({
-                    index: 1,
-                    routes: [
-                      { name: 'More' },
-                      { name: 'ProfileScreen' },
-                    ],
-                  })
-                );
+                navigation.goBack();
               },
             },
           ],
@@ -194,48 +189,17 @@ const UpdateProfile = () => {
     }
   };
 
-  // API → UI (dd-mm-yyyy)
-  const formatDateForUI = isoDate => {
-    if (!isoDate) return '';
-    const d = new Date(isoDate);
-
-    const day = String(d.getDate()).padStart(2, '0');
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const year = d.getFullYear();
-
-    return `${day}-${month}-${year}`; // 17-12-2025
-  };
-
-  // UI → API (yyyy-mm-dd)
-  const formatDateForAPI = uiDate => {
-    if (!uiDate) return '';
-    const [day, month, year] = uiDate.split('-');
-    return `${year}-${month}-${day}`;
-  };
-
-
-
-
   /* ================= UI ================= */
   return (
     <View style={{ flex: 1 }}>
       <LinearGradient colors={theme.backgroundGradient} style={{ flex: 1 }}>
-        <SafeAreaView style={{ flex: 1 }}>
+        {/* Removed SafeAreaView wrapper to control padding manually with insets */}
+        <View style={{ flex: 1, paddingTop: insets.top + 30 }}>
+          <CustomHeader
+            title="PROFILE"
+            onBack={() => navigation.goBack()}
+          />
           <ScrollView showsVerticalScrollIndicator={false}>
-            {/* HEADER */}
-            <View style={styles.header}>
-              <TouchableOpacity onPress={() => navigation.goBack()}>
-                <Icon
-                  name="caret-back-outline"
-                  size={normalize(23)}
-                  color="#fff"
-                />
-              </TouchableOpacity>
-              {/* CHANGED: Title to PROFILE */}
-              <Text style={styles.headerTitle}>PROFILE</Text>
-              <View style={{ width: normalize(23) }} />
-            </View>
-            <View style={styles.headerSeparator} />
 
             {loading ? (
               <ActivityIndicator size="large" color="#fff" style={{ marginTop: 50 }} />
@@ -292,16 +256,19 @@ const UpdateProfile = () => {
                 {/* Year of Birth */}
                 <View style={styles.fieldRow}>
                   <Text style={styles.fieldLabel}>Year of Birth:</Text>
-                  <Pressable onPress={() => setShowDate(true)} style={{ flex: 1 }}>
-                    <View pointerEvents="none">
-                      <TextInput
-                        style={styles.inlineInput}
-                        editable={false}
-                        value={dateOfBirth}
-                        placeholderTextColor="#94A3B8"
-                      />
-                    </View>
-                  </Pressable>
+                  <TextInput
+                    style={styles.inlineInput}
+                    value={dateOfBirth}
+                    onChangeText={(text) => {
+                      if (/^\d{0,4}$/.test(text)) {
+                        setDateOfBirth(text);
+                      }
+                    }}
+                    placeholder="YYYY"
+                    placeholderTextColor="#94A3B8"
+                    keyboardType="numeric"
+                    maxLength={4}
+                  />
                 </View>
 
                 {/* Gender */}
@@ -321,7 +288,7 @@ const UpdateProfile = () => {
                             styles.input1,
                             { color: gender ? 'white' : '#94A3B8' },
                           ]}>
-                          {gender || 'Select Gender'}
+                          {gender ? (gender === 'other' ? 'Others' : gender.charAt(0).toUpperCase() + gender.slice(1)) : 'Select Gender'}
                         </Text>
                       </View>
                       <MaterialIcons
@@ -333,18 +300,52 @@ const UpdateProfile = () => {
 
                     {showGenderOptions && (
                       <View style={styles.dropdownOptions}>
-                        {['male', 'female', 'other'].map(option => (
+                        {[
+                          { label: 'Male', value: 'male' },
+                          { label: 'Female', value: 'female' },
+                          { label: 'Others', value: 'other' }
+                        ].map(option => (
                           <TouchableOpacity
-                            key={option}
+                            key={option.value}
                             onPress={() => {
-                              setGender(option);
+                              setGender(option.value);
                               setShowGenderOptions(false);
                             }}>
-                            <Text style={styles.dropdownOptionText}>{option}</Text>
+                            <Text style={styles.dropdownOptionText}>{option.label}</Text>
                           </TouchableOpacity>
                         ))}
                       </View>
                     )}
+                  </View>
+                </View>
+
+                {/* Country */}
+                <View style={[styles.fieldRow, { alignItems: 'flex-start' }]}>
+                  <Text style={[styles.fieldLabel, { marginTop: 12 }]}>Country:</Text>
+                  <View style={{ flex: 1 }}>
+                    <TouchableOpacity
+                      style={styles.dropdownButton}
+                      onPress={() => setShowCountryPicker(true)}>
+                      <View style={styles.dropdownTextContainer}>
+                        <Text
+                          style={[
+                            styles.input1,
+                            {
+                              color: country ? 'white' : '#94A3B8',
+                              fontSize: country ? normalize(22) : normalize(14)
+                            },
+                          ]}>
+                          {country && CountryList.find(c => c.name === country)
+                            ? `${CountryList.find(c => c.name === country).flag}`
+                            : country || 'Select Country'}
+                        </Text>
+                      </View>
+                      <MaterialIcons
+                        name="keyboard-arrow-down"
+                        size={normalize(20)}
+                        color="#94A3B8"
+                      />
+                    </TouchableOpacity>
                   </View>
                 </View>
 
@@ -383,24 +384,52 @@ const UpdateProfile = () => {
               </View>
             )}
           </ScrollView>
-        </SafeAreaView>
+        </View>
       </LinearGradient>
 
-      {/* DATE PICKER */}
-      {showDate && (
-        <DateTimePicker
-          value={new Date()}
-          mode="date"
-          maximumDate={new Date()} // ✅ Prevent future dates
-          onChange={(e, d) => {
-            setShowDate(false);
-            if (d) {
-              const iso = d.toISOString();
-              setDateOfBirth(formatDateForUI(iso));
-            }
-          }}
-        />
-      )}
+      {/* COUNTRY PICKER MODAL */}
+      <Modal
+        visible={showCountryPicker}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowCountryPicker(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { height: '80%' }]}>
+            <View style={styles.titleContainer}>
+              <Text style={styles.modalTitle}>Select Country</Text>
+            </View>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {CountryList.map((item, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={styles.modalOption}
+                  onPress={() => {
+                    setCountry(item.name);
+                    setShowCountryPicker(false);
+                  }}>
+                  <Text style={{ fontSize: 24 }}>{item.flag}</Text>
+                  <Text
+                    style={[
+                      styles.modalOptionText,
+                      country === item.name && { color: '#4da6ff', fontWeight: 'bold' },
+                    ]}>
+                    {item.name}
+                  </Text>
+                  {country === item.name && (
+                    <Icon name="checkmark" size={18} color="#4da6ff" />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => setShowCountryPicker(false)}>
+              <Text style={styles.closeText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
     </View>
   );
 };
@@ -408,11 +437,12 @@ const UpdateProfile = () => {
 
 const styles = StyleSheet.create({
   header: {
-    marginTop: normalize(37),
+    // marginTop: normalize(37), // REMOVED
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingHorizontal: normalize(15),
-    bottom: 10,
+    marginBottom: 10, // Adjusted simple bottom margin
+    // bottom: 10, // REMOVED
   },
   headerTitle: {
     color: '#fff',
@@ -553,7 +583,69 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: normalize(16),
     fontWeight: '700'
-  }
+  },
+
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)', // Softer overlay
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: '85%',
+    backgroundColor: 'rgba(255, 255, 255, 0.92)', // Glass-like White
+    borderRadius: 20,
+    padding: 0,
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.5)', // Subtle frost border
+    overflow: 'hidden',
+  },
+  titleContainer: {
+    paddingVertical: 18,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.05)',
+    backgroundColor: 'rgba(255, 255, 255, 0.5)', // Slightly different top
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1E293B', // Dark Text
+    textAlign: 'center',
+    letterSpacing: 0.5,
+  },
+  modalOption: {
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.05)', // Very light separator
+  },
+  modalOptionText: {
+    fontSize: 16,
+    color: '#334155', // Dark Grey Text
+    marginLeft: 15,
+    flex: 1,
+    fontWeight: '500',
+  },
+  closeButton: {
+    alignItems: 'center',
+    paddingVertical: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.8)', // Translucent footer
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.05)',
+  },
+  closeText: {
+    fontSize: 16,
+    color: '#EF4444', // Red accent
+    fontWeight: '600',
+  },
 
 });
 

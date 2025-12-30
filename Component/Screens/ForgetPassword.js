@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import {
   StyleSheet,
   Text,
@@ -33,6 +33,15 @@ const ForgetPassword = () => {
   const [errorText, setErrorText] = useState('');
 
   const inputRefs = useRef([]);
+
+  // Auto-verify OTP when full
+  useEffect(() => {
+    const code = otp.join('');
+    if (code.length === 6) {
+      handleVerifyOtp();
+    }
+  }, [otp]);
+
 
   /* ================= OTP VERIFY ================= */
   const handleVerifyOtp = async () => {
@@ -147,13 +156,19 @@ const ForgetPassword = () => {
     }
   };
 
+  const handleBackspace = (key, index) => {
+    if (key === 'Backspace' && otp[index] === '' && index > 0) {
+      inputRefs.current[index - 1]?.focus();
+    }
+  };
+
   return (
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn} hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}>
           <Icon name="caret-back-outline" size={normalize(29)} color="white" />
         </TouchableOpacity>
         <Text style={styles.title}>Forgot Password</Text>
@@ -176,6 +191,9 @@ const ForgetPassword = () => {
                   keyboardType="numeric"
                   maxLength={1}
                   onChangeText={text => handleOtpChange(text, index)}
+                  onKeyPress={({ nativeEvent }) =>
+                    handleBackspace(nativeEvent.key, index)
+                  }
                 />
               ))}
             </View>
@@ -206,13 +224,15 @@ const ForgetPassword = () => {
           </View>
         )}
 
-        <TouchableOpacity
-          style={styles.button}
-          onPress={step === 1 ? handleVerifyOtp : handleResetPassword}>
-          <Text style={styles.buttonText}>
-            {step === 1 ? 'Confirm' : 'Reset Password'}
-          </Text>
-        </TouchableOpacity>
+        {step === 2 && (
+          <TouchableOpacity
+            style={styles.button}
+            onPress={handleResetPassword}>
+            <Text style={styles.buttonText}>
+              Reset Password
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
     </KeyboardAvoidingView>
   );

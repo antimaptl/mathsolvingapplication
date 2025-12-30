@@ -9,35 +9,34 @@ import {
   StatusBar,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import {useNavigation} from '@react-navigation/native';
-import {useTheme} from '../Globalfile/ThemeContext';
+import { useNavigation } from '@react-navigation/native';
+import { useTheme } from '../Globalfile/ThemeContext';
 
-const {width, height} = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 const AddFriendScreen = () => {
   const navigation = useNavigation();
-  const {theme} = useTheme();
+  const { theme } = useTheme();
 
   return (
     <LinearGradient
       colors={theme.backgroundGradient || ['#0f162b', '#0f162b']}
       style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#0f162b" />
 
       {/* Title */}
-      <Text style={[styles.title, {color: theme.text}]}>Add Friends</Text>
+      <Text style={[styles.title, { color: theme.text }]}>Add Friends</Text>
 
       {/* Illustration */}
       <View style={styles.imageContainer}>
         <Image
-          source={require('../Screens/Image/addFriend.png')} 
+          source={require('../Screens/Image/addFriend.png')}
           style={styles.image}
           resizeMode="contain"
         />
       </View>
 
       {/* Description */}
-      <Text style={[styles.description, {color: theme.textSecondary || '#cbd5e1'}]}>
+      <Text style={[styles.description, { color: theme.textSecondary || '#cbd5e1' }]}>
         Connect with your friends and challenge them in fun math battles!
       </Text>
 
@@ -51,7 +50,7 @@ const AddFriendScreen = () => {
 
         <TouchableOpacity
           onPress={() => navigation.replace('WelcomeScreen')}
-          style={[styles.continueButton, {backgroundColor: theme.primary || '#FB923C'}]}>
+          style={[styles.continueButton, { backgroundColor: theme.primary || '#FB923C' }]}>
           <Text style={styles.continueText}>Continue</Text>
         </TouchableOpacity>
       </View>

@@ -1,5 +1,5 @@
 
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useIsFocused } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
 import {
   View,
@@ -11,10 +11,10 @@ import {
   PixelRatio,
   ScrollView,
   ActivityIndicator,
-  SafeAreaView,
   Platform,
   Alert,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/Ionicons';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
@@ -22,6 +22,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../Globalfile/ThemeContext';
 import Geolocation from 'react-native-geolocation-service';
 import { request, PERMISSIONS, RESULTS } from 'react-native-permissions';
+import { CountryList } from '../Globalfile/CountryList';
+import CustomHeader from '../Globalfile/CustomHeader';
 
 const { width, height } = Dimensions.get('window');
 const scale = width / 375;
@@ -30,6 +32,7 @@ const normalize = size =>
 
 const ProfileScreen = () => {
   const Navigation = useNavigation();
+  const isFocused = useIsFocused();
   const { theme } = useTheme();
 
   const [userData, setUserData] = useState(null);
@@ -40,7 +43,6 @@ const ProfileScreen = () => {
     const fetchUserData = async () => {
       try {
         const token = await AsyncStorage.getItem('authToken');
-        // console.log("NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN", token);
         if (!token) {
           setLoading(false);
           return;
@@ -64,72 +66,11 @@ const ProfileScreen = () => {
       }
     };
 
-    fetchUserData();
-  }, []);
-
-  /* ================= AUTO LOCATION ON LOAD ================= */
-  useEffect(() => {
-    if (userData && !userData.country) {
-      getUserLocation();
+    if (isFocused) {
+      fetchUserData();
     }
-  }, [userData]);
+  }, [isFocused]);
 
-  /* ================= LOCATION ================= */
-  const getUserLocation = async () => {
-    try {
-      const permission = await request(
-        Platform.OS === 'android'
-          ? PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION
-          : PERMISSIONS.IOS.LOCATION_WHEN_IN_USE,
-      );
-
-      if (permission !== RESULTS.GRANTED) {
-        Alert.alert(
-          'Location Required',
-          'Please allow location to show your country',
-        );
-        return;
-      }
-
-      Geolocation.getCurrentPosition(
-        async position => {
-          const { latitude, longitude } = position.coords;
-
-          const res = await fetch(
-            `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`,
-          );
-          const data = await res.json();
-
-          const countryName = data.countryName || '';
-          if (!countryName) return;
-
-          // 🔥 save to backend
-          const token = await AsyncStorage.getItem('authToken');
-          await fetch('http://43.204.167.118:3000/api/auth/profile', {
-            method: 'PUT',
-            headers: {
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ country: countryName }),
-          });
-
-          // 🔥 update UI
-          setUserData(prev => ({
-            ...prev,
-            country: countryName,
-          }));
-        },
-        error => {
-          console.log(error);
-          Alert.alert('Error', 'Unable to fetch location');
-        },
-        { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 },
-      );
-    } catch (e) {
-      console.log(e);
-    }
-  };
 
   /* ================= HELPERS ================= */
   const formatDate = d => {
@@ -141,167 +82,150 @@ const ProfileScreen = () => {
     )}-${date.getFullYear().toString().slice(-2)}`;
   };
 
-  const mapCountryNameToCode = name => {
+  const getFlagFromCountryName = name => {
     if (!name) return '';
-    const map = {
-      india: 'IN',
-      'united states': 'US',
-      'united kingdom': 'UK',
-      canada: 'CA',
-      australia: 'AU',
-      germany: 'DE',
-      france: 'FR',
-    };
-    return map[name.toLowerCase()] || '';
+    // Normalize comparison (case-insensitive) just in case
+    const country = CountryList.find(c => c.name.toLowerCase() === name.toLowerCase() || c.code.toLowerCase() === name.toLowerCase());
+    return country ? country.flag : '🏳️'; // Return flag or a default if not found
   };
 
-  const getFlagEmoji = code =>
-    code
-      ? code
-        .toUpperCase()
-        .replace(/./g, c =>
-          String.fromCodePoint(127397 + c.charCodeAt()),
-        )
-      : '';
-
   // ✅ Main screen content separated for cleaner theme wrapping
-  const Content = () => (
-    <SafeAreaView style={[styles.container]}>
+  const Content = () => {
+    const insets = useSafeAreaInsets(); // ✅ Hook moved here
+    return (
+      <View style={{ flex: 1, paddingTop: insets.top + 30 }}>
+        {/* Header - Outside Padding */}
+        <CustomHeader
+          title="PROFILE"
+          onBack={() => Navigation.goBack()}
+          rightIcon={
+            <TouchableOpacity
+              onPress={() => {
+                Navigation.navigate("UpdateProfile")
+              }}>
+              <FontAwesome5 name="user-edit" size={normalize(16)} color="#fff" />
+            </TouchableOpacity>
+          }
+        />
 
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => Navigation.goBack()}>
-            <Icon name="caret-back-outline" size={normalize(23)} color="#fff" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>PROFILE</Text>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}>
 
-          <TouchableOpacity
-            onPress={() => {
-              Navigation.navigate("UpdateProfile")
-            }}>
-            <FontAwesome5 name="user-edit" size={normalize(16)} color="#fff" />
-          </TouchableOpacity>
-        </View>
-        <View style={styles.headerSeparator} />
+          {loading ? (
+            <ActivityIndicator
+              size="large"
+              color="#fff"
+              style={{ marginTop: 50 }}
+            />
+          ) : (
+            <View style={styles.profileSection}>
+              {/* Profile Section */}
+              <View style={styles.profileTop}>
+                <View style={styles.imageContainer}>
+                  <Image
+                    source={
+                      userData?.profileImage
+                        ? { uri: userData.profileImage }
+                        : require('../Screens/Image/dummyProfile.jpg')
+                    }
+                    style={styles.profileImage}
+                  />
 
-        {loading ? (
-          <ActivityIndicator
-            size="large"
-            color="#fff"
-            style={{ marginTop: 50 }}
-          />
-        ) : (
-          <View style={styles.profileSection}>
-            {/* Profile Section */}
-            <View style={styles.profileTop}>
-              <View style={styles.imageContainer}>
-                <Image
-                  source={
-                    userData?.profileImage
-                      ? { uri: userData.profileImage }
-                      : require('../Screens/Image/dummyProfile.jpg')
-                  }
-                  style={styles.profileImage}
-                />
-
+                </View>
+                <View style={styles.profileText}>
+                  <Text style={styles.userName}>
+                    {userData?.username || 'Unknown'}
+                  </Text>
+                  <Text style={styles.joinDate}>
+                    Joined: {formatDate(userData?.createdAt)}
+                  </Text>
+                </View>
               </View>
-              <View style={styles.profileText}>
-                <Text style={styles.userName}>
-                  {userData?.username || 'Unknown'}
-                </Text>
-                <Text style={styles.joinDate}>
-                  Joined: {formatDate(userData?.createdAt)}
-                </Text>
-              </View>
-            </View>
 
-            {/* Info */}
-            <View style={styles.userInfo}>
-              <Text style={styles.email}>
-                Email:{' '}
-                <Text style={styles.emailText}>{userData?.email || 'N/A'}</Text>
-              </Text>
-              <Text style={styles.detail}>
-                First Name: {userData?.firstName || 'N/A'}
-              </Text>
-              <Text style={styles.detail}>
-                Last Name: {userData?.lastName || 'N/A'}
-              </Text>
-              <Text style={styles.detail}>
+              {/* Info */}
+              <View style={styles.userInfo}>
+                <Text style={styles.email}>
+                  Email:{' '}
+                  <Text style={styles.emailText}>{userData?.email || 'N/A'}</Text>
+                </Text>
                 <Text style={styles.detail}>
-                  Year of Birth : {formatDate(userData?.dateOfBirth)}
+                  First Name: {userData?.firstName || 'N/A'}
                 </Text>
+                <Text style={styles.detail}>
+                  Last Name: {userData?.lastName || 'N/A'}
+                </Text>
+                <Text style={styles.detail}>
+                  <Text style={styles.detail}>
+                    Year of Birth : {userData?.dateOfBirth ? new Date(userData.dateOfBirth).getFullYear() : 'N/A'}
+                  </Text>
 
-              </Text>
-              <Text style={styles.detail}>
-                Gender: {userData?.gender || 'N/A'}
-              </Text>
-              {/* 🔥 LOCATION DISPLAY (ADDED) */}
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Text style={styles.detail}>Country:</Text>
+                </Text>
+                <Text style={styles.detail}>
+                  Gender: {userData?.gender ? (userData.gender === 'other' ? 'Others' : userData.gender.charAt(0).toUpperCase() + userData.gender.slice(1)) : 'N/A'}
+                </Text>
+                {/* 🔥 LOCATION DISPLAY (ADDED) */}
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Text style={styles.detail}>Country:</Text>
 
-                {userData?.country ? (
-                  <View style={{ marginStart: 12, marginTop: -2 }}>
-                    <Text style={{ fontSize: normalize(18) }}>
-                      {getFlagEmoji(mapCountryNameToCode(userData.country))}
+                  {userData?.country ? (
+                    <View style={{ marginStart: 12, marginTop: -6 }}>
+                      <Text style={{ fontSize: normalize(22) }}>
+                        {getFlagFromCountryName(userData.country)}
+                      </Text>
+                    </View>
+                  ) : (
+                    <Text style={{ color: '#777', marginStart: 10 }}>
+                      Not Set
                     </Text>
-                  </View>
-                ) : (
-                  <TouchableOpacity onPress={getUserLocation}>
-                    <Text style={{ color: '#4da6ff', marginStart: 10 }}>
-                      Enable Location
+                  )}
+                </View>
+
+              </View>
+
+              {/* Rank Tabs */}
+              <View style={styles.tabRow}>
+                {['E2', 'E4', 'M2', 'M4', 'H2', 'H4'].map((item, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    style={[styles.tab, item === 'M4' && styles.activeTab]}>
+                    <Text
+                      style={[
+                        styles.tabText,
+                        item === 'M4' && styles.activeTabText,
+                      ]}>
+                      {item}
                     </Text>
                   </TouchableOpacity>
-                )}
-              </View>
-
-            </View>
-
-            {/* Rank Tabs */}
-            <View style={styles.tabRow}>
-              {['E2', 'E4', 'M2', 'M4', 'H2', 'H4'].map((item, index) => (
-                <TouchableOpacity
-                  key={index}
-                  style={[styles.tab, item === 'M4' && styles.activeTab]}>
-                  <Text
-                    style={[
-                      styles.tabText,
-                      item === 'M4' && styles.activeTabText,
-                    ]}>
-                    {item}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            {/* Rank Bar */}
-            <View style={styles.rankContainer}>
-              <Text style={styles.rankText}>Current Rank: 10,456</Text>
-              <View style={styles.rankBar}>
-                <View style={[styles.rankBarFillGreen, { width: '50%' }]} />
-                <View style={[styles.rankBarFillRed, { width: '45%' }]} />
-              </View>
-            </View>
-
-            {/* Achievements */}
-            <View style={styles.achievementsContainer}>
-              <Text style={styles.achievementTitle}>Achievements</Text>
-              <View style={styles.achievementRow}>
-                {['Ach. 1', 'Ach. 2', 'Ach. 3', 'Ach. 4'].map((item, index) => (
-                  <View key={index} style={styles.achievementBox}>
-                    <Text style={styles.achievementText}>{item}</Text>
-                  </View>
                 ))}
               </View>
+
+              {/* Rank Bar */}
+              <View style={styles.rankContainer}>
+                <Text style={styles.rankText}>Current Rank: 10,456</Text>
+                <View style={styles.rankBar}>
+                  <View style={[styles.rankBarFillGreen, { width: '50%' }]} />
+                  <View style={[styles.rankBarFillRed, { width: '45%' }]} />
+                </View>
+              </View>
+
+              {/* Achievements */}
+              <View style={styles.achievementsContainer}>
+                <Text style={styles.achievementTitle}>Achievements</Text>
+                <View style={styles.achievementRow}>
+                  {['Ach. 1', 'Ach. 2', 'Ach. 3', 'Ach. 4'].map((item, index) => (
+                    <View key={index} style={styles.achievementBox}>
+                      <Text style={styles.achievementText}>{item}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
             </View>
-          </View>
-        )}
-      </ScrollView>
-    </SafeAreaView>
-  );
+          )}
+        </ScrollView>
+      </View >
+    );
+  };
 
   // ✅ Apply theme background here
   return theme.backgroundGradient ? (
@@ -329,7 +253,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: normalize(20),
     marginBottom: normalize(15),
   },
   headerTitle: { color: '#fff', fontSize: normalize(18), fontWeight: '700' },
@@ -357,7 +280,6 @@ const styles = StyleSheet.create({
   profileImage: {
     width: normalize(70),
     height: normalize(70),
-    // borderRadius: normalize(40),
   },
   profileText: { marginLeft: normalize(30) },
   userName: {
@@ -423,93 +345,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   achievementText: { color: '#ddd', fontSize: normalize(12) },
-  modalOverlay: {
-    position: 'absolute',
-    top: 0, left: 0, right: 0, bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-
-  modalContainer: {
-    width: '85%',
-    backgroundColor: '#fff',
-    padding: normalize(18),
-    borderRadius: normalize(12),
-    elevation: 10,
-    transform: [{ scale: 0.95 }],
-    opacity: 0.95,
-  },
-
-  modalHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: normalize(10),
-  },
-
-  modalTitle: {
-    fontSize: normalize(16),
-    color: '#000',
-    fontWeight: '700',
-  },
-
-  modalImageRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: normalize(20),
-    marginTop: normalize(10),
-  },
-
-  modalImageBox: {
-    width: normalize(60),
-    height: normalize(60),
-    borderWidth: 1,
-    borderColor: '#777',
-  },
-
-  uploadText: {
-    color: '#d19a00',
-    fontSize: normalize(13),
-    width: normalize(100),
-  },
-
-  label: {
-    fontSize: normalize(13),
-    color: '#333',
-    fontStyle: 'italic',
-    marginTop: normalize(6),
-  },
-
-  modalBtnRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: normalize(25),
-  },
-
-  discardBtn: {
-    width: '48%',
-    borderWidth: 1,
-    borderColor: '#333',
-    paddingVertical: normalize(8),
-    alignItems: 'center',
-  },
-
-  saveBtn: {
-    width: '48%',
-    borderWidth: 1,
-    borderColor: '#333',
-    paddingVertical: normalize(8),
-    alignItems: 'center',
-  },
-
-  discardText: {
-    color: '#000',
-  },
-
-  saveText: {
-    color: '#000',
-  },
 });
 
 export default ProfileScreen;

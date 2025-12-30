@@ -34,6 +34,9 @@ const KeyboardPreview = ({ layout, theme, isSelected }) => {
               content = <Text style={{ fontSize: 8, color: '#fff' }}>CLR</Text>;
             } else if (strItem === 'skip') {
               content = <Text style={{ fontSize: 8, color: '#fff' }}>SKIP</Text>;
+            } else {
+              // Render numbers/decimals
+              content = <Text style={{ fontSize: 10, color: '#fff', fontWeight: 'bold' }}>{item}</Text>;
             }
 
             return (

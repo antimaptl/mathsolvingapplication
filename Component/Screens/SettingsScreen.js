@@ -24,6 +24,8 @@ import { useTheme } from '../Globalfile/ThemeContext';
 import { useSound } from '../../Context/SoundContext';
 import messaging from '@react-native-firebase/messaging';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import CustomHeader from '../Globalfile/CustomHeader';
 
 const { width, height } = Dimensions.get('window');
 const scaleFont = size => size * PixelRatio.getFontScale();
@@ -53,7 +55,7 @@ const SettingsScreen = () => {
       const parsed = storedValue === "true";
       console.log("🔄 Parsed value:", parsed);
 
-     
+
       const permissionStatus = await messaging().hasPermission();
       console.log("📱 System permission raw:", permissionStatus);
 
@@ -141,13 +143,13 @@ const SettingsScreen = () => {
   const handleToggle = async (value) => {
     console.log("🔄 User toggled:", value);
 
-    
+
     console.log("⚙ Always opening system notification settings...");
     if (Platform.OS === "android") {
       Linking.openSettings();
     }
 
-    
+
     if (value === true) {
       console.log("📨 UI: Notification turned ON (system will decide actual state)");
       await AsyncStorage.setItem("notification", "true");
@@ -211,49 +213,28 @@ const SettingsScreen = () => {
     );
   };
 
-  const Content = () => (
-    <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}>
-          <Ionicons
-            name="caret-back-outline"
-            size={scaleFont(28)}
-            color={theme.text || 'black'}
-          />
-        </TouchableOpacity>
-
-        {/* Header Title (Center Aligned) */}
-        <Text
-          style={[
-            styles.headerTitle,
-            { color: theme.text || 'black' },
-          ]}>
-          SETTINGS
-        </Text>
-        {/* Placeholder for centering */}
-        <View style={styles.rightPlaceholder} />
-      </View>
-
-
-      <View style={styles.headerSeparator} />
-
-
-      {/* Settings List (Separate Cards) */}
-      <View style={styles.settingsList}>
-        <SettingCard
-          label="Allow Notification"
-          stateKey="notification"
-          iconName="bell-outline"
+  const Content = () => {
+    const insets = useSafeAreaInsets();
+    return (
+      <View style={{ flex: 1, paddingTop: insets.top + 30 }}>
+        <CustomHeader
+          title="SETTINGS"
+          onBack={() => navigation.goBack()}
         />
-        <SettingCard
-          label="Sound"
-          stateKey="sound"
-          iconName="volume-high"
-        />
-        {/* <SettingCard
+        <View style={styles.container}>
+          {/* Settings List (Separate Cards) */}
+          <View style={styles.settingsList}>
+            <SettingCard
+              label="Allow Notification"
+              stateKey="notification"
+              iconName="bell-outline"
+            />
+            <SettingCard
+              label="Sound"
+              stateKey="sound"
+              iconName="volume-high"
+            />
+            {/* <SettingCard
           label="Vibrate"
           stateKey="vibrate"
           iconName="vibrate"
@@ -263,9 +244,11 @@ const SettingsScreen = () => {
           stateKey="music"
           iconName="music"
         /> */}
+          </View>
+        </View>
       </View>
-    </SafeAreaView>
-  );
+    );
+  };
 
   // Background Theme
   return theme.backgroundGradient ? (

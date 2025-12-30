@@ -17,7 +17,7 @@ export const themes = {
     // glacierRush:{name:'Glacier Rush',backgroundGradient:['#003344','#006688','#0099CC'],text:'#E9FFFF',primary:'#33CCFF',cardBackground:'#002B38',buttonGradient:['#00B8E6','#66D9FF'],subText:'#DFF8FF'},
     forestQuest: { name: 'Forest Quest', backgroundGradient: ['#0B3D0B', '#145214', '#1F7A1F'], text: '#E8FFE8', primary: '#1C7A23', cardBackground: '#123312', buttonGradient: ['#1C6B1C', '#2FBF2F'], subText: '#E6F9E6' },
     // goldRush:{name:'Gold Rush',backgroundGradient:['#4B3F00','#8C7600'],text:'#FFFFFF',primary:'#FFD700',cardBackground:'#3A2E00',buttonGradient:['#FFB700','#FFC845'],subText:'#FFF5D6'},
-    desertLogic: { name: 'Desert Logic', backgroundGradient: ['#553300', '#A66A00', '#DCA000'], text: '#2B1A00', primary: '#E6B44C', cardBackground: '#3F2700', buttonGradient: ['#D4A243', '#FFE1A0'], subText: '#FFF2D9' },
+    desertLogic: { name: 'Desert Logic', backgroundGradient: ['#553300', '#A66A00', '#DCA000'], text: '#FFF0F6', primary: '#E6B44C', cardBackground: '#3F2700', buttonGradient: ['#D4A243', '#FFE1A0'], subText: '#FFF2D9' },
     blossomDream: { name: 'Blossom Dream', backgroundGradient: ['#4A0A2E', '#B3126E', '#FF66A6'], text: '#FFF0F6', primary: '#FF9ECB', cardBackground: '#2A001A', buttonGradient: ['#C2185B', '#FF80AB'], subText: '#FFE8F2' },
     // crimsonVictory:{name:'Crimson Victory',backgroundGradient:['#3A0000','#7A0000','#B30000'],text:'#FDEDED',primary:'#FF4C4C',cardBackground:'#2A0000',buttonGradient:['#FF1A1A','#FF6666'],subText:'#FFE5E5'},
     lavaBlaze: { name: 'Lava Blaze', backgroundGradient: ['#330000', '#660000', '#FF4500'], text: '#FFEFE6', primary: '#FF7A00', cardBackground: '#1A0000', buttonGradient: ['#B30000', '#FF6600'], subText: '#FFEFE8' },

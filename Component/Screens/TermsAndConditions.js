@@ -8,10 +8,11 @@ import {
   Dimensions,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
+import CustomHeader from '../Globalfile/CustomHeader';
 
-const {width, height} = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
-const  TermsAndConditions= ({navigation}) => {
+const TermsAndConditions = ({ navigation }) => {
   const termsText = `
   Lorem Ipsum Lorem Ipsum Lorem Ipsum Lorem Ipsum
   Lorem Ipsum Lorem Ipsum Lorem Ipsum Lorem Ipsum
@@ -37,15 +38,10 @@ const  TermsAndConditions= ({navigation}) => {
 
   return (
     <View style={styles.container}>
-      {/* Header with Back Button */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}>
-          <Icon name="caret-back-outline" size={24} color="#fff" />
-        </TouchableOpacity>
-        <Text style={styles.title}>T&C</Text>
-      </View>
+      <CustomHeader
+        title="T&C"
+        onBack={() => navigation.goBack()}
+      />
 
       {/* Scrollable T&C Content */}
       <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -66,7 +62,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: width * 0.08,
     marginBottom: height * 0.02,
-     gap:95
+    gap: 95
   },
   backButton: {
     marginRight: width * 0.03,

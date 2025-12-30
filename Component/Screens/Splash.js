@@ -35,13 +35,13 @@ export default function SplashScreen() {
           } else if (token) {
             navigation.replace('BottomTab');
           } else {
-            navigation.replace('Login');
+            navigation.replace('AuthLandingScreen');
           }
         }, 3000);
 
       } catch (error) {
         console.log('Error checking auth:', error);
-        navigation.replace('Login');
+        navigation.replace('AuthLandingScreen');
       }
     };
 

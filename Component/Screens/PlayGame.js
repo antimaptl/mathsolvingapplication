@@ -20,6 +20,7 @@ import {
   stopBackgroundMusic,
 } from '../Globalfile/playBackgroundMusic';
 import { useTheme } from '../Globalfile/ThemeContext';
+import CustomHeader from '../Globalfile/CustomHeader';
 
 const { width, height } = Dimensions.get('window');
 const scaleFont = size => size * PixelRatio.getFontScale();
@@ -28,6 +29,9 @@ const PlayGame = ({ route }) => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const { gametype } = route.params || {};
+
+  // ✅ Determine if Practice Mode (Check params OR tab name)
+  const isPractice = gametype === 'PRACTICE' || route.name === 'Practise';
   const { theme } = useTheme(); // ✅ Get current theme
   const [selectedDifficulty, setSelectedDifficulty] = useState('easy');
   const [selectedTimer, setSelectedTimer] = useState('1 Minute');
@@ -113,7 +117,7 @@ const PlayGame = ({ route }) => {
       };
 
       navigation.navigate(
-        gametype === 'PRACTICE' ? 'MathInputScreen' : 'Lobby',
+        isPractice ? 'MathInputScreen' : 'Lobby',
         params,
       );
     } catch (error) {
@@ -122,92 +126,78 @@ const PlayGame = ({ route }) => {
   };
 
   const Content = () => (
-    <ScrollView
-      contentContainerStyle={[styles.container, { paddingTop: insets.top + 40 }]}>
-      <View style={{ flexDirection: 'row', gap: width * 0.025 }}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.iconButton}>
-          <Icon name="caret-back-outline" size={scaleFont(26)} color="#fff" />
-        </TouchableOpacity>
-      </View>
+    <View style={{ flex: 1, paddingTop: insets.top + 30 }}>
+      <CustomHeader
+        title={isPractice ? 'Practice Game' : 'Play Game'}
+        onBack={() => navigation.goBack()}
+      // style={{ marginTop: -10 }} // Removed manual margin
+      />
+      <ScrollView
+        contentContainerStyle={[styles.container]}>
+        {/* Difficulty Section */}
+        <Text style={styles.sectionTitle}>Select Difficulty</Text>
+        <View style={styles.row}>
+          {renderOption('Easy', selectedDifficulty === 'easy', async () => {
+            await AsyncStorage.setItem('diff', 'easy');
+            setSelectedDifficulty('easy');
+          })}
+          {renderOption('Medium', selectedDifficulty === 'medium', async () => {
+            await AsyncStorage.setItem('diff', 'medium');
+            setSelectedDifficulty('medium');
+          })}
+          {renderOption('Hard', selectedDifficulty === 'hard', async () => {
+            await AsyncStorage.setItem('diff', 'hard');
+            setSelectedDifficulty('hard');
+          })}
+        </View>
 
-      <Text style={styles.heading}>
-        {gametype === 'PRACTICE' ? 'Practice Game' : 'Play Game'}
-      </Text>
-      <View
-        style={{
-          borderWidth: 1,
-          bottom: '1%',
-          borderColor: '#ffffff',
-          opacity: 0.5,
-          marginHorizontal: -width * 0.05,
-          marginBottom: height * 0.04,
-        }}></View>
-      {/* Difficulty Section */}
-      <Text style={styles.sectionTitle}>Select Difficulty</Text>
-      <View style={styles.row}>
-        {renderOption('Easy', selectedDifficulty === 'easy', async () => {
-          await AsyncStorage.setItem('diff', 'easy');
-          setSelectedDifficulty('easy');
-        })}
-        {renderOption('Medium', selectedDifficulty === 'medium', async () => {
-          await AsyncStorage.setItem('diff', 'medium');
-          setSelectedDifficulty('medium');
-        })}
-        {renderOption('Hard', selectedDifficulty === 'hard', async () => {
-          await AsyncStorage.setItem('diff', 'hard');
-          setSelectedDifficulty('hard');
-        })}
-      </View>
+        {/* Timer Section */}
+        <Text style={styles.sectionTitle}>Timer</Text>
+        <View style={styles.row}>
+          {renderOption('1 Minute', selectedTimer === '1 Minute', async () => {
+            await AsyncStorage.setItem('timer', '1 Minute');
+            setSelectedTimer('1 Minute');
+          })}
 
-      {/* Timer Section */}
-      <Text style={styles.sectionTitle}>Timer</Text>
-      <View style={styles.row}>
-        {renderOption('1 Minute', selectedTimer === '1 Minute', async () => {
-          await AsyncStorage.setItem('timer', '1 Minute');
-          setSelectedTimer('1 Minute');
-        })}
+          {renderOption('2 Minute', selectedTimer === '2 Minute', async () => {
+            await AsyncStorage.setItem('timer', '2 Minute');
+            setSelectedTimer('2 Minute');
+          })}
 
-        {renderOption('2 Minute', selectedTimer === '2 Minute', async () => {
-          await AsyncStorage.setItem('timer', '2 Minute');
-          setSelectedTimer('2 Minute');
-        })}
+          {renderOption('3 Minute', selectedTimer === '3 Minute', async () => {
+            await AsyncStorage.setItem('timer', '3 Minute');
+            setSelectedTimer('3 Minute');
+          })}
+        </View>
 
-        {renderOption('3 Minute', selectedTimer === '3 Minute', async () => {
-          await AsyncStorage.setItem('timer', '3 Minute');
-          setSelectedTimer('3 Minute');
-        })}
-      </View>
+        {/* Symbol Section */}
+        <Text style={styles.sectionTitle}>Symbol</Text>
+        <View style={styles.row1}>
+          {renderOption('(+) and (-)', selectedSymbol === '(+) and (-)', async () => {
+            await AsyncStorage.setItem('symbol', '(+) and (-)');
+            setSelectedSymbol('(+) and (-)');
+          })}
+          {renderOption(
+            '(+), (-), (x) and (/)',
+            selectedSymbol === '(+), (-), (x) and (/)',
+            async () => {
+              await AsyncStorage.setItem('symbol', '(+), (-), (x) and (/)');
+              setSelectedSymbol('(+) , (-), (x) and (/)');
+            }
+          )}
+        </View>
 
-      {/* Symbol Section */}
-      <Text style={styles.sectionTitle}>Symbol</Text>
-      <View style={styles.row1}>
-        {renderOption('(+) and (-)', selectedSymbol === '(+) and (-)', async () => {
-          await AsyncStorage.setItem('symbol', '(+) and (-)');
-          setSelectedSymbol('(+) and (-)');
-        })}
-        {renderOption(
-          '(+), (-), (x) and (/)',
-          selectedSymbol === '(+), (-), (x) and (/)',
-          async () => {
-            await AsyncStorage.setItem('symbol', '(+), (-), (x) and (/)');
-            setSelectedSymbol('(+) , (-), (x) and (/)');
-          }
-        )}
-      </View>
-
-      {/* ✅ Themed Gradient Play Button */}
-      <LinearGradient
-        colors={[theme.primary || '#FB923C', theme.primary || '#FF7F50']}
-        style={styles.playButton}>
-        <TouchableOpacity
-          onPress={handlePlayPress}
-          style={{ width: '100%', alignItems: 'center' }}>
-          <Text style={styles.playButtonText}>Play</Text>
-        </TouchableOpacity>
-      </LinearGradient>
-    </ScrollView>
+        <LinearGradient
+          colors={[theme.primary || '#FB923C', theme.primary || '#FF7F50']}
+          style={styles.playButton}>
+          <TouchableOpacity
+            onPress={handlePlayPress}
+            style={{ width: '100%', alignItems: 'center' }}>
+            <Text style={styles.playButtonText}>Play</Text>
+          </TouchableOpacity>
+        </LinearGradient>
+      </ScrollView>
+    </View>
   );
 
   return theme.backgroundGradient ? (

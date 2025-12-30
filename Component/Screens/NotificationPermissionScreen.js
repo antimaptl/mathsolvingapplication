@@ -125,10 +125,6 @@ const NotificationPermissionScreen = () => {
       {/* ✅ Apply theme background gradient */}
       {theme.backgroundGradient ? (
         <LinearGradient colors={theme.backgroundGradient} style={styles.container}>
-          <StatusBar
-            backgroundColor={theme.backgroundGradient[0]}
-            barStyle="light-content"
-          />
           <Content />
         </LinearGradient>
       ) : (

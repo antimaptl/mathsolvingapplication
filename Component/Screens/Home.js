@@ -24,6 +24,7 @@ import {
   muteBackgroundMusic,
   unmuteBackgroundMusic,
 } from '../Globalfile/playBackgroundMusic';
+import { useSound } from '../../Context/SoundContext';
 
 const { width, height } = Dimensions.get('window');
 const scaleFont = (size) => size * PixelRatio.getFontScale();
@@ -32,19 +33,8 @@ const Home = () => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { theme } = useTheme(); // ✅ get theme
+  const { isSoundOn, toggleSound } = useSound();
 
-  const [isMuted, setIsMuted] = useState(false);
-
-  // useEffect(() => {
-  //   playBackgroundMusic();
-  //   return () => stopBackgroundMusic();
-  // }, []);
-
-  // const toggleSound = () => {
-  //   if (isMuted) unmuteBackgroundMusic();
-  //   else muteBackgroundMusic();
-  //   setIsMuted(!isMuted);
-  // };
 
   const Content = () => (
     <View style={[styles.contentContainer, { paddingTop: insets.top + 30 }]}>
@@ -64,11 +54,11 @@ const Home = () => {
           </TouchableOpacity>
 
           {/* 🔊 Sound Toggle */}
-          <TouchableOpacity onPress={() => setIsMuted(prev => !prev)}>
+          <TouchableOpacity onPress={toggleSound}>
             <MaskedView
               maskElement={
                 <Ionicons
-                  name={isMuted ? 'volume-mute' : 'volume-high'}
+                  name={!isSoundOn ? 'volume-mute' : 'volume-high'}
                   size={width * 0.07}
                   color="black"
                   style={{ marginBottom: height * 0.010 }}
@@ -113,7 +103,7 @@ const Home = () => {
       {/* ✅ Apply theme background */}
       {theme.backgroundGradient ? (
         <LinearGradient colors={theme.backgroundGradient} style={styles.container}>
-         
+
           <Content />
         </LinearGradient>
       ) : (

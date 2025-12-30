@@ -16,6 +16,8 @@ import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import LinearGradient from 'react-native-linear-gradient';
 import { useTheme } from '../Globalfile/ThemeContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import CustomHeader from '../Globalfile/CustomHeader';
 
 const { width, height } = Dimensions.get('window');
 const scale = size => (width / 375) * size;
@@ -50,6 +52,7 @@ const More = () => {
   const navigation = useNavigation();
   const { theme } = useTheme();
   const [showLogoutModal, setShowLogoutModal] = React.useState(false);
+  const insets = useSafeAreaInsets(); // ✅ Hook
 
   const handleLogout = async () => {
     await AsyncStorage.removeItem('authToken');
@@ -60,106 +63,95 @@ const More = () => {
   };
 
   const Content = () => (
-    <SafeAreaView style={[styles.container]}>
-      <View style={styles.topBar}>
-        <TouchableOpacity onPress={() => navigation.navigate('Home')}>
-          <Ionicons
-            name="caret-back-outline"
-            size={scale(26)}
-            color={theme.text || '#808080'}
-          />
-        </TouchableOpacity>
-        <Text style={[styles.menuTitle, { color: theme.text || '#fff' }]}>
-          MORE
-        </Text>
-      </View>
-      <View
-        style={{
-          borderWidth: 1,
-          bottom: '1%',
-          borderColor: '#94A3B8',
-          opacity: 0.5,
-          marginHorizontal: -width * 0.05,
-        }}></View>
-      <ScrollView contentContainerStyle={styles.menuList}>
-        {menuItems.map((item, index) => {
-          const IconComp =
-            item.lib === 'MaterialIcons' ? MaterialIcons : Ionicons;
-          return (
-            <TouchableOpacity
-              key={index}
-              style={styles.menuItem}
-              onPress={() => {
-                if (item.route === 'ThemeSelectorScreen') {
-                  navigation.navigate('ThemeSelectorScreen', {
-                    from: 'settings',
-                  });
-                } else {
-                  navigation.navigate(item.route);
-                }
-              }}>
-              <IconComp
-                name={item.icon}
-                size={scale(20)}
-                color={theme.text || '#fff'}
-                style={styles.icon}
-              />
-              <Text style={[styles.menuText, { color: theme.text || '#fff' }]}>
-                {item.label}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
+    <View style={{ flex: 1, paddingTop: insets.top + 30 }}>
+      {/* Header outside main container for edge-to-edge separator */}
+      <CustomHeader
+        title="MORE"
+        onBack={() => navigation.navigate('Home')}
+      />
 
-      {/* ✅ Themed Logout Button */}
-      <View style={{ paddingHorizontal: width * 0.06 }}>
-        <LinearGradient
-          colors={[theme.primary || '#FB923C', theme.primary || '#FF7F50']}
-          style={styles.logoutButton}>
-          <TouchableOpacity
-            onPress={() => setShowLogoutModal(true)}
-            style={{ width: '100%', alignItems: 'center' }}>
-            <Text style={styles.logoutText}>Logout</Text>
-          </TouchableOpacity>
-        </LinearGradient>
-      </View>
-      {/* 🔥 Center Popup Confirmation Modal */}
-      {showLogoutModal && (
-        <View style={styles.centerOverlay}>
-          <View
-            style={[
-              styles.centerModal,
-              { backgroundColor: theme.cardBackground || '#1E293B' },
-            ]}>
-            <Text style={[styles.centerTitle, { color: theme.text || '#fff' }]}>
-              Logout
-            </Text>
-
-            <Text style={[styles.centerMessage, { color: theme.text || '#fff' }]}>
-              Are you sure you want to logout?
-            </Text>
-
-            <View style={styles.centerButtons}>
+      <View style={styles.container}>
+        <ScrollView contentContainerStyle={styles.menuList}>
+          {menuItems.map((item, index) => {
+            const IconComp =
+              item.lib === 'MaterialIcons' ? MaterialIcons : Ionicons;
+            return (
               <TouchableOpacity
-                onPress={() => setShowLogoutModal(false)}
-                style={styles.centerCancelBtn}>
-                <Text style={styles.centerCancelTxt}>Cancel</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
+                key={index}
+                style={styles.menuItem}
                 onPress={() => {
-                  setShowLogoutModal(false);
-                  handleLogout();
-                }}
-                style={styles.centerLogoutBtn}>
-                <Text style={styles.centerLogoutTxt}>Logout</Text>
+                  if (item.route === 'ThemeSelectorScreen') {
+                    navigation.navigate('ThemeSelectorScreen', {
+                      from: 'settings',
+                    });
+                  } else {
+                    navigation.navigate(item.route);
+                  }
+                }}>
+                <IconComp
+                  name={item.icon}
+                  size={scale(20)}
+                  color={theme.text || '#fff'}
+                  style={styles.icon}
+                />
+                <Text style={[styles.menuText, { color: theme.text || '#fff' }]}>
+                  {item.label}
+                </Text>
               </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+
+        {/* ✅ Themed Logout Button */}
+        <View style={{ paddingHorizontal: width * 0.06 }}>
+          <LinearGradient
+            colors={[theme.primary || '#FB923C', theme.primary || '#FF7F50']}
+            style={styles.logoutButton}>
+            <TouchableOpacity
+              onPress={() => setShowLogoutModal(true)}
+              style={{ width: '100%', alignItems: 'center' }}>
+              <Text style={styles.logoutText}>Logout</Text>
+            </TouchableOpacity>
+          </LinearGradient>
+        </View>
+
+        {/* 🔥 Center Popup Confirmation Modal */}
+        {showLogoutModal && (
+          <View style={styles.centerOverlay}>
+            <View
+              style={[
+                styles.centerModal,
+                { backgroundColor: theme.cardBackground || '#1E293B' },
+              ]}>
+              <Text style={[styles.centerTitle, { color: theme.text || '#fff' }]}>
+                Logout
+              </Text>
+
+              <Text style={[styles.centerMessage, { color: theme.text || '#fff' }]}>
+                Are you sure you want to logout?
+              </Text>
+
+              <View style={styles.centerButtons}>
+                <TouchableOpacity
+                  onPress={() => setShowLogoutModal(false)}
+                  style={styles.centerCancelBtn}>
+                  <Text style={styles.centerCancelTxt}>Cancel</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={() => {
+                    setShowLogoutModal(false);
+                    handleLogout();
+                  }}
+                  style={styles.centerLogoutBtn}>
+                  <Text style={styles.centerLogoutTxt}>Logout</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
-        </View>
-      )}
-    </SafeAreaView>
+        )}
+      </View>
+    </View>
   );
 
   return theme.backgroundGradient ? (
@@ -179,7 +171,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: width * 0.02,
-    paddingTop: height * 0.03,
+    // paddingTop: height * 0.03, // REMOVED
   },
   topBar: {
     flexDirection: 'row',

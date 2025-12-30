@@ -8,6 +8,8 @@ import Learn from './Learn';
 import Puzzle from './Puzzle';
 import PlayGame from './PlayGame';
 
+
+
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
@@ -83,7 +85,8 @@ const BottomTab = () => {
         />
         <Tab.Screen
           name="Play"
-          component={Puzzle}
+          component={PlayGame}
+          initialParams={{ gametype: 'PLAY' }}
           options={{
             tabBarIcon: ({ focused }) =>
               renderIcon(require('../Screens/Image/PuzzleIcon.png'), 'Play', focused),
@@ -91,7 +94,8 @@ const BottomTab = () => {
         />
         <Tab.Screen
           name="Practise"
-          component={Learn}
+          component={PlayGame}
+          initialParams={{ gametype: 'PRACTICE' }}
           options={{
             tabBarIcon: ({ focused }) =>
               renderIcon(require('../Screens/Image/Learn.png'), 'Practise', focused),
@@ -122,7 +126,7 @@ const styles = StyleSheet.create({
     width: width * 0.06,   // smaller icon
     height: height * 0.035,
     marginBottom: 2,
-    
+
   },
   label: {
     fontSize: 10,

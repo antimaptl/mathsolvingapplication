@@ -15,6 +15,8 @@ import { useTheme, themes } from '../Globalfile/ThemeContext';
 import KeyboardSelector from '../Screens/KeyboardSelector';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import CustomHeader from '../Globalfile/CustomHeader';
 
 const { width, height } = Dimensions.get('window');
 const scale = width / 375;
@@ -27,111 +29,108 @@ const ThemeSelectorScreen = () => {
   const from = route.params?.from || 'settings';
   const { theme, changeTheme } = useTheme();
   const [selectedTab, setSelectedTab] = useState('colors');
+  const insets = useSafeAreaInsets(); // ✅ Hook
 
   const handleNext = () => {
     navigation.replace('AddFriendScreen');
   };
 
   return (
-    <LinearGradient colors={theme.backgroundGradient} style={styles.container}>
-      {/* Header */}
-      <View
-        style={{
-          alignItems: 'flex-start',
-          marginBottom: 20,
-          flexDirection: 'row',
-        }}>
-        {from !== 'onboarding' && (
-          <TouchableOpacity
-            style={{ position: 'absolute', left: '-30%', bottom: 10 }}
-            onPress={() => navigation.goBack()}>
-            <Icon
-              name="caret-back-outline"
-              size={normalize(25)}
-              color="#fff"
-            />
-          </TouchableOpacity>
-        )}
-        <Text style={[styles.title, { color: theme.text }]}>🎨 THEME</Text>
-      </View>
-      <View style={{
-        borderWidth: 1, borderColor: '#94A3B8', width: "95%", opacity: 0.5, bottom: "1%"
-      }}></View>
-      {/* Toggle Buttons */}
-      <View style={styles.toggleContainer}>
-        <TouchableOpacity
-          style={[
-            styles.toggleButton,
-            selectedTab === 'colors' && styles.activeToggle,
-          ]}
-          onPress={() => setSelectedTab('colors')}>
-          <Text
-            style={[
-              styles.toggleText,
-              selectedTab === 'colors' && styles.activeToggleText,
-            ]}>
-            Colors
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[
-            styles.toggleButton,
-            selectedTab === 'keyboard' && styles.activeToggle,
-          ]}
-          onPress={() => setSelectedTab('keyboard')}>
-          <Text
-            style={[
-              styles.toggleText,
-              selectedTab === 'keyboard' && styles.activeToggleText,
-            ]}>
-            Keyboard
-          </Text>
-        </TouchableOpacity>
-      </View>
+    <LinearGradient colors={theme.backgroundGradient} style={{ flex: 1 }}>
+      <View style={{ width: '100%', alignItems: 'center', flex: 1, paddingTop: insets.top + 30 }}>
+        {/* Custom Header with full width separator */}
+        <View style={{ width: '100%', marginBottom: 10 }}>
+          <CustomHeader
+            title="THEME"
+            onBack={() => {
+              if (from === 'onboarding') {
+                // unexpected, usually no back here or handle differently
+              } else {
+                navigation.goBack();
+              }
+            }}
+            showBack={from !== 'onboarding'}
+          />
+        </View>
 
-      {/* Theme or Keyboard Section */}
-      {selectedTab === 'colors' ? (
-        <ScrollView
-          contentContainerStyle={styles.scroll}
-          showsVerticalScrollIndicator={true}>
-          {Object.keys(themes).map(key => {
-            const t = themes[key];
-            const isSelected = theme.name === t.name;
-            return (
-              <TouchableOpacity
-                key={key}
-                onPress={() => changeTheme(key)}
-                activeOpacity={0.8}
-                style={styles.pillContainer}>
-                <LinearGradient
-                  colors={t.backgroundGradient}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.pillBox}>
-                  <View style={styles.circleOuter}>
-                    {isSelected && <View style={styles.circleInner} />}
-                  </View>
-                  <Text style={[styles.pillText, { color: t.text }]}>
-                    {t.name}
-                  </Text>
-                </LinearGradient>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-      ) : (
-        <KeyboardSelector />
-      )}
+        <View style={styles.container}>
+          {/* Toggle Buttons */}
+          <View style={styles.toggleContainer}>
+            <TouchableOpacity
+              style={[
+                styles.toggleButton,
+                selectedTab === 'colors' && styles.activeToggle,
+              ]}
+              onPress={() => setSelectedTab('colors')}>
+              <Text
+                style={[
+                  styles.toggleText,
+                  selectedTab === 'colors' && styles.activeToggleText,
+                ]}>
+                Colors
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.toggleButton,
+                selectedTab === 'keyboard' && styles.activeToggle,
+              ]}
+              onPress={() => setSelectedTab('keyboard')}>
+              <Text
+                style={[
+                  styles.toggleText,
+                  selectedTab === 'keyboard' && styles.activeToggleText,
+                ]}>
+                Keyboard
+              </Text>
+            </TouchableOpacity>
+          </View>
 
-      {from === 'onboarding' && (
-        <TouchableOpacity
-          style={[styles.nextButton, { backgroundColor: theme.primary }]}
-          onPress={handleNext}>
-          <Text style={[styles.nextText, { color: theme.buttonText || '#fff' }]}>
-            Next
-          </Text>
-        </TouchableOpacity>
-      )}
+          {/* Theme or Keyboard Section */}
+          {selectedTab === 'colors' ? (
+            <ScrollView
+              contentContainerStyle={styles.scroll}
+              showsVerticalScrollIndicator={true}>
+              {Object.keys(themes).map(key => {
+                const t = themes[key];
+                const isSelected = theme.name === t.name;
+                return (
+                  <TouchableOpacity
+                    key={key}
+                    onPress={() => changeTheme(key)}
+                    activeOpacity={0.8}
+                    style={styles.pillContainer}>
+                    <LinearGradient
+                      colors={t.backgroundGradient}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 0 }}
+                      style={styles.pillBox}>
+                      <View style={styles.circleOuter}>
+                        {isSelected && <View style={styles.circleInner} />}
+                      </View>
+                      <Text style={[styles.pillText, { color: t.text }]}>
+                        {t.name}
+                      </Text>
+                    </LinearGradient>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          ) : (
+            <KeyboardSelector />
+          )}
+
+          {from === 'onboarding' && (
+            <TouchableOpacity
+              style={[styles.nextButton, { backgroundColor: theme.primary }]}
+              onPress={handleNext}>
+              <Text style={[styles.nextText, { color: theme.buttonText || '#fff' }]}>
+                Next
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
     </LinearGradient>
   );
 };
@@ -139,7 +138,7 @@ const ThemeSelectorScreen = () => {
 export default ThemeSelectorScreen;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, paddingVertical: 30, alignItems: 'center', paddingHorizontal: "auto" },
+  container: { flex: 1, alignItems: 'center', paddingHorizontal: "auto" },
   title: { fontSize: normalize(18), fontWeight: '700', marginBottom: 15 },
   toggleContainer: {
     flexDirection: 'row',

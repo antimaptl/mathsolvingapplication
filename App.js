@@ -64,6 +64,7 @@ import GameNotifications from './Component/Screens/GameNotifications';
 import { SoundProvider } from './Context/SoundContext';
 import i18next from 'i18next';
 import UpdateProfile from './Component/Screens/UpdateProfile';
+import UserProfile from './Component/Screens/UserProfile';
 
 const Stack = createNativeStackNavigator();
 
@@ -265,6 +266,10 @@ const App = () => {
                     <Stack.Screen
                       name="UpdateProfile"
                       component={UpdateProfile}
+                    />
+                    <Stack.Screen
+                      name="UserProfile"
+                      component={UserProfile}
                     />
                   </Stack.Navigator>
                 </NavigationContainer>

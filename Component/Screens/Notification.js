@@ -116,7 +116,12 @@ const Notification = () => {
 
   const handleNavigation = remoteMessage => {
     const type = remoteMessage?.data?.type;
-    if (type === 'FRIEND_REQUEST') navigate('FriendRequestScreen');
+    console.log('🔔 Notification Clicked, Type:', type);
+
+    if (type === 'FRIEND_REQUEST' || type === 'ADD_FRIEND') {
+      console.log('👉 Navigating to GameNotifications');
+      navigate('GameNotifications');
+    }
   };
 
   useEffect(() => {
