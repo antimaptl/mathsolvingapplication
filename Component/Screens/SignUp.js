@@ -165,6 +165,7 @@ export default function SignUp() {
       );
 
       const data = await response.json();
+      console.log('Signup Response Data:', data);
 
       // ❌ Backend validation errors
       if (!response.ok || data.success === false) {

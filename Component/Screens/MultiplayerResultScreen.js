@@ -28,7 +28,7 @@ const MultiplayerResultScreen = ({ route }) => {
   const { theme } = useTheme();
 
   // State
-  const [finalIsWinner, setFinalIsWinner] = useState(null);
+  const [gameResult, setGameResult] = useState(null); // 'win', 'lose', or 'draw'
   const [isProcessing, setIsProcessing] = useState(true);
   const [user, setUser] = useState(null);
   const [authToken, setAuthToken] = useState(null);
@@ -79,93 +79,183 @@ const MultiplayerResultScreen = ({ route }) => {
         toValue: 1,
         duration: 600,
         useNativeDriver: true,
-        easing: Easing.out(Easing.cubic)
+        easing: Easing.out(Easing.cubic),
       }),
       Animated.timing(scaleAnim, {
         toValue: 1,
         duration: 600,
         useNativeDriver: true,
-        easing: Easing.out(Easing.back(1.5))
-      })
+        easing: Easing.out(Easing.back(1.5)),
+      }),
     ]).start();
 
-    if (!user?._id || !authToken || !player2Id) return;
-    if (hasSubmittedRef.current) return;
-    hasSubmittedRef.current = true;
-
-    const submitResult = async () => {
-      try {
-        const payload = {
-          player1Id: String(user._id),
-          player2Id: String(player2Id),
-          scorePlayer1: totalScore,
-          scorePlayer2: opponentScore,
-          durationSeconds,
-        };
-        await axios.post(
-          'http://43.204.167.118:3000/api/match/result',
-          payload,
-          { headers: { Authorization: `Bearer ${authToken}` } },
-        );
-        setFinalIsWinner(totalScore > opponentScore);
-      } catch (err) {
-        console.log('RESULT ERROR:', err?.message);
-        setFinalIsWinner(totalScore > opponentScore);
-      } finally {
-        setIsProcessing(false);
-      }
+    // ✅ Determine game result (win/lose/draw)
+    const determineResult = () => {
+      if (totalScore > opponentScore) return 'win';
+      if (totalScore < opponentScore) return 'lose';
+      return 'draw';
     };
-    submitResult();
-  }, [user?._id, authToken, player2Id]);
+
+    const result = determineResult();
+    setGameResult(result);
+    setIsProcessing(false); // ✅ Set immediately - no API call needed
+
+    console.log('🎯 Game Result:', result);
+    console.log('📊 Scores:', { you: totalScore, opponent: opponentScore });
+
+    // ✅ REMOVED: API call to /api/match/result
+    // The backend already saved the game when it ended via GameRoom.saveGameToDatabase()
+    // No need to call API again from frontend
+  }, [totalScore, opponentScore]);
+
+  /* ================= UI HELPERS ================= */
+  const getResultColor = () => {
+    switch (gameResult) {
+      case 'win':
+        return '#4ade80'; // Green
+      case 'lose':
+        return '#f87171'; // Red
+      case 'draw':
+        return '#fbbf24'; // Yellow/Amber
+      default:
+        return '#ffffff';
+    }
+  };
+
+  const getResultTitle = () => {
+    switch (gameResult) {
+      case 'win':
+        return 'You Win! 🏆';
+      case 'lose':
+        return 'Better Luck\nNext Time! 😔';
+      case 'draw':
+        return "It's a Draw! 🤝";
+      default:
+        return 'Match Complete';
+    }
+  };
+
+  const getResultMessage = () => {
+    switch (gameResult) {
+      case 'win':
+        return 'You Win!'
+      case 'lose':
+        return 'You Lose!';
+      case 'draw':
+        return 'Match Drawn!';
+      default:
+        return 'Match completed';
+    }
+  };
+
+  const getResultEmoji = () => {
+    switch (gameResult) {
+      case 'win':
+        return '🏆';
+      case 'lose':
+        return '😥';
+      case 'draw':
+        return '🤝';
+      default:
+        return '🎮';
+    }
+  };
 
   /* ================= UI COMPONENTS ================= */
 
   return (
     <View style={styles.mainContainer}>
-
       {/* 1. BACKGROUND: ORIGINAL STATS PAGE */}
       <LinearGradient
         colors={theme.backgroundGradient || ['#0B1220', '#0B1220']}
         style={styles.background}
       />
 
-      <ScrollView contentContainerStyle={[styles.scrollContent, { marginTop: insets.top }]}>
-
-        <Text style={[styles.title, { color: finalIsWinner ? '#4ade80' : '#f7d1d1ff' }]}>
-          {finalIsWinner ? 'You Win!' : 'Better Luck\nNext Time!😔'}
+      <ScrollView
+        contentContainerStyle={[styles.scrollContent, { marginTop: insets.top }]}>
+        <Text
+          style={[
+            styles.title,
+            { color: getResultColor() },
+          ]}>
+          {getResultTitle()}
         </Text>
 
-        <View style={[styles.scoreBox, { backgroundColor: theme.cardBackground || '#1f2937' }]}>
+        {/* ✅ Draw Badge (only shown when draw) */}
+        {gameResult === 'draw' && (
+          <View style={styles.drawBadge}>
+            <Text style={styles.drawBadgeText}>🤝 DRAW MATCH</Text>
+          </View>
+        )}
+
+        <View
+          style={[
+            styles.scoreBox,
+            { backgroundColor: theme.cardBackground || '#1f2937' },
+          ]}>
           <Text style={styles.label}>Your Score</Text>
           <Text style={styles.value}>{totalScore}</Text>
         </View>
 
-        <View style={[styles.scoreBox, { backgroundColor: theme.cardBackground || '#1f2937' }]}>
+        <View
+          style={[
+            styles.scoreBox,
+            { backgroundColor: theme.cardBackground || '#1f2937' },
+          ]}>
           <Text style={styles.label}>Opponent Score</Text>
           <Text style={styles.value}>{opponentScore}</Text>
         </View>
 
-        <View style={[styles.scoreBox, { backgroundColor: theme.cardBackground || '#1f2937' }]}>
-          <Text style={styles.label}>Correct Answers</Text>
-          <Text style={styles.value}>{correctCount}</Text>
+        {/* ✅ Show score difference or "Equal" for draw */}
+        <View
+          style={[
+            styles.scoreBox,
+            {
+              backgroundColor: theme.cardBackground || '#1f2937',
+              borderWidth: 2,
+              borderColor: getResultColor(),
+            },
+          ]}>
+          <Text style={styles.label}>Score Difference</Text>
+          <Text style={[styles.value, { color: getResultColor() }]}>
+            {gameResult === 'draw'
+              ? 'Equal'
+              : `${Math.abs(totalScore - opponentScore)}`}
+          </Text>
         </View>
 
-        <View style={[styles.scoreBox, { backgroundColor: theme.cardBackground || '#1f2937' }]}>
+        <View
+          style={[
+            styles.scoreBox,
+            { backgroundColor: theme.cardBackground || '#1f2937' },
+          ]}>
           <Text style={styles.label}>Correct Answers</Text>
           <Text style={styles.value}>{correctCount || 0}</Text>
         </View>
 
-        <View style={[styles.scoreBox, { backgroundColor: theme.cardBackground || '#1f2937' }]}>
+        <View
+          style={[
+            styles.scoreBox,
+            { backgroundColor: theme.cardBackground || '#1f2937' },
+          ]}>
           <Text style={styles.label}>Incorrect Answers</Text>
           <Text style={styles.value}>{inCorrectCount || 0}</Text>
         </View>
 
-        <View style={[styles.scoreBox, { backgroundColor: theme.cardBackground || '#1f2937' }]}>
+        <View
+          style={[
+            styles.scoreBox,
+            { backgroundColor: theme.cardBackground || '#1f2937' },
+          ]}>
           <Text style={styles.label}>Skipped</Text>
           <Text style={styles.value}>{skippedQuestions || 0}</Text>
         </View>
 
-        <View style={[styles.scoreBox, { backgroundColor: theme.cardBackground || '#1f2937' }]}>
+        <View
+          style={[
+            styles.scoreBox,
+            { backgroundColor: theme.cardBackground || '#1f2937' },
+          ]}>
           <Text style={styles.label}>Accuracy</Text>
           <Text style={styles.value}>{correctPercentage || 0}%</Text>
         </View>
@@ -175,7 +265,9 @@ const MultiplayerResultScreen = ({ route }) => {
           colors={[theme.primary || '#f97316', theme.primary || '#f97316']}
           style={styles.newGameBtn}>
           <TouchableOpacity
-            onPress={() => navigation.navigate('PlayGame', { gametype: 'MULTIPLAYER' })}
+            onPress={() =>
+              navigation.navigate('PlayGame', { gametype: 'MULTIPLAYER' })
+            }
             style={{ width: '100%', alignItems: 'center' }}>
             <Text style={styles.newGameText}>Play Again</Text>
           </TouchableOpacity>
@@ -184,23 +276,41 @@ const MultiplayerResultScreen = ({ route }) => {
         {/* Home Button */}
         <TouchableOpacity
           onPress={() => navigation.navigate('BottomTab')}
-          style={[styles.homeBtn, { backgroundColor: theme.cardBackground || '#052757ff' }]}>
+          style={[
+            styles.homeBtn,
+            { backgroundColor: theme.cardBackground || '#052757ff' },
+          ]}>
           <Text style={styles.homeText}>Home</Text>
         </TouchableOpacity>
-
       </ScrollView>
-
 
       {/* 2. OVERLAY MODAL: PREMIUM CARD */}
       {showModal && (
         <View style={styles.modalOverlay}>
-          <Animated.View style={[
-            styles.resultCard,
-            {
-              opacity: fadeAnim,
-              transform: [{ scale: scaleAnim }],
-            }
-          ]}>
+          <Animated.View
+            style={[
+              styles.resultCard,
+              {
+                opacity: fadeAnim,
+                transform: [{ scale: scaleAnim }],
+                borderColor: getResultColor(),
+                borderWidth: 2,
+              },
+            ]}>
+            {/* ✅ Result Badge at Top */}
+            <View
+              style={[
+                styles.resultBadge,
+                { backgroundColor: getResultColor() },
+              ]}>
+              <Text style={styles.resultBadgeText}>
+                {gameResult === 'win'
+                  ? 'VICTORY'
+                  : gameResult === 'lose'
+                    ? 'DEFEAT'
+                    : 'DRAW'}
+              </Text>
+            </View>
 
             {/* Players Row */}
             <View style={styles.playersRow}>
@@ -208,53 +318,96 @@ const MultiplayerResultScreen = ({ route }) => {
               <View style={styles.playerSide}>
                 <View style={styles.playerHeader}>
                   <Text style={styles.starIcon}>⭐</Text>
-                  <Text style={styles.labelTitle}>PLAYER</Text>
+                  <Text style={styles.labelTitle}>YOU</Text>
                 </View>
-                <Text style={styles.playerRating}>{user?.rating || 1000}</Text>
-                <Text style={styles.mainScore}>{totalScore}</Text>
+                <Text style={styles.playerRating}>
+                  {user?.pr?.pvp?.medium || user?.rating || 1000}
+                </Text>
+                <Text
+                  style={[
+                    styles.mainScore,
+                    gameResult === 'win' && { color: '#4ade80' },
+                    gameResult === 'draw' && { color: '#fbbf24' },
+                  ]}>
+                  {totalScore}
+                </Text>
               </View>
 
-              {/* VS */}
-              <View style={styles.vsBadge}>
-                <Text style={styles.vsText}>VS</Text>
+              {/* VS Badge */}
+              <View
+                style={[
+                  styles.vsBadge,
+                  gameResult === 'draw' && {
+                    backgroundColor: '#fbbf24',
+                    borderColor: '#fbbf24',
+                  },
+                ]}>
+                <Text style={styles.vsText}>
+                  {gameResult === 'draw' ? '=' : 'VS'}
+                </Text>
               </View>
 
               {/* Opponent */}
               <View style={styles.opponentSide}>
                 <View style={styles.playerHeader}>
-                  <Text style={styles.labelTitle}>Opponent</Text>
+                  <Text style={styles.labelTitle}>OPPONENT</Text>
                   <View style={styles.miniAvatar}>
                     <Text style={{ color: '#fff', fontSize: 10 }}>OP</Text>
                   </View>
                 </View>
                 <Text style={styles.playerRating}>1000</Text>
-                <Text style={styles.mainScore}>{opponentScore}</Text>
+                <Text
+                  style={[
+                    styles.mainScore,
+                    gameResult === 'lose' && { color: '#f87171' },
+                    gameResult === 'draw' && { color: '#fbbf24' },
+                  ]}>
+                  {opponentScore}
+                </Text>
               </View>
             </View>
 
+            {/* ✅ Score Difference Indicator */}
+            {gameResult !== 'draw' && (
+              <View style={styles.scoreDiffContainer}>
+                <Text style={styles.scoreDiffLabel}>Score Difference</Text>
+                <Text
+                  style={[
+                    styles.scoreDiffValue,
+                    { color: getResultColor() },
+                  ]}>
+                  {Math.abs(totalScore - opponentScore)} points
+                </Text>
+              </View>
+            )}
+
             {/* Result Message */}
             <View style={styles.messageContainer}>
-              <Text style={styles.resultTitle}>
-                {finalIsWinner ? 'You Win 🏆' : 'Better Luck Next Time 😥'}
+              <Text style={[styles.resultTitle, { color: getResultColor() }]}>
+                {getResultTitle().replace('\n', ' ')} {getResultEmoji()}
               </Text>
+              <Text style={styles.resultSubtitle}>{getResultMessage()}</Text>
               {/* Duration */}
               <Text style={styles.durationText}>
-                Duration seconds: <Text style={{ fontWeight: 'bold', color: '#fff' }}>{durationSeconds}</Text>
+                Duration:{' '}
+                <Text style={{ fontWeight: 'bold', color: '#fff' }}>
+                  {durationSeconds}s
+                </Text>
               </Text>
             </View>
 
             {/* OK Button - Closes Modal */}
             <TouchableOpacity
-              style={styles.okButton}
-              onPress={() => setShowModal(false)}
-            >
-              <Text style={styles.okButtonText}>OK</Text>
+              style={[
+                styles.okButton,
+                { backgroundColor: getResultColor() },
+              ]}
+              onPress={() => setShowModal(false)}>
+              <Text style={styles.okButtonText}>Continue</Text>
             </TouchableOpacity>
-
           </Animated.View>
         </View>
       )}
-
     </View>
   );
 };
@@ -275,7 +428,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 40,
     paddingHorizontal: 20,
-    paddingBottom: 100, // Extra space at bottom
+    paddingBottom: 100,
   },
 
   // ORIGINAL SCREEN STYLES
@@ -283,8 +436,21 @@ const styles = StyleSheet.create({
     fontSize: scaleFont(30),
     fontWeight: '700',
     textAlign: 'center',
-    marginBottom: 40,
+    marginBottom: 20,
     marginTop: 20,
+  },
+  drawBadge: {
+    backgroundColor: '#fbbf24',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+    marginBottom: 30,
+  },
+  drawBadgeText: {
+    color: '#000',
+    fontSize: 16,
+    fontWeight: '800',
+    letterSpacing: 1,
   },
   scoreBox: {
     width: '100%',
@@ -331,11 +497,10 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
 
-
   // MODAL OVERLAY STYLES
   modalOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.85)', // Darker dim
+    backgroundColor: 'rgba(0,0,0,0.85)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
@@ -353,15 +518,26 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.5,
     shadowRadius: 20,
     elevation: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+  },
+  resultBadge: {
+    paddingHorizontal: 24,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginBottom: 20,
+    marginTop: -10,
+  },
+  resultBadgeText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '900',
+    letterSpacing: 2,
   },
   playersRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     width: '100%',
-    marginBottom: 40,
+    marginBottom: 30,
   },
   playerSide: { flex: 1, alignItems: 'center' },
   opponentSide: { flex: 1, alignItems: 'center' },
@@ -379,8 +555,13 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   miniAvatar: {
-    width: 20, height: 20, backgroundColor: '#334155', borderRadius: 4, marginLeft: 5,
-    justifyContent: 'center', alignItems: 'center'
+    width: 20,
+    height: 20,
+    backgroundColor: '#334155',
+    borderRadius: 4,
+    marginLeft: 5,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   playerRating: { color: '#64748b', fontSize: 10, marginBottom: 10 },
   mainScore: { fontSize: 32, fontWeight: '700', color: '#fff' },
@@ -402,11 +583,31 @@ const styles = StyleSheet.create({
   },
   vsText: { color: '#fff', fontWeight: '900', fontSize: 14 },
 
-  messageContainer: { alignItems: 'center', marginBottom: 40 },
+  scoreDiffContainer: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  scoreDiffLabel: {
+    color: '#64748b',
+    fontSize: 11,
+    marginBottom: 4,
+  },
+  scoreDiffValue: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+
+  messageContainer: { alignItems: 'center', marginBottom: 30 },
   resultTitle: {
     fontSize: 22,
     fontWeight: '700',
     color: '#fff',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  resultSubtitle: {
+    color: '#94a3b8',
+    fontSize: 13,
     textAlign: 'center',
     marginBottom: 10,
   },

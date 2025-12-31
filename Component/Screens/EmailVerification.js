@@ -24,6 +24,8 @@ export default function EmailVerification() {
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [errorMessage, setErrorMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const otpVerifiedRef = useRef(false);
+
 
   // 🔹 New States for OTP Logic
   const [timer, setTimer] = useState(30);
@@ -63,10 +65,17 @@ export default function EmailVerification() {
 
   useEffect(() => {
     const enteredOtp = otp.join('');
-    if (enteredOtp.length === 6 && !loading) {
-      handleVerifyOtp(enteredOtp);
-    }
+
+    // 🔒 hard guard
+    if (enteredOtp.length !== 6) return;
+    if (loading) return;
+    if (otpVerifiedRef.current) return;
+
+    otpVerifiedRef.current = true; // 👈 lock
+    handleVerifyOtp(enteredOtp);
+
   }, [otp]);
+
 
   const handleChange = (text, index) => {
     const newOtp = [...otp];
@@ -111,98 +120,101 @@ export default function EmailVerification() {
       const data = await response.json();
 
       if (data.success === true) {
+        setResendCount(prev => prev + 1);
         Toast.show({
           type: 'success',
           text1: 'OTP Sent',
-          text2: 'OTP sent again to your email',
+          text2: `OTP sent again. Attempt ${resendCount + 1}/3`,
         });
 
-        setResendCount(prev => prev + 1);
         startResendTimer();
 
         // Reset counters on Resend
         setIncorrectAttempts(0);
 
       } else {
-        setErrorMessage(data.message || 'Failed to resend OTP');
+        const msg = data.message || data.error || 'Failed to resend OTP';
+        setErrorMessage(msg);
+        Toast.show({
+          type: 'error',
+          text1: 'Resend Failed',
+          text2: msg
+        });
       }
     } catch (error) {
       setErrorMessage('Network error. Please try again.');
     }
   };
 
-  const handleVerifyOtp = async userEnteredOtp => {
+  const handleVerifyOtp = async (userEnteredOtp) => {
     if (loading) return;
 
     setLoading(true);
     setErrorMessage('');
-    const userDataFromParams = route.params?.userData || {};
 
-    const {
-      username,
-      email,
-      password,
-      dateOfBirth,
-      country,
-      gender
-    } = userDataFromParams;
+    const email = route.params?.userData?.email?.trim();
 
     if (!email) {
       setErrorMessage('Email not found. Please restart signup.');
+      otpVerifiedRef.current = false;
       setLoading(false);
       return;
     }
 
     try {
+      const payload = {
+        email,
+        otp: userEnteredOtp,
+      };
+
       const res = await fetch(
         'http://43.204.167.118:3000/api/auth/verify-signup-otp',
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email,
-            otp: userEnteredOtp,
-            username,
-            password,
-            gender: gender || undefined,
-            dateOfBirth,
-            country
-          }),
-        },
+          body: JSON.stringify(payload),
+        }
       );
 
       const body = await res.json();
 
       if (!res.ok || body.success === false) {
-        // Use exact API message
-        setErrorMessage(body.message || 'Invalid OTP');
+        let msg = body.message || 'Invalid OTP';
+        if (msg.toLowerCase().includes('invalid otp')) {
+          msg = `${msg}. Please enter valid OTP.`;
+        }
+        setErrorMessage(msg);
         setOtp(['', '', '', '', '', '']);
         inputs.current[0]?.focus();
-
-        // Track attempts but DO NOT BLOCK INPUTS client-side
-        const newAttempts = incorrectAttempts + 1;
-        setIncorrectAttempts(newAttempts);
-
+        otpVerifiedRef.current = false;
         setLoading(false);
         return;
       }
 
-      // Success
+      // ✅ SUCCESS
       if (body.token) {
-        const userObj = body.player || body.user || route.params?.userData;
+        // Based on screenshot: body.player contains the user data
+        const userObj = body.player || body.user;
         await login(body.token, userObj, body);
       }
 
-      navigation.replace('NotificationPermissionScreen', {
-        userData: route.params.userData,
+      // 🔄 Reset Navigation Stack
+      navigation.reset({
+        index: 1,
+        routes: [
+          { name: 'AuthLandingScreen' },
+          { name: 'NotificationPermissionScreen' },
+        ],
       });
 
     } catch (err) {
       setErrorMessage('Network error. Please try again.');
+      otpVerifiedRef.current = false;
     } finally {
       setLoading(false);
     }
   };
+
 
   const insets = useSafeAreaInsets();
 
@@ -293,7 +305,7 @@ export default function EmailVerification() {
             ? 'Resend Limit Reached'
             : timer > 0
               ? `Resend in ${timer}s`
-              : 'Resend OTP'}
+              : `Resend OTP${resendCount > 0 ? ` (Attempt ${resendCount}/3)` : ''}`}
         </Text>
       </TouchableOpacity>
 

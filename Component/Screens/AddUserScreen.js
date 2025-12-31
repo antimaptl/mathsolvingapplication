@@ -22,6 +22,7 @@ import Toast from 'react-native-toast-message';
 import messaging from '@react-native-firebase/messaging';
 import LinearGradient from 'react-native-linear-gradient';
 import { useTheme } from '../Globalfile/ThemeContext';
+import CustomHeader from '../Globalfile/CustomHeader';
 
 const { width, height } = Dimensions.get('window');
 const scale = size => (width / 375) * size;
@@ -225,12 +226,20 @@ const AddUserScreen = () => {
 
   const handleSearch = text => {
     setSearchText(text);
-    if (text.trim() === '') {
-      fetchMyFriends();
-    } else {
-      fetchSearchedUsers(text);
-    }
   };
+
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      if (searchText.trim() === '') {
+        fetchMyFriends();
+      } else {
+        // Only search if text is present to avoid empty search calls if trim() check fails
+        fetchSearchedUsers(searchText);
+      }
+    }, 500);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchText]);
 
   /* ================= UI RENDER ================= */
 
@@ -379,144 +388,126 @@ const AddUserScreen = () => {
     <LinearGradient
       colors={theme.backgroundGradient || ['#0F172A', '#1E293B']}
       style={{ flex: 1, }}>
-      <View style={[styles.container]}>
-        <View style={styles.headerRow}>
-          <View style={styles.leftHeader}>
-            <TouchableOpacity
-              onPress={() => navigation.goBack()}
-              style={[styles.backButton]}>
-              <Icon
-                name="caret-back-outline"
-                size={scale(22)}
-                color={theme.text || '#fff'}
-              />
-            </TouchableOpacity>
-            <Text style={[styles.header, { color: theme.text }]}>Friends</Text>
-          </View>
-
-          <View style={styles.notificationContainer}>
-            <TouchableOpacity
-              onPress={() => navigation.navigate('FriendRequestScreen')}>
-              <Icon
-                name="notifications-outline"
-                size={scale(22)}
-                color={theme.text || '#fff'}
-              />
-            </TouchableOpacity>
-            <View
-              style={[
-                styles.badge,
-                { backgroundColor: theme.error || '#EF4444' },
-              ]}>
-              <Text style={styles.badgeText}>{pendingCount || 0}</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* 🔹 Separator Line */}
-        <View
-          style={{
-            height: 1,
-            backgroundColor: '#94A3B8',
-            opacity: 0.3,
-            marginBottom: height * 0.02,
-            borderColor: '#94A3B8',
-            borderWidth: 1,
-            marginHorizontal: -width * 0.05,
-            top: 10
-          }}
-        />
-
-        {/* 🔍 Search */}
-        <View style={{ top: 20, flex: 1 }}>
-          {loading ? (
-            <ActivityIndicator
-              size="large"
-              color={theme.primary || '#FB923C'}
-              style={{ marginTop: height * 0.05 }}
-            />
-          ) : (
-            <>
-              {searchText.trim() === '' && (
-                <View
-                  style={[
-                    styles.inviteSection,
-                    { backgroundColor: theme.cardBackground || '#1E293B' },
-                  ]}>
-                  <Text style={[styles.sectionTitle, { color: theme.text }]}>
-                    Invite & Connect
-                  </Text>
-
-                  <TouchableOpacity
-                    style={[styles.inviteButton1, { backgroundColor: '#25D366' }]}>
-                    <FontAwesome
-                      name="whatsapp"
-                      size={scale(20)}
-                      color="#fff"
-                      style={styles.iconLeft}
-                    />
-                    <Text style={styles.inviteText}>
-                      Invite Friends via WhatsApp or SMS
-                    </Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={[
-                      styles.inviteButton,
-                      { backgroundColor: theme.cardBackground || '#1E293B' },
-                    ]}>
-                    <View style={styles.fbIconCircle}>
-                      <FontAwesome name="facebook" size={scale(22)} color="#fff" />
-                    </View>
-                    <Text style={[styles.inviteText, { color: theme.text }]}>
-                      Facebook Friends
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-
+      <View style={{ flex: 1, paddingTop: height * 0.03 }}>
+        <CustomHeader
+          title="FRIENDS"
+          onBack={() => navigation.goBack()}
+          rightIcon={
+            <View style={styles.notificationContainer}>
+              <TouchableOpacity
+                onPress={() => navigation.navigate('FriendRequestScreen')}>
+                <Icon
+                  name="notifications-outline"
+                  size={scale(22)}
+                  color={theme.text || '#fff'}
+                />
+              </TouchableOpacity>
               <View
                 style={[
-                  styles.searchContainer,
-                  { backgroundColor: theme.cardBackground || '#1E293B' },
+                  styles.badge,
+                  { backgroundColor: theme.error || '#EF4444' },
                 ]}>
-                <Icon
-                  name="search"
-                  size={scale(22)}
-                  color={theme.subText || '#94A3B8'}
-                />
-                <TextInput
-                  placeholder="Search Contacts"
-                  placeholderTextColor={theme.subText || '#94A3B8'}
-                  style={[styles.searchInput, { color: theme.text }]}
-                  value={searchText}
-                  onChangeText={handleSearch}
-                />
+                <Text style={styles.badgeText}>{pendingCount || 0}</Text>
               </View>
+            </View>
+          }
+        />
 
-              <Text style={[styles.sectionTitle, { color: theme.text }]}>
-                {searchText.trim() !== '' ? 'Search Results' : `My Friends (${displayedUsers.length})`}
-              </Text>
-              <ScrollView
-                refreshControl={
-                  <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-                }
-                showsVerticalScrollIndicator={false}>
-                <FlatList
-                  data={displayedUsers}
-                  keyExtractor={item => item._id}
-                  renderItem={renderItem}
-                  scrollEnabled={false}
-                  contentContainerStyle={{ paddingBottom: height * 0.1 }}
-                  ListEmptyComponent={
-                    <View style={{ alignItems: 'center', marginTop: 20 }}>
-                      <Text style={{ color: theme.subText }}>No users found.</Text>
-                    </View>
+        <View style={[styles.container, { paddingTop: 0 }]}>
+          {/* Main content now inside container with padding */}
+
+          {/* 🔍 Search */}
+          <View style={{ top: 20, flex: 1 }}>
+
+            <View
+              style={[
+                styles.searchContainer,
+                { backgroundColor: theme.cardBackground || '#1E293B' },
+              ]}>
+              <Icon
+                name="search"
+                size={scale(22)}
+                color={theme.subText || '#94A3B8'}
+              />
+              <TextInput
+                placeholder="Search Contacts"
+                placeholderTextColor={theme.subText || '#94A3B8'}
+                style={[styles.searchInput, { color: theme.text }]}
+                value={searchText}
+                onChangeText={handleSearch}
+              />
+            </View>
+
+            {loading ? (
+              <ActivityIndicator
+                size="large"
+                color={theme.primary || '#FB923C'}
+                style={{ marginTop: height * 0.05 }}
+              />
+            ) : (
+              <>
+                {searchText.trim() === '' && (
+                  <View
+                    style={[
+                      styles.inviteSection,
+                      { backgroundColor: theme.cardBackground || '#1E293B' },
+                    ]}>
+                    <Text style={[styles.sectionTitle, { color: theme.text }]}>
+                      Invite & Connect
+                    </Text>
+
+                    <TouchableOpacity
+                      style={[styles.inviteButton1, { backgroundColor: '#25D366' }]}>
+                      <FontAwesome
+                        name="whatsapp"
+                        size={scale(20)}
+                        color="#fff"
+                        style={styles.iconLeft}
+                      />
+                      <Text style={styles.inviteText}>
+                        Invite Friends via WhatsApp or SMS
+                      </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={[
+                        styles.inviteButton,
+                        { backgroundColor: theme.cardBackground || '#1E293B' },
+                      ]}>
+                      <View style={styles.fbIconCircle}>
+                        <FontAwesome name="facebook" size={scale(22)} color="#fff" />
+                      </View>
+                      <Text style={[styles.inviteText, { color: theme.text }]}>
+                        Facebook Friends
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+
+                <Text style={[styles.sectionTitle, { color: theme.text }]}>
+                  {searchText.trim() !== '' ? 'Search Results' : `My Friends (${displayedUsers.length})`}
+                </Text>
+                <ScrollView
+                  refreshControl={
+                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
                   }
-                />
-              </ScrollView>
-            </>
-          )}
+                  showsVerticalScrollIndicator={false}>
+                  <FlatList
+                    data={displayedUsers}
+                    keyExtractor={item => item._id}
+                    renderItem={renderItem}
+                    scrollEnabled={false}
+                    contentContainerStyle={{ paddingBottom: height * 0.1 }}
+                    ListEmptyComponent={
+                      <View style={{ alignItems: 'center', marginTop: 20 }}>
+                        <Text style={{ color: theme.subText }}>No users found.</Text>
+                      </View>
+                    }
+                  />
+                </ScrollView>
+              </>
+            )}
+          </View>
         </View>
       </View>
     </LinearGradient>

@@ -1,4 +1,5 @@
 import { StyleSheet } from 'react-native';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import React, { useEffect, useRef } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -119,167 +120,171 @@ const App = () => {
   }, []);
 
   return (
-    <I18nextProvider i18n={i18next}>
-      <ThemeProvider>
-        <KeyboardProvider>
-          <AuthProvider>
-            <Socket>
-              <Notification />
-              <SoundProvider>
-                <NavigationContainer ref={navigationRef}>
-                  <Stack.Navigator screenOptions={{ headerShown: false }}>
-                    <Stack.Screen name="Splash" component={Splash} />
-                    <Stack.Screen name="OnBoarding" component={OnBoarding} />
-                    <Stack.Screen
-                      name="AuthLandingScreen"
-                      component={AuthLandingScreen}
-                    />
-                    <Stack.Screen name="Login" component={Login} />
-                    <Stack.Screen name="SignUp" component={SignUp} />
-                    <Stack.Screen
-                      name="TermsAndConditions"
-                      component={TermsAndConditions}
-                    />
-                    <Stack.Screen name="SkipScreen" component={SkipScreen} />
-                    <Stack.Screen
-                      name="ChooseThemeIntroScreen"
-                      component={ChooseThemeIntroScreen}
-                    />
-                    <Stack.Screen name="BottomTab" component={BottomTab} />
-                    <Stack.Screen
-                      name="WelcomeScreen"
-                      component={WelcomeScreen}
-                    />
-                    <Stack.Screen name="PlayGame" component={PlayGame} />
-                    <Stack.Screen name="Home" component={Home} />
-                    <Stack.Screen
-                      name="NotificationPermissionScreen"
-                      component={NotificationPermissionScreen}
-                    />
-                    <Stack.Screen
-                      name="AddFriendScreen"
-                      component={AddFriendScreen}
-                    />
-                    <Stack.Screen
-                      name="ProfileScreen"
-                      component={ProfileScreen}
-                    />
-                    <Stack.Screen
-                      name="ThemeSelectorScreen"
-                      component={ThemeSelectorScreen}
-                    />
-                    <Stack.Screen
-                      name="MathInputScreen"
-                      component={MathInputScreen}
-                    />
-                    <Stack.Screen
-                      name="GuessTheSignScreen"
-                      component={GuessTheSignScreen}
-                    />
-                    <Stack.Screen
-                      name="MathInputScreenSecond"
-                      component={MathInputScreenSecond}
-                    />
-                    <Stack.Screen
-                      name="MathInputScreenThrid"
-                      component={MathInputScreenThrid}
-                    />
-                    <Stack.Screen
-                      name="WellDoneScreen"
-                      component={WellDoneScreen}
-                    />
-                    <Stack.Screen name="QuitScreen" component={QuitScreen} />
-                    <Stack.Screen
-                      name="RestartScreen"
-                      component={RestartScreen}
-                    />
-                    <Stack.Screen
-                      name="FireworksAnimation"
-                      component={FireworksAnimation}
-                    />
-                    <Stack.Screen name="Leaderboard" component={Leaderboard} />
-                    <Stack.Screen
-                      name="EndlessLeaderboard"
-                      component={EndlessLeaderboard}
-                    />
-                    <Stack.Screen name="Store" component={Store} />
-                    <Stack.Screen name="Dashboard" component={Dashboard} />
-                    <Stack.Screen
-                      name="EmailVerification"
-                      component={EmailVerification}
-                    />
-                    <Stack.Screen
-                      name="GuessTheSign"
-                      component={GuessTheSign}
-                    />
-                    <Stack.Screen
-                      name="AddUserScreen"
-                      component={AddUserScreen}
-                    />
-                    <Stack.Screen
-                      name="ChangeDifficultyScreen"
-                      component={ChangeDifficultyScreen}
-                    />
-                    <Stack.Screen name="LastScreen" component={LastScreen} />
-                    <Stack.Screen
-                      name="MathPuzzleScreen"
-                      component={MathPuzzleScreen}
-                    />
-                    <Stack.Screen name="DataScreen" component={DataScreen} />
-                    <Stack.Screen name="StateData" component={StateData} />
-                    <Stack.Screen name="Lobby" component={Lobby} />
-                    <Stack.Screen
-                      name="MultiPlayerGame"
-                      component={MultiPlayerGame}
-                    />
-                    <Stack.Screen name="CommingSoon" component={CommingSoon} />
-                    <Stack.Screen
-                      name="ForgetPassword"
-                      component={ForgetPassword}
-                    />
-                    <Stack.Screen name="More" component={More} />
-                    <Stack.Screen
-                      name="FriendRequestScreen"
-                      component={FriendRequestScreen}
-                    />
-                    <Stack.Screen
-                      name="LanguageSelectionScreen"
-                      component={LanguageSelectionScreen}
-                    />
-                    <Stack.Screen
-                      name="LanguageConfirmationScreen"
-                      component={LanguageConfirmationScreen}
-                    />
-                    <Stack.Screen
-                      name="MultiplayerResultScreen"
-                      component={MultiplayerResultScreen}
-                    />
-                    <Stack.Screen
-                      name="SettingsScreen"
-                      component={SettingsScreen}
-                    />
-                    <Stack.Screen name="SoundScreen" component={SoundScreen} />
-                    <Stack.Screen
-                      name="GameNotifications"
-                      component={GameNotifications}
-                    />
-                    <Stack.Screen
-                      name="UpdateProfile"
-                      component={UpdateProfile}
-                    />
-                    <Stack.Screen
-                      name="UserProfile"
-                      component={UserProfile}
-                    />
-                  </Stack.Navigator>
-                </NavigationContainer>
-              </SoundProvider>
-              <Toast />
-            </Socket>
-          </AuthProvider>
-        </KeyboardProvider>
-      </ThemeProvider>
-    </I18nextProvider>
+    <SafeAreaProvider>
+      <SafeAreaView style={{ flex: 1 }}>
+        <I18nextProvider i18n={i18next}>
+          <ThemeProvider>
+            <KeyboardProvider>
+              <AuthProvider>
+                <Socket>
+                  <Notification />
+                  <SoundProvider>
+                    <NavigationContainer ref={navigationRef}>
+                      <Stack.Navigator screenOptions={{ headerShown: false }}>
+                        <Stack.Screen name="Splash" component={Splash} />
+                        <Stack.Screen name="OnBoarding" component={OnBoarding} />
+                        <Stack.Screen
+                          name="AuthLandingScreen"
+                          component={AuthLandingScreen}
+                        />
+                        <Stack.Screen name="Login" component={Login} />
+                        <Stack.Screen name="SignUp" component={SignUp} />
+                        <Stack.Screen
+                          name="TermsAndConditions"
+                          component={TermsAndConditions}
+                        />
+                        <Stack.Screen name="SkipScreen" component={SkipScreen} />
+                        <Stack.Screen
+                          name="ChooseThemeIntroScreen"
+                          component={ChooseThemeIntroScreen}
+                        />
+                        <Stack.Screen name="BottomTab" component={BottomTab} />
+                        <Stack.Screen
+                          name="WelcomeScreen"
+                          component={WelcomeScreen}
+                        />
+                        <Stack.Screen name="PlayGame" component={PlayGame} />
+                        <Stack.Screen name="Home" component={Home} />
+                        <Stack.Screen
+                          name="NotificationPermissionScreen"
+                          component={NotificationPermissionScreen}
+                        />
+                        <Stack.Screen
+                          name="AddFriendScreen"
+                          component={AddFriendScreen}
+                        />
+                        <Stack.Screen
+                          name="ProfileScreen"
+                          component={ProfileScreen}
+                        />
+                        <Stack.Screen
+                          name="ThemeSelectorScreen"
+                          component={ThemeSelectorScreen}
+                        />
+                        <Stack.Screen
+                          name="MathInputScreen"
+                          component={MathInputScreen}
+                        />
+                        <Stack.Screen
+                          name="GuessTheSignScreen"
+                          component={GuessTheSignScreen}
+                        />
+                        <Stack.Screen
+                          name="MathInputScreenSecond"
+                          component={MathInputScreenSecond}
+                        />
+                        <Stack.Screen
+                          name="MathInputScreenThrid"
+                          component={MathInputScreenThrid}
+                        />
+                        <Stack.Screen
+                          name="WellDoneScreen"
+                          component={WellDoneScreen}
+                        />
+                        <Stack.Screen name="QuitScreen" component={QuitScreen} />
+                        <Stack.Screen
+                          name="RestartScreen"
+                          component={RestartScreen}
+                        />
+                        <Stack.Screen
+                          name="FireworksAnimation"
+                          component={FireworksAnimation}
+                        />
+                        <Stack.Screen name="Leaderboard" component={Leaderboard} />
+                        <Stack.Screen
+                          name="EndlessLeaderboard"
+                          component={EndlessLeaderboard}
+                        />
+                        <Stack.Screen name="Store" component={Store} />
+                        <Stack.Screen name="Dashboard" component={Dashboard} />
+                        <Stack.Screen
+                          name="EmailVerification"
+                          component={EmailVerification}
+                        />
+                        <Stack.Screen
+                          name="GuessTheSign"
+                          component={GuessTheSign}
+                        />
+                        <Stack.Screen
+                          name="AddUserScreen"
+                          component={AddUserScreen}
+                        />
+                        <Stack.Screen
+                          name="ChangeDifficultyScreen"
+                          component={ChangeDifficultyScreen}
+                        />
+                        <Stack.Screen name="LastScreen" component={LastScreen} />
+                        <Stack.Screen
+                          name="MathPuzzleScreen"
+                          component={MathPuzzleScreen}
+                        />
+                        <Stack.Screen name="DataScreen" component={DataScreen} />
+                        <Stack.Screen name="StateData" component={StateData} />
+                        <Stack.Screen name="Lobby" component={Lobby} />
+                        <Stack.Screen
+                          name="MultiPlayerGame"
+                          component={MultiPlayerGame}
+                        />
+                        <Stack.Screen name="CommingSoon" component={CommingSoon} />
+                        <Stack.Screen
+                          name="ForgetPassword"
+                          component={ForgetPassword}
+                        />
+                        <Stack.Screen name="More" component={More} />
+                        <Stack.Screen
+                          name="FriendRequestScreen"
+                          component={FriendRequestScreen}
+                        />
+                        <Stack.Screen
+                          name="LanguageSelectionScreen"
+                          component={LanguageSelectionScreen}
+                        />
+                        <Stack.Screen
+                          name="LanguageConfirmationScreen"
+                          component={LanguageConfirmationScreen}
+                        />
+                        <Stack.Screen
+                          name="MultiplayerResultScreen"
+                          component={MultiplayerResultScreen}
+                        />
+                        <Stack.Screen
+                          name="SettingsScreen"
+                          component={SettingsScreen}
+                        />
+                        <Stack.Screen name="SoundScreen" component={SoundScreen} />
+                        <Stack.Screen
+                          name="GameNotifications"
+                          component={GameNotifications}
+                        />
+                        <Stack.Screen
+                          name="UpdateProfile"
+                          component={UpdateProfile}
+                        />
+                        <Stack.Screen
+                          name="UserProfile"
+                          component={UserProfile}
+                        />
+                      </Stack.Navigator>
+                    </NavigationContainer>
+                  </SoundProvider>
+                  <Toast />
+                </Socket>
+              </AuthProvider>
+            </KeyboardProvider>
+          </ThemeProvider>
+        </I18nextProvider>
+      </SafeAreaView>
+    </SafeAreaProvider>
   );
 };
 

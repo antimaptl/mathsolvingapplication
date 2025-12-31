@@ -26,6 +26,8 @@ const scale = width / 375;
 const normalize = size =>
     Math.round(PixelRatio.roundToNearestPixel(size * scale));
 
+import Toast from 'react-native-toast-message';
+
 const UserProfile = () => {
     const Navigation = useNavigation();
     const route = useRoute();
@@ -37,6 +39,8 @@ const UserProfile = () => {
     console.log("🔍 UserProfile Response:", userId);
     const [userData, setUserData] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [friendshipStatus, setFriendshipStatus] = useState(null); // 'accepted', 'pending', 'none'
+    const [actionLoading, setActionLoading] = useState(false);
 
     /* ================= FETCH USER ================= */
     useEffect(() => {
@@ -50,31 +54,30 @@ const UserProfile = () => {
             try {
                 const token = await AsyncStorage.getItem('authToken');
                 const response = await fetch(
-                    'http://43.204.167.118:3000/api/auth/getUserById',
+                    `https://mataletics-backend.onrender.com/api/auth/getUserById?userId=${userId}`,
                     {
                         method: 'GET',
                         headers: {
                             Authorization: `Bearer ${token}`,
                             'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ userId })
+                        }
                     }
                 );
 
                 const text = await response.text();
-                console.log("🔍 UserProfile Raw Response:", text);
+                // console.log("🔍 UserProfile Raw Response:", text);
 
                 let result;
                 try {
                     result = JSON.parse(text);
                 } catch (jsonError) {
-                    console.log("❌ JSON Parse Error:", jsonError, "Response:", text);
                     Alert.alert("Error", "Server error (Invalid JSON)");
                     return;
                 }
 
                 if (result.success) {
                     setUserData(result.user);
+                    checkFriendshipStatus(result.user.username);
                 } else {
                     Alert.alert("Error", result.message || "Failed to fetch profile");
                 }
@@ -88,6 +91,102 @@ const UserProfile = () => {
 
         fetchUserData();
     }, [userId]);
+
+    const checkFriendshipStatus = async (username) => {
+        if (!username) return;
+        try {
+            const token = await AsyncStorage.getItem('authToken');
+            const response = await fetch(
+                'http://43.204.167.118:3000/api/friend/search-user-list',
+                {
+                    method: 'POST',
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ searchText: username })
+                }
+            );
+            const data = await response.json();
+            if (data.success && data.users) {
+                const found = data.users.find(u => u._id === userId);
+                if (found) {
+                    setFriendshipStatus(found.friendshipStatus);
+                }
+            }
+        } catch (error) {
+            console.log("Status Check Error:", error);
+        }
+    };
+
+    const handleAddFriend = async () => {
+        if (actionLoading) return;
+        setActionLoading(true);
+        try {
+            const token = await AsyncStorage.getItem('authToken');
+            const userDataStr = await AsyncStorage.getItem('userData');
+            const parsedUser = JSON.parse(userDataStr);
+            const requesterId = parsedUser?.id || parsedUser?._id;
+
+            if (!requesterId || !userId) return;
+
+            const response = await fetch(
+                'http://43.204.167.118:3000/api/friend/add-friend',
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({
+                        requester: requesterId,
+                        recipient: userId,
+                    }),
+                },
+            );
+            const data = await response.json();
+            if (data.success) {
+                setFriendshipStatus('pending');
+                Toast.show({ type: 'success', text1: 'Friend Request Sent' });
+            } else {
+                Toast.show({ type: 'error', text1: data.message || 'Failed' });
+            }
+        } catch (error) {
+            Toast.show({ type: 'error', text1: 'Error sending request' });
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    const handleRemoveFriend = async () => {
+        if (actionLoading) return;
+        setActionLoading(true);
+        try {
+            const token = await AsyncStorage.getItem('authToken');
+            const response = await fetch(
+                'http://43.204.167.118:3000/api/friend/deleteFriendShipByUser',
+                {
+                    method: 'DELETE',
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ friendId: userId })
+                }
+            );
+            const data = await response.json();
+            if (data.success) {
+                setFriendshipStatus('none');
+                Toast.show({ type: 'success', text1: friendshipStatus === 'pending' ? 'Request Cancelled' : 'Unfriended' });
+            } else {
+                Toast.show({ type: 'error', text1: 'Failed to remove' });
+            }
+        } catch (error) {
+            Toast.show({ type: 'error', text1: 'Error removing friend' });
+        } finally {
+            setActionLoading(false);
+        }
+    };
 
     /* ================= HELPERS ================= */
     const formatDate = d => {
@@ -166,6 +265,35 @@ const UserProfile = () => {
                                         <Text style={styles.joinDate}>
                                             Status: {userData?.accountStatus?.state || 'Active'}
                                         </Text>
+
+                                        {/* FOLLOW / UNFOLLOW BUTTON */}
+                                        <TouchableOpacity
+                                            style={[
+                                                styles.actionButton,
+                                                {
+                                                    backgroundColor: friendshipStatus === 'accepted' ? '#EF4444' : // Red for Remove
+                                                        friendshipStatus === 'pending' ? '#64748B' : // Grey for Cancel
+                                                            '#3B82F6' // Blue for Add
+                                                }
+                                            ]}
+                                            onPress={
+                                                friendshipStatus === 'accepted' || friendshipStatus === 'pending'
+                                                    ? handleRemoveFriend
+                                                    : handleAddFriend
+                                            }
+                                            disabled={actionLoading}
+                                        >
+                                            {actionLoading ? (
+                                                <ActivityIndicator size="small" color="#fff" />
+                                            ) : (
+                                                <Text style={styles.actionButtonText}>
+                                                    {friendshipStatus === 'accepted' ? 'Unfriend' :
+                                                        friendshipStatus === 'pending' ? 'Cancel Request' :
+                                                            'Add Friend'}
+                                                </Text>
+                                            )}
+                                        </TouchableOpacity>
+
                                     </View>
                                 </View>
 
@@ -369,6 +497,20 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     achievementText: { color: '#ddd', fontSize: normalize(12) },
+    actionButton: {
+        marginTop: normalize(10),
+        paddingVertical: normalize(8),
+        paddingHorizontal: normalize(20),
+        borderRadius: normalize(8),
+        alignItems: 'center',
+        justifyContent: 'center',
+        minWidth: normalize(100),
+    },
+    actionButtonText: {
+        color: '#fff',
+        fontSize: normalize(14),
+        fontWeight: '600',
+    },
 });
 
 export default UserProfile;
