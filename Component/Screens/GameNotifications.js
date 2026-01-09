@@ -12,7 +12,10 @@ import {
   LayoutAnimation,
   Platform,
   UIManager,
+  Animated,
 } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import Swipeable from 'react-native-gesture-handler/Swipeable';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation } from '@react-navigation/native';
@@ -21,7 +24,7 @@ import { useTheme } from '../Globalfile/ThemeContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import Toast from 'react-native-toast-message';
-import CustomHeader from '../Globalfile/CustomHeader';
+import { useSocket } from '../../Context/Socket'; // ✅ FIX 1: Import useSocket
 
 const { width, height } = Dimensions.get('window');
 const scaleFont = size => size * PixelRatio.getFontScale();
@@ -36,10 +39,13 @@ if (Platform.OS === 'android') {
 const GameNotifications = () => {
   const navigation = useNavigation();
   const { theme } = useTheme();
+  const socket = useSocket(); // ✅ FIX 2: Get socket at component level
 
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [expandedId, setExpandedId] = useState(null); // ID of currently expanded item
+  const [expandedId, setExpandedId] = useState(null);
+  const [challengeNotifications, setChallengeNotifications] = useState([]);
+  const [inAppNotifications, setInAppNotifications] = useState([]); // ✅ FIX 3: Add missing state
 
   // 1. Fetch Notifications (Friend Requests)
   const fetchNotifications = async () => {
@@ -56,18 +62,18 @@ const GameNotifications = () => {
       );
 
       if (res.data.success) {
-        // Map API data to UI structure
         const mappedData = (res.data.requests || [])
-          .filter(req => req.requester && req.requester._id) // Filter out invalid items
+          .filter(req => req.requester && req.requester._id)
           .map(req => ({
-            id: req.requester._id, // Use requester ID as unique key for actions
+            id: req.requester._id,
             user: req.requester.username || 'Unknown User',
-            time: req.createdAt, // ISO String
+            time: req.createdAt,
             type: 'friend_request',
             message: 'Has sent you a friend request.',
-            fullMessage: `User ${req.requester.username || 'Unknown'} wants to be your friend. Access their profile to see more details.`,
+            fullMessage: `User ${req.requester.username || 'Unknown'
+              } wants to be your friend. Access their profile to see more details.`,
             actions: ['Accept', 'Reject'],
-            recipient: req.recipient, // Needed for API action
+            recipient: req.recipient,
           }));
         setNotifications(mappedData);
       }
@@ -78,12 +84,39 @@ const GameNotifications = () => {
     }
   };
 
+  // ✅ FIX 4: Add fetchInAppNotifications function
+  const fetchInAppNotifications = async () => {
+    try {
+      const res = await axios.get(
+        'https://mataletics-backend.onrender.com/api/notifications/in-app',
+      );
+
+      if (res.data?.success) {
+        const mapped = (res.data.data || []).map((item, index) => ({
+          id: `inapp-${index}`,
+          user: item.title,
+          time: item.date,
+          type: 'in_app',
+          message: item.body,
+          fullMessage: item.body,
+          image: item.image,
+          actions: [],
+        }));
+
+        setInAppNotifications(mapped);
+      }
+    } catch (e) {
+      console.log('In-app notif error:', e);
+    }
+  };
+
   useEffect(() => {
     fetchNotifications();
+    fetchInAppNotifications(); // ✅ FIX 5: Call in-app notifications fetch
   }, []);
 
   // 2. Helper: Relative Time
-  const getRelativeTime = (isoString) => {
+  const getRelativeTime = isoString => {
     const now = new Date();
     const past = new Date(isoString);
     const diffInSeconds = Math.floor((now - past) / 1000);
@@ -96,49 +129,134 @@ const GameNotifications = () => {
     const diffInDays = Math.floor(diffInHours / 24);
     if (diffInDays < 30) return `${diffInDays} d ago`;
 
-    return past.toLocaleDateString(); // Fallback for old dates
+    return past.toLocaleDateString();
   };
 
   // 3. Handle Expand/Collapse
-  const toggleExpand = (id) => {
+  const toggleExpand = id => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setExpandedId(prev => (prev === id ? null : id));
   };
 
-  // 4. Handle Actions (Accept/Reject)
+  // ✅ FIX 6: Socket listener for challenge notifications
+  useEffect(() => {
+    if (!socket) return;
+
+    const onChallengeReceived = data => {
+      console.log('📩 Challenge received:', data);
+
+      const newChallenge = {
+        id: `challenge-${data.challengeId}`,
+        user: data.challenger.username,
+        time: new Date().toISOString(),
+        type: 'challenge_received',
+        message: 'Has challenged you to a game!',
+        fullMessage: `${data.challenger.username
+          } wants to play: ${data.gameSettings.diff.toUpperCase()} difficulty, ${data.gameSettings.timer
+          }s timer`,
+        actions: ['Accept', 'Decline'],
+        challengeData: data,
+      };
+
+      setChallengeNotifications(prev => [newChallenge, ...prev]);
+    };
+
+    socket.on('challenge-received', onChallengeReceived);
+
+    return () => {
+      socket.off('challenge-received', onChallengeReceived);
+    };
+  }, [socket]); // ✅ Depend on socket
+
+  // ✅ FIX 7: Merge all notifications correctly
+  const allNotifications = [
+    ...notifications,
+    ...inAppNotifications,
+    ...challengeNotifications,
+  ].sort((a, b) => new Date(b.time) - new Date(a.time));
+
+  // 4. Handle Actions
   const handleAction = async (notification, actionType) => {
-    try {
-      const token = await AsyncStorage.getItem('authToken');
-      const url = actionType === 'Accept'
-        ? 'http://43.204.167.118:3000/api/friend/accept-friend'
-        : 'http://43.204.167.118:3000/api/friend/reject-friend';
+    // Handle friend requests
+    if (notification.type === 'friend_request') {
+      try {
+        const token = await AsyncStorage.getItem('authToken');
+        const url =
+          actionType === 'Accept'
+            ? 'http://43.204.167.118:3000/api/friend/accept-friend'
+            : 'http://43.204.167.118:3000/api/friend/reject-friend';
 
-      // Optimistic Update: Remove from list immediately
-      setNotifications(prev => prev.filter(n => n.id !== notification.id));
+        setNotifications(prev => prev.filter(n => n.id !== notification.id));
 
-      const res = await axios.post(
-        url,
-        { requester: notification.id, recipient: notification.recipient },
-        { headers: { Authorization: `Bearer ${token}` } }
+        await axios.post(
+          url,
+          { requester: notification.id, recipient: notification.recipient },
+          { headers: { Authorization: `Bearer ${token}` } },
+        );
+
+        Toast.show({ type: 'success', text1: `Request ${actionType}ed` });
+      } catch (error) {
+        Toast.show({ type: 'error', text1: 'Action Failed' });
+        fetchNotifications();
+      }
+    }
+
+    // ✅ Handle game challenges
+    if (notification.type === 'challenge_received') {
+      if (!socket || !socket.connected) {
+        Toast.show({ type: 'error', text1: 'Connection error' });
+        return;
+      }
+
+      // Remove notification immediately
+      setChallengeNotifications(prev =>
+        prev.filter(n => n.id !== notification.id),
       );
 
-      if (res.data.success) {
-        Toast.show({
-          type: 'success',
-          text1: actionType === 'Accept' ? 'Request Accepted' : 'Request Rejected',
+      if (actionType === 'Accept') {
+        socket.emit('accept-challenge', {
+          challengeId: notification.challengeData.challengeId,
         });
-      } else {
-        // Revert if failed (optional, simplified here)
-        Toast.show({ type: 'error', text1: 'Action Failed', text2: res.data.message });
-        fetchNotifications(); // Refresh entire list to be safe
+
+        // ✅ FIX 8: Listen for challenge-accepted event (not game-started)
+        const handleChallengeAccepted = data => {
+          console.log('✅ Challenge accepted, navigating to game:', data);
+
+          Toast.show({
+            type: 'success',
+            text1: 'Challenge Accepted!',
+            text2: 'Starting game...',
+          });
+
+          // Navigate to PlayGame
+          navigation.navigate('PlayGame', {
+            gameRoom: data.gameRoom,
+            opponent: data.opponent,
+            myPlayerId: data.myPlayerId,
+            initialQuestionMeter: data.initialQuestionMeter,
+          });
+        };
+
+        // Listen for the game start event
+        socket.once('challenge-accepted', handleChallengeAccepted);
+
+        // Also listen for game-started as backup
+        socket.once('game-started', data => {
+          console.log('🎮 Game started event received');
+          // If already navigated via challenge-accepted, this won't execute
+        });
+      } else if (actionType === 'Decline') {
+        socket.emit('decline-challenge', {
+          challengeId: notification.challengeData.challengeId,
+        });
+
+        Toast.show({
+          type: 'info',
+          text1: 'Challenge Declined',
+        });
       }
-    } catch (e) {
-      console.log('Action Error:', e);
-      Toast.show({ type: 'error', text1: 'Network Error' });
-      fetchNotifications();
     }
   };
-
 
   // ---------- Components ----------
 
@@ -148,108 +266,189 @@ const GameNotifications = () => {
       return (
         <TouchableOpacity
           onPress={() => handleAction(notification, action)}
-          style={styles.actionIconWrapper}
-        >
+          style={styles.actionIconWrapper}>
           <MaterialCommunityIcons
             name={isAccept ? 'check-circle' : 'close-circle'}
-            size={scaleFont(30)} // Slightly larger for better touch target
-            color={isAccept ? theme.successColor || '#10B981' : theme.dangerColor || '#EF4444'}
+            size={scaleFont(30)}
+            color={
+              isAccept
+                ? theme.successColor || '#10B981'
+                : theme.dangerColor || '#EF4444'
+            }
           />
         </TouchableOpacity>
       );
     }
+
+    // ✅ FIX 9: Add action buttons for challenge notifications
+    if (type === 'challenge_received') {
+      const isAccept = action === 'Accept';
+      return (
+        <TouchableOpacity
+          onPress={() => handleAction(notification, action)}
+          style={[
+            styles.challengeActionButton,
+            isAccept ? styles.acceptButton : styles.declineButton,
+          ]}>
+          <Text style={styles.challengeActionText}>{action}</Text>
+        </TouchableOpacity>
+      );
+    }
+
     return null;
+  };
+
+  const handleDelete = (id, type) => {
+    // Optimistic Update
+    setNotifications(prev => prev.filter(n => n.id !== id));
+    setInAppNotifications(prev => prev.filter(n => n.id !== id));
+    setChallengeNotifications(prev => prev.filter(n => n.id !== id));
+
+    // Optional: Call specific delete API if required
+    Toast.show({ type: 'success', text1: 'Notification removed' });
+  };
+
+  const renderDeleteAction = (progress, dragX, item) => {
+    const scale = dragX.interpolate({
+      inputRange: [-80, 0],
+      outputRange: [1, 0],
+      extrapolate: 'clamp',
+    });
+
+    return (
+      <View style={styles.deleteAction}>
+        <Animated.View style={[styles.deleteActionContent, { transform: [{ scale }] }]}>
+          <MaterialCommunityIcons name="trash-can-outline" size={30} color="#fff" />
+        </Animated.View>
+      </View>
+    );
   };
 
   const NotificationCard = ({ data }) => {
     const isExpanded = expandedId === data.id;
-    const isSystem = data.type === 'system';
 
     return (
-      <TouchableOpacity
-        activeOpacity={0.9}
-        onPress={() => toggleExpand(data.id)}
-        style={[
-          styles.notificationCard,
-          {
-            backgroundColor: theme.cardBackground || '#1E293B',
-            borderColor: theme.borderColor || '#334155',
-          },
-        ]}>
-
-        {/* Header: User & Time */}
-        <View style={styles.cardHeader}>
-          <Text style={[styles.username, { color: theme.text }]}>
-            {data.user}
-          </Text>
-          <View style={styles.headerRight}>
-            <Text style={[styles.time, { color: theme.subText || '#94A3B8' }]}>
-              {getRelativeTime(data.time)}
-            </Text>
-            <MaterialCommunityIcons
-              name={isExpanded ? 'chevron-up' : 'chevron-down'}
-              size={scaleFont(20)}
-              color={theme.text}
-            />
+      <Swipeable
+        renderRightActions={(progress, dragX) => renderDeleteAction(progress, dragX, data)}
+        onSwipeableRightOpen={() => handleDelete(data.id, data.type)}
+        friction={2}
+        rightThreshold={40}
+      >
+        <TouchableOpacity
+          activeOpacity={0.9}
+          onPress={() => toggleExpand(data.id)}
+          style={[
+            styles.notificationCard,
+            {
+              backgroundColor: theme.cardBackground || '#1E293B',
+              borderColor: theme.borderColor || '#334155',
+            },
+            // ✅ Highlight challenge notifications
+            data.type === 'challenge_received' && styles.challengeCard,
+          ]}>
+          {/* Header: User & Time */}
+          <View style={styles.cardHeader}>
+            <View style={styles.userSection}>
+              {data.type === 'challenge_received' && (
+                <Text style={styles.challengeBadge}>🎮</Text>
+              )}
+              <Text style={[styles.username, { color: theme.text }]}>
+                {data.user}
+              </Text>
+            </View>
+            <View style={styles.headerRight}>
+              <Text style={[styles.time, { color: theme.subText || '#94A3B8' }]}>
+                {getRelativeTime(data.time)}
+              </Text>
+              <MaterialCommunityIcons
+                name={isExpanded ? 'chevron-up' : 'chevron-down'}
+                size={scaleFont(20)}
+                color={theme.text}
+              />
+            </View>
           </View>
-        </View>
 
-        {/* Body: Message */}
-        <View style={styles.cardBody}>
-          <Text style={[styles.message, { color: theme.text }]}>
-            {data.message}
-          </Text>
+          {/* Body: Message */}
+          <View style={styles.cardBody}>
+            <Text style={[styles.message, { color: theme.text }]}>
+              {data.message}
+            </Text>
 
-          {/* Action Buttons (Always visible for friend requests for quick access) */}
-          {data.type === 'friend_request' && (
-            <View style={styles.actionsRow}>
-              {data.actions.map((act, idx) => (
-                <ActionButton key={idx} type={data.type} action={act} notification={data} />
-              ))}
+            {/* Action Buttons */}
+            {data.actions && data.actions.length > 0 && (
+              <View style={styles.actionsRow}>
+                {data.actions.map((act, idx) => (
+                  <ActionButton
+                    key={idx}
+                    type={data.type}
+                    action={act}
+                    notification={data}
+                  />
+                ))}
+              </View>
+            )}
+          </View>
+
+          {/* Expanded Content */}
+          {isExpanded && (
+            <View style={styles.expandedContent}>
+              <Text style={[styles.detailText, { color: theme.subText || '#ccc' }]}>
+                {data.fullMessage}
+              </Text>
             </View>
           )}
-        </View>
-
-        {/* Expanded Content */}
-        {isExpanded && (
-          <View style={styles.expandedContent}>
-            <Text style={[styles.detailText, { color: theme.subText || '#ccc' }]}>
-              {data.fullMessage}
-            </Text>
-          </View>
-        )}
-      </TouchableOpacity>
+        </TouchableOpacity>
+      </Swipeable>
     );
   };
 
-
   const Content = () => (
-    // Replaced SafeAreaView with View + manual padding
-    <View style={{ flex: 1, paddingTop: height * 0.03 }}>
-      <CustomHeader
-        title="NOTIFICATIONS"
-        onBack={() => navigation.goBack()}
-      />
+    <SafeAreaView style={styles.container}>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <View style={styles.innerContainer}>
+          {/* Header */}
+          <View style={styles.header}>
+            <TouchableOpacity
+              onPress={() => navigation.goBack()}
+              style={styles.backButton}>
+              <Ionicons
+                name="caret-back-outline"
+                size={scaleFont(28)}
+                color={theme.text || 'black'}
+              />
+            </TouchableOpacity>
+            <Text style={[styles.headerTitle, { color: theme.text || 'black' }]}>
+              NOTIFICATIONS
+            </Text>
+            <View style={styles.rightPlaceholder} />
+          </View>
+          <View style={styles.headerSeparator} />
 
-      <View style={styles.container}>
-        {/* List */}
-        {loading ? (
-          <ActivityIndicator size="large" color={theme.primary} style={{ marginTop: 50 }} />
-        ) : (
-          <ScrollView showsVerticalScrollIndicator={false} style={styles.notificationsList}>
-            {notifications.length === 0 ? (
-              <Text style={[styles.emptyText, { color: theme.subText }]}>
-                No new notifications
-              </Text>
-            ) : (
-              notifications.map(n => <NotificationCard key={n.id} data={n} />)
-            )}
-            <View style={{ height: 30 }} />
-          </ScrollView>
-        )}
-        <Toast />
-      </View>
-    </View>
+          {/* List */}
+          {loading ? (
+            <ActivityIndicator
+              size="large"
+              color={theme.primary}
+              style={{ marginTop: 50 }}
+            />
+          ) : (
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              style={styles.notificationsList}>
+              {allNotifications.length === 0 ? (
+                <Text style={[styles.emptyText, { color: theme.subText }]}>
+                  No new notifications
+                </Text>
+              ) : (
+                allNotifications.map(n => <NotificationCard key={n.id} data={n} />)
+              )}
+              <View style={{ height: 30 }} />
+            </ScrollView>
+          )}
+          <Toast />
+        </View>
+      </GestureHandlerRootView>
+    </SafeAreaView>
   );
 
   return theme.backgroundGradient ? (
@@ -257,7 +456,8 @@ const GameNotifications = () => {
       <Content />
     </LinearGradient>
   ) : (
-    <View style={{ flex: 1, backgroundColor: theme.backgroundColor || '#f4f4f4' }}>
+    <View
+      style={{ flex: 1, backgroundColor: theme.backgroundColor || '#f4f4f4' }}>
       <Content />
     </View>
   );
@@ -265,11 +465,35 @@ const GameNotifications = () => {
 
 export default GameNotifications;
 
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  innerContainer: {
+    flex: 1,
     paddingHorizontal: width * 0.05,
     paddingTop: height * 0.03,
+  },
+  deleteAction: {
+    backgroundColor: '#EF4444',
+    justifyContent: 'center',
+    alignItems: 'flex-end',
+    marginBottom: height * 0.02,
+    marginTop: 0,
+    borderRadius: 12,
+    flex: 1,
+    paddingHorizontal: 20
+  },
+  deleteActionContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  deleteText: {
+    color: 'white',
+    fontWeight: '600',
+    padding: 20,
   },
   header: {
     flexDirection: 'row',
@@ -306,7 +530,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 12,
     marginBottom: height * 0.02,
-    overflow: 'hidden', // for animation
+    overflow: 'hidden',
+  },
+  challengeCard: {
+    borderColor: '#00e0ff',
+    borderWidth: 2,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -314,10 +542,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 5,
   },
+  userSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  challengeBadge: {
+    fontSize: scaleFont(18),
+  },
   headerRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5
+    gap: 5,
   },
   username: {
     fontSize: scaleFont(16),
@@ -343,6 +579,24 @@ const styles = StyleSheet.create({
   },
   actionIconWrapper: {
     padding: 2,
+  },
+  challengeActionButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    minWidth: 70,
+    alignItems: 'center',
+  },
+  acceptButton: {
+    backgroundColor: '#10B981',
+  },
+  declineButton: {
+    backgroundColor: '#EF4444',
+  },
+  challengeActionText: {
+    color: '#fff',
+    fontSize: scaleFont(14),
+    fontWeight: '600',
   },
   expandedContent: {
     marginTop: 15,

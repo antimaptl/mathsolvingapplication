@@ -66,6 +66,10 @@ import { SoundProvider } from './Context/SoundContext';
 import i18next from 'i18next';
 import UpdateProfile from './Component/Screens/UpdateProfile';
 import UserProfile from './Component/Screens/UserProfile';
+import SelectOpponent from './Component/Screens/SelectOpponent';
+import GameChallengeScreen from './Component/Screens/ChallengeScreen';
+import ChallengeFriends from './Component/Screens/ChallengeScreen';
+import WaitingForOpponent from './Component/Screens/WaitingForOpponent';
 
 const Stack = createNativeStackNavigator();
 
@@ -132,7 +136,10 @@ const App = () => {
                     <NavigationContainer ref={navigationRef}>
                       <Stack.Navigator screenOptions={{ headerShown: false }}>
                         <Stack.Screen name="Splash" component={Splash} />
-                        <Stack.Screen name="OnBoarding" component={OnBoarding} />
+                        <Stack.Screen
+                          name="OnBoarding"
+                          component={OnBoarding}
+                        />
                         <Stack.Screen
                           name="AuthLandingScreen"
                           component={AuthLandingScreen}
@@ -143,7 +150,10 @@ const App = () => {
                           name="TermsAndConditions"
                           component={TermsAndConditions}
                         />
-                        <Stack.Screen name="SkipScreen" component={SkipScreen} />
+                        <Stack.Screen
+                          name="SkipScreen"
+                          component={SkipScreen}
+                        />
                         <Stack.Screen
                           name="ChooseThemeIntroScreen"
                           component={ChooseThemeIntroScreen}
@@ -191,7 +201,10 @@ const App = () => {
                           name="WellDoneScreen"
                           component={WellDoneScreen}
                         />
-                        <Stack.Screen name="QuitScreen" component={QuitScreen} />
+                        <Stack.Screen
+                          name="QuitScreen"
+                          component={QuitScreen}
+                        />
                         <Stack.Screen
                           name="RestartScreen"
                           component={RestartScreen}
@@ -200,7 +213,10 @@ const App = () => {
                           name="FireworksAnimation"
                           component={FireworksAnimation}
                         />
-                        <Stack.Screen name="Leaderboard" component={Leaderboard} />
+                        <Stack.Screen
+                          name="Leaderboard"
+                          component={Leaderboard}
+                        />
                         <Stack.Screen
                           name="EndlessLeaderboard"
                           component={EndlessLeaderboard}
@@ -223,19 +239,40 @@ const App = () => {
                           name="ChangeDifficultyScreen"
                           component={ChangeDifficultyScreen}
                         />
-                        <Stack.Screen name="LastScreen" component={LastScreen} />
+                        <Stack.Screen
+                          name="LastScreen"
+                          component={LastScreen}
+                        />
                         <Stack.Screen
                           name="MathPuzzleScreen"
                           component={MathPuzzleScreen}
                         />
-                        <Stack.Screen name="DataScreen" component={DataScreen} />
+                        <Stack.Screen
+                          name="DataScreen"
+                          component={DataScreen}
+                        />
                         <Stack.Screen name="StateData" component={StateData} />
+                        <Stack.Screen
+                          name="SelectOpponent"
+                          component={SelectOpponent}
+                        />
+                        <Stack.Screen
+                          name="ChallengeFriends"
+                          component={ChallengeFriends}
+                        />
+                        <Stack.Screen
+                          name="WaitingForOpponent"
+                          component={WaitingForOpponent}
+                        />
                         <Stack.Screen name="Lobby" component={Lobby} />
                         <Stack.Screen
                           name="MultiPlayerGame"
                           component={MultiPlayerGame}
                         />
-                        <Stack.Screen name="CommingSoon" component={CommingSoon} />
+                        <Stack.Screen
+                          name="CommingSoon"
+                          component={CommingSoon}
+                        />
                         <Stack.Screen
                           name="ForgetPassword"
                           component={ForgetPassword}
@@ -261,7 +298,10 @@ const App = () => {
                           name="SettingsScreen"
                           component={SettingsScreen}
                         />
-                        <Stack.Screen name="SoundScreen" component={SoundScreen} />
+                        <Stack.Screen
+                          name="SoundScreen"
+                          component={SoundScreen}
+                        />
                         <Stack.Screen
                           name="GameNotifications"
                           component={GameNotifications}
@@ -274,6 +314,7 @@ const App = () => {
                           name="UserProfile"
                           component={UserProfile}
                         />
+
                       </Stack.Navigator>
                     </NavigationContainer>
                   </SoundProvider>

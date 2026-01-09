@@ -5,8 +5,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { navigate } from '../Globalfile/navigationRef';
 import notifee, { AndroidImportance } from '@notifee/react-native';
+import InAppBanner from '../Screens/InAppBanner';
 
 const Notification = () => {
+  const [inAppData, setInAppData] = useState(null);
+
   const requestUserPermission = async () => {
     try {
       if (Platform.OS === 'android') {
@@ -30,42 +33,33 @@ const Notification = () => {
 
   const getFcmToken = async () => {
     try {
-      const auth = messaging();
-      const token = await auth.getToken();
+      const token = await messaging().getToken();
       if (token) {
         console.log('🔥 Generated FCM Token:', token);
         await AsyncStorage.setItem('fcmToken', token);
         sendTokenToServer(token);
-      } else {
-        console.log('⚠️ Failed to generate FCM Token');
       }
     } catch (e) {
       console.log('❌ FCM token error:', e);
     }
   };
 
-  // 🔹 Use Auth Context to detect login
-  const { token } = React.useContext(require('../Globalfile/AuthProvider').AuthContext);
+  const { token } = React.useContext(
+    require('../Globalfile/AuthProvider').AuthContext
+  );
 
-  // Trigger sync when token changes
   useEffect(() => {
     if (token) {
-      console.log('✅ Auth Token detected in Notification.js, syncing FCM...');
       getFcmToken();
     }
   }, [token]);
 
   const sendTokenToServer = async fcmToken => {
-    console.log('📤 Sending FCM token to server:', fcmToken);
     try {
-      // Use token from context or storage
       const authToken = token || await AsyncStorage.getItem('authToken');
-      if (!authToken) {
-        console.log('⚠️ No Auth Token available to send FCM token');
-        return;
-      }
+      if (!authToken) return;
 
-      const res = await axios.patch(
+      await axios.patch(
         'http://43.204.167.118:3000/api/auth/save-fcmToken',
         { fcmToken },
         {
@@ -75,21 +69,25 @@ const Notification = () => {
           },
         },
       );
-      console.log('FCM token sent to server result:', res.status)
     } catch (e) {
       console.log('Send token error:', e);
     }
   };
 
+  // 🔔 FOREGROUND NOTIFICATION
   const showBanner = async remoteMessage => {
     const { notification, data } = remoteMessage;
     if (!notification) return;
 
-    const title = notification.title || 'Notification';
-    const body = notification.body || 'You have a new notification';
-    const type = data?.type || null;
+    // ✅ IN-APP notification (ALL types)
+    setInAppData({
+      title: notification.title || 'Notification',
+      body: notification.body || '',
+      type: data?.type,
+      data,
+    });
 
-    // Only send native notification, no banner
+    // ✅ EXISTING native notification (same as before)
     if (Platform.OS === 'android') {
       try {
         const channelId = await notifee.createChannel({
@@ -99,8 +97,8 @@ const Notification = () => {
         });
 
         await notifee.displayNotification({
-          title,
-          body,
+          title: notification.title,
+          body: notification.body,
           android: {
             channelId,
             largeIcon: 'ic_largeicon',
@@ -109,32 +107,35 @@ const Notification = () => {
           },
         });
       } catch (err) {
-        console.log('Notifee notification error:', err);
+        console.log('Notifee error:', err);
       }
     }
   };
 
   const handleNavigation = remoteMessage => {
     const type = remoteMessage?.data?.type;
-    console.log('🔔 Notification Clicked, Type:', type);
 
     if (type === 'FRIEND_REQUEST' || type === 'ADD_FRIEND') {
-      console.log('👉 Navigating to GameNotifications');
       navigate('GameNotifications');
     }
   };
 
   useEffect(() => {
-    const auth = messaging();
-    const unsubscribeForeground = auth.onMessage(showBanner);
-    const unsubscribeBackground = auth.onNotificationOpenedApp(handleNavigation);
+    requestUserPermission();
 
-    auth.getInitialNotification()
+    const unsubscribeForeground = messaging().onMessage(showBanner);
+    const unsubscribeBackground =
+      messaging().onNotificationOpenedApp(handleNavigation);
+
+    messaging()
+      .getInitialNotification()
       .then(remoteMessage => {
         if (remoteMessage) handleNavigation(remoteMessage);
       });
 
-    const unsubscribeToken = auth.onTokenRefresh(token => sendTokenToServer(token));
+    const unsubscribeToken = messaging().onTokenRefresh(token =>
+      sendTokenToServer(token),
+    );
 
     return () => {
       unsubscribeForeground();
@@ -143,8 +144,17 @@ const Notification = () => {
     };
   }, []);
 
-  // Banner UI removed entirely
-  return null;
+  return (
+    <>
+      {inAppData && (
+        <InAppBanner
+          title={inAppData.title}
+          body={inAppData.body}
+          onHide={() => setInAppData(null)}
+        />
+      )}
+    </>
+  );
 };
 
 export default Notification;

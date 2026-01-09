@@ -17,7 +17,9 @@ import MaterialIcons from 'react-native-vector-icons/FontAwesome';
 import { useNavigation } from '@react-navigation/native';
 import Toast from 'react-native-toast-message';
 import LinearGradient from 'react-native-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../Globalfile/ThemeContext';
+import CustomHeader from '../Globalfile/CustomHeader';
 
 const { width, height } = Dimensions.get('window');
 const guidelineBaseWidth = 375;
@@ -34,6 +36,7 @@ const FriendRequestScreen = () => {
   const navigation = useNavigation();
   const fetchCalled = useRef(false);
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
 
   const fetchFriendRequests = async () => {
     try {
@@ -236,95 +239,55 @@ const FriendRequestScreen = () => {
     <LinearGradient
       colors={theme.backgroundGradient || ['#0F172A', '#1E293B']}
       style={{ flex: 1 }}>
-      <View style={styles.container}>
-        <View style={styles.headerRow}>
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={styles.backButton}>
-            <Icon
-              name="caret-back-outline"
-              size={scaleFont(22)}
-              color={theme.text || '#fff'}
-            />
-          </TouchableOpacity>
-          <View>
-            <Text style={[styles.headerText, { color: theme.text }]}>
-              Pending
-            </Text>
-            <Text style={[styles.headerText, { color: theme.text }]}>
-              Requests
-            </Text>
-          </View>
-        </View>
-
-        <View
-          style={[
-            styles.divider,
-            { borderColor: '#94A3B8' },
-          ]}
+      <View style={{ flex: 1, paddingTop: insets.top + 30 }}>
+        <CustomHeader
+          title="Pending Requests"
+          onBack={() => navigation.goBack()}
         />
 
-        <View
-          style={[
-            styles.titleContainer,
-            { backgroundColor: theme.cardBackground || '#1E293B' },
-          ]}>
-          <Text style={[styles.titleText, { color: theme.text }]}>
-            Pending Requests ({requests.length})
-          </Text>
-        </View>
+        <View style={styles.contentContainer}>
+          <View
+            style={[
+              styles.titleContainer,
+              { backgroundColor: theme.cardBackground || '#1E293B' },
+            ]}>
+            <Text style={[styles.titleText, { color: theme.text }]}>
+              Pending Requests ({requests.length})
+            </Text>
+          </View>
 
-        {loading ? (
-          <ActivityIndicator
-            color={theme.primary || '#FB923C'}
-            size="large"
-            style={{ marginTop: verticalScale(40) }}
-          />
-        ) : (
-          <FlatList
-            data={requests}
-            keyExtractor={item => item._id}
-            renderItem={renderItem}
-            ListEmptyComponent={
-              <Text style={[styles.emptyText, { color: theme.subText }]}>
-                No pending friend requests.
-              </Text>
-            }
-            contentContainerStyle={{ paddingBottom: verticalScale(60) }}
-            showsVerticalScrollIndicator={false}
-          />
-        )}
+          {loading ? (
+            <ActivityIndicator
+              color={theme.primary || '#FB923C'}
+              size="large"
+              style={{ marginTop: verticalScale(40) }}
+            />
+          ) : (
+            <FlatList
+              data={requests}
+              keyExtractor={item => item._id}
+              renderItem={renderItem}
+              ListEmptyComponent={
+                <Text style={[styles.emptyText, { color: theme.subText }]}>
+                  No pending friend requests.
+                </Text>
+              }
+              contentContainerStyle={{ paddingBottom: verticalScale(60) }}
+              showsVerticalScrollIndicator={false}
+            />
+          )}
+        </View>
       </View>
     </LinearGradient>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  contentContainer: {
     flex: 1,
     paddingHorizontal: scale(16),
-    paddingTop: verticalScale(20),
   },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: verticalScale(16),
-    gap: "31%"
-  },
-  backButton: {
-    padding: scale(6),
-  },
-  headerText: {
-    fontSize: scaleFont(19),
-    fontWeight: '700',
-  },
-  divider: {
-    height: 1,
-    opacity: 0.3,
-    marginBottom: verticalScale(45),
-    borderWidth: 1,
-    top: verticalScale(24)
-  },
+
   titleContainer: {
     paddingVertical: verticalScale(10),
     paddingHorizontal: scale(10),
