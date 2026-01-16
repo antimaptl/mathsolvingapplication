@@ -138,15 +138,15 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: width * 0.05,
-    paddingTop: height * 0.03,
+    marginTop: height * - 0.03,
   },
 
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: height * 0.01,
-    paddingBottom: height * 0.01,
+    // paddingTop: height * 0.01,
+    // paddingBottom: height * 0.01,
   },
 
   headerSeparator: {
@@ -155,7 +155,7 @@ const styles = StyleSheet.create({
     opacity: 0.5,
     top: 28,
     marginHorizontal: -width * 0.09,
-    marginBottom: height * 0.04,
+    // marginBottom: height * 0.04,
 
   },
 

@@ -11,6 +11,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  Modal,
+  FlatList,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Toast from 'react-native-toast-message';
@@ -47,6 +49,7 @@ export default function SignUp() {
 
   const [gender, setGender] = useState('');
   const [showGenderOptions, setShowGenderOptions] = useState(false);
+  const [showYearPicker, setShowYearPicker] = useState(false); // ✅ Year Picker State
   const [errors, setErrors] = useState({});
   const [isTicked, setIsTicked] = useState(false);
   const [tncError, setTncError] = useState(false);
@@ -113,6 +116,10 @@ export default function SignUp() {
   //     .toUpperCase()
   //     .replace(/./g, char => String.fromCodePoint(127397 + char.charCodeAt(0)));
   // };
+
+  // Generate years (Current year down to 100 years ago)
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: 100 }, (_, i) => (currentYear - i).toString());
 
   const validateEmail = email => {
     const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -379,27 +386,21 @@ export default function SignUp() {
               )}
             </View>
 
-            <View style={[styles.inputContainer]}>
+            <View style={[styles.inputContainer, errors.dateOfBirth && styles.errorBorder]}>
               <MaterialIcons
                 name="calendar-month"
                 size={normalize(20)}
                 color="#94A3B8"
                 style={styles.inputIcon}
               />
-              <TextInput
-                style={styles.input}
-                placeholder="Year of Birth"
-                placeholderTextColor="#94A3B8"
-                value={dateOfBirth}
-                onChangeText={(text) => {
-                  // Allow only numbers and max 4 digits
-                  if (/^\d{0,4}$/.test(text)) {
-                    setDateOfBirth(text);
-                  }
-                }}
-                keyboardType="numeric"
-                maxLength={4}
-              />
+              <TouchableOpacity
+                style={{ flex: 1, justifyContent: 'center', height: normalize(40) }}
+                onPress={() => setShowYearPicker(true)}
+              >
+                <Text style={{ color: dateOfBirth ? 'white' : '#94A3B8', fontSize: normalize(16) }}>
+                  {dateOfBirth || 'Year of Birth'}
+                </Text>
+              </TouchableOpacity>
             </View>
 
             <View style={styles.tickContainer}>
@@ -474,6 +475,65 @@ export default function SignUp() {
             </TouchableOpacity>
           </View>
         </ScrollView>
+        {/* YEAR PICKER MODAL */}
+        <Modal
+          visible={showYearPicker}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => setShowYearPicker(false)}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContainer}>
+              <LinearGradient
+                colors={['#1e293b', '#0f172a']}
+                style={styles.modalContentGradient}
+              >
+                <View style={styles.titleContainer}>
+                  <Text style={styles.modalTitle}>Select Year</Text>
+                  <TouchableOpacity
+                    style={styles.headerCloseIcon}
+                    onPress={() => setShowYearPicker(false)}
+                  >
+                    <Icon name="close" size={24} color="#94A3B8" />
+                  </TouchableOpacity>
+                </View>
+
+                <FlatList
+                  data={years}
+                  keyExtractor={(item) => item}
+                  showsVerticalScrollIndicator={false}
+                  contentContainerStyle={{ paddingVertical: 10 }}
+                  renderItem={({ item }) => (
+                    <TouchableOpacity
+                      style={[
+                        styles.modalOption,
+                        dateOfBirth === item && styles.modalOptionSelected
+                      ]}
+                      onPress={() => {
+                        setDateOfBirth(item);
+                        setShowYearPicker(false);
+                      }}>
+                      <Text
+                        style={[
+                          styles.modalOptionText,
+                          dateOfBirth === item && styles.modalOptionTextSelected,
+                        ]}>
+                        {item}
+                      </Text>
+                      {dateOfBirth === item && (
+                        <LinearGradient
+                          colors={['#FB923C', '#F97316']}
+                          style={styles.checkIconContainer}
+                        >
+                          <Icon name="checkmark" size={12} color="#fff" />
+                        </LinearGradient>
+                      )}
+                    </TouchableOpacity>
+                  )}
+                />
+              </LinearGradient>
+            </View>
+          </View>
+        </Modal>
       </LinearGradient>
     </KeyboardAvoidingView>
   );
@@ -660,5 +720,81 @@ const styles = StyleSheet.create({
     marginBottom: normalize(10),
     marginLeft: normalize(5),
     alignSelf: "flex-end"
+  },
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContainer: {
+    width: '85%',
+    height: '60%',
+    borderRadius: 24,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.5,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  modalContentGradient: {
+    flex: 1,
+    padding: 0,
+  },
+  titleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center', // Center the title
+    paddingVertical: 20,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.08)',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#fff',
+    letterSpacing: 0.5,
+  },
+  headerCloseIcon: {
+    position: 'absolute',
+    right: 20,
+    padding: 5,
+  },
+  modalOption: {
+    paddingVertical: 15,
+    paddingHorizontal: 25,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginHorizontal: 10,
+    marginVertical: 4,
+    borderRadius: 12,
+  },
+  modalOptionSelected: {
+    backgroundColor: 'rgba(251, 146, 60, 0.15)', // Orange tint
+    borderWidth: 1,
+    borderColor: 'rgba(251, 146, 60, 0.3)',
+  },
+  modalOptionText: {
+    fontSize: 16,
+    color: '#94A3B8',
+    fontWeight: '500',
+  },
+  modalOptionTextSelected: {
+    color: '#FB923C', // Orange
+    fontWeight: '700',
+    fontSize: 18,
+  },
+  checkIconContainer: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

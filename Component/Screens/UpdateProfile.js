@@ -15,6 +15,7 @@ import {
   Pressable,
   Platform,
   Alert,
+  FlatList,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -55,6 +56,7 @@ const UpdateProfile = () => {
 
   const [showGenderOptions, setShowGenderOptions] = useState(false);
   const [showCountryPicker, setShowCountryPicker] = useState(false); // ✅ Modal State
+  const [showYearPicker, setShowYearPicker] = useState(false); // ✅ Year Picker State
 
   /* ================= FETCH USER ================= */
   useEffect(() => {
@@ -87,6 +89,10 @@ const UpdateProfile = () => {
 
     loadUser();
   }, []);
+
+  // Generate years (Current year down to 100 years ago)
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: 100 }, (_, i) => (currentYear - i).toString());
 
   /* ================= IMAGE PICK ================= */
   const openPicker = async type => {
@@ -256,19 +262,14 @@ const UpdateProfile = () => {
                 {/* Year of Birth */}
                 <View style={styles.fieldRow}>
                   <Text style={styles.fieldLabel}>Year of Birth:</Text>
-                  <TextInput
+                  <TouchableOpacity
                     style={styles.inlineInput}
-                    value={dateOfBirth}
-                    onChangeText={(text) => {
-                      if (/^\d{0,4}$/.test(text)) {
-                        setDateOfBirth(text);
-                      }
-                    }}
-                    placeholder="YYYY"
-                    placeholderTextColor="#94A3B8"
-                    keyboardType="numeric"
-                    maxLength={4}
-                  />
+                    onPress={() => setShowYearPicker(true)}
+                  >
+                    <Text style={{ color: dateOfBirth ? 'white' : '#94A3B8', fontSize: normalize(14), paddingVertical: 0 }}>
+                      {dateOfBirth || 'YYYY'}
+                    </Text>
+                  </TouchableOpacity>
                 </View>
 
                 {/* Gender */}
@@ -426,6 +427,66 @@ const UpdateProfile = () => {
               onPress={() => setShowCountryPicker(false)}>
               <Text style={styles.closeText}>Close</Text>
             </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* YEAR PICKER MODAL */}
+      <Modal
+        visible={showYearPicker}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowYearPicker(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <LinearGradient
+              colors={['#1e293b', '#0f172a']} // Dark gradient background
+              style={styles.modalContentGradient}
+            >
+              <View style={styles.titleContainer}>
+                <Text style={styles.modalTitle}>Select Year</Text>
+                <TouchableOpacity
+                  style={styles.headerCloseIcon}
+                  onPress={() => setShowYearPicker(false)}
+                >
+                  <Icon name="close" size={24} color="#94A3B8" />
+                </TouchableOpacity>
+              </View>
+              <FlatList
+                data={years}
+                keyExtractor={(item) => item}
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={{ paddingVertical: 10 }}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={[
+                      styles.modalOption,
+                      dateOfBirth === item && styles.modalOptionSelected
+                    ]}
+                    onPress={() => {
+                      setDateOfBirth(item);
+                      setShowYearPicker(false);
+                    }}>
+                    <Text
+                      style={[
+                        styles.modalOptionText,
+                        dateOfBirth === item && styles.modalOptionTextSelected,
+                      ]}>
+                      {item}
+                    </Text>
+                    {dateOfBirth === item && (
+                      <LinearGradient
+                        colors={['#4fa5c2', '#4fa5c2']} // Blue tint for UpdateProfile maybe? Or keep Orange? App uses Blue for Save button. Let's use Theme Primary if possible or Blue. Saving uses theme.primary. Let's stick to Orange/Blue. I'll use Blue here to match profile screen.
+                        style={styles.checkIconContainer}
+                      >
+                        <Icon name="checkmark" size={12} color="#fff" />
+                      </LinearGradient>
+                    )}
+                  </TouchableOpacity>
+                )}
+              />
+              {/* Removed Bottom Close Button favoring the top X */}
+            </LinearGradient>
           </View>
         </View>
       </Modal>
@@ -588,63 +649,90 @@ const styles = StyleSheet.create({
   // Modal Styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)', // Softer overlay
+    backgroundColor: 'rgba(0,0,0,0.7)',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  modalContent: {
+  modalContainer: { // Renamed from modalContent to allow gradient wrapper
     width: '85%',
-    backgroundColor: 'rgba(255, 255, 255, 0.92)', // Glass-like White
-    borderRadius: 20,
-    padding: 0,
-    elevation: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.2,
-    shadowRadius: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.5)', // Subtle frost border
+    height: '60%',
+    borderRadius: 24,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.5,
+    shadowRadius: 20,
+    elevation: 10,
+    backgroundColor: '#1E293B' // Fallback
+  },
+  modalContentGradient: {
+    flex: 1,
+    padding: 0,
   },
   titleContainer: {
-    paddingVertical: 18,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center', // Center title
+    paddingVertical: 20,
+    paddingHorizontal: 20,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.05)',
-    backgroundColor: 'rgba(255, 255, 255, 0.5)', // Slightly different top
+    borderBottomColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: 'transparent', // Gradient handles it
   },
   modalTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#1E293B', // Dark Text
-    textAlign: 'center',
+    color: '#fff',
     letterSpacing: 0.5,
   },
+  headerCloseIcon: {
+    position: 'absolute',
+    right: 20,
+    padding: 5,
+  },
   modalOption: {
-    paddingVertical: 16,
-    paddingHorizontal: 20,
+    paddingVertical: 15,
+    paddingHorizontal: 25,
     flexDirection: 'row',
     alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.05)', // Very light separator
+    justifyContent: 'space-between',
+    marginHorizontal: 10,
+    marginVertical: 4,
+    borderRadius: 12,
+    borderBottomWidth: 0, // Reset previous
+  },
+  modalOptionSelected: {
+    backgroundColor: 'rgba(79, 165, 194, 0.15)', // Blue tint
+    borderWidth: 1,
+    borderColor: 'rgba(79, 165, 194, 0.3)',
   },
   modalOptionText: {
     fontSize: 16,
-    color: '#334155', // Dark Grey Text
-    marginLeft: 15,
-    flex: 1,
+    color: '#94A3B8',
     fontWeight: '500',
+    flex: 0, // Reset
   },
-  closeButton: {
+  modalOptionTextSelected: {
+    color: '#4fa5c2', // Blue
+    fontWeight: '700',
+    fontSize: 18,
+  },
+  checkIconContainer: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  closeButton: { // Keep just in case used elsewhere, but mainly hidden
     alignItems: 'center',
     paddingVertical: 18,
-    backgroundColor: 'rgba(255, 255, 255, 0.8)', // Translucent footer
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(0,0,0,0.05)',
   },
   closeText: {
     fontSize: 16,
-    color: '#EF4444', // Red accent
-    fontWeight: '600',
+    color: '#EF4444',
   },
 
 });
