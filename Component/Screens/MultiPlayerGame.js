@@ -1,425 +1,4 @@
-// import React, {useState, useEffect, useRef, useContext} from 'react';
-// import {
-//   View,
-//   Text,
-//   TouchableOpacity,
-//   StyleSheet,
-//   Dimensions,
-//   PixelRatio,
-//   SafeAreaView,
-//   StatusBar,
-//   Animated,
-// } from 'react-native';
-// import AsyncStorage from '@react-native-async-storage/async-storage';
-// import Icon from 'react-native-vector-icons/Ionicons';
-// import {useNavigation, useRoute} from '@react-navigation/native';
-// import LinearGradient from 'react-native-linear-gradient';
-// import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-// import {useSocket} from '../../Context/Socket';
-// import {useSafeAreaInsets} from 'react-native-safe-area-context';
-
-// // ⭐ ADD THE THEME CONTEXT — SAME AS MathInputScreen
-// import { useTheme } from '../Globalfile/ThemeContext';
-
-// const {width, height} = Dimensions.get('window');
-// const scaleFont = size => size * PixelRatio.getFontScale();
-
-// const numPad = [
-//   ['7', '8', '9', '-'],
-//   ['4', '5', '6', '.'],
-//   ['1', '2', '3', 'na'],
-//   ['Clear', '0', '⌫', 'skip'],
-// ];
-
-// const getMathSymbol = word => {
-//   const symbolMap = {
-//     Sum: '+',
-//     Difference: '-',
-//     Product: '*',
-//     Quotient: '/',
-//     Modulus: '%',
-//     Exponent: '^',
-//   };
-//   return symbolMap[word] || word;
-// };
-
-// const MultiPlayerGame = () => {
-//   const socket = useSocket();
-//   const insets = useSafeAreaInsets();
-//   const navigation = useNavigation();
-//   const route = useRoute();
-
-//   // ⭐ GET THE THEME
-//   const {theme} = useTheme();
-
-//   const {currentQuestion, timer, difficulty} = route.params || {};
-
-//   const [input, setInput] = useState('');
-//   const [question, setQuestion] = useState('');
-//   const [correctAnswer, setCorrectAnswer] = useState('');
-//   const [loading, setLoading] = useState(true);
-//   const [user, setUser] = useState(null);
-//   const socketRef = useRef(null);
-
-//   const totalTimeRef = useRef(timer ?? 60);
-//   const [minutes, setMinutes] = useState(Math.floor((timer ?? 60) / 60));
-//   const [seconds, setSeconds] = useState((timer ?? 60) % 60);
-//   const [animateWatch] = useState(new Animated.Value(1));
-//   const [isThirtySecPhase, setIsThirtySecPhase] = useState(false);
-//   const [isPaused, setIsPaused] = useState(false);
-
-//   const scoreRef = useRef(0);
-//   const correctAnswersRef = useRef(0);
-//   const incorrectCountRef = useRef(0);
-//   const skippedCountRef = useRef(0);
-
-//   const [score, setScore] = useState(0);
-//   const [correctAnswers, setCorrectAnswers] = useState(0);
-//   const [skippedCount, setSkippedCount] = useState(0);
-
-//   const [feedback, setFeedback] = useState(null);
-//   const [awaitingResult, setAwaitingResult] = useState(false);
-
-//   useEffect(() => {
-//     AsyncStorage.getItem('userData')
-//       .then(stored => {
-//         if (stored) setUser(JSON.parse(stored));
-//       })
-//       .catch(console.error);
-//   }, []);
-
-//   useEffect(() => {
-//     if (!socket) return;
-//     socketRef.current = socket;
-
-//     const handleNewQuestion = q => {
-//       const mathSymbol = getMathSymbol(q.symbol);
-//       setQuestion(`${q.input1} ${mathSymbol} ${q.input2}`);
-//       setCorrectAnswer(String(q.answer));
-//       setInput('');
-//       setLoading(false);
-//       setFeedback(null);
-//       setAwaitingResult(false);
-//     };
-
-//     const handleNextQuestion = data => {
-//       const q = data.question;
-//       const mathSymbol = getMathSymbol(q.symbol);
-//       setQuestion(`${q.input1} ${mathSymbol} ${q.input2}`);
-//       setCorrectAnswer(String(q.answer));
-//       setInput('');
-//       setLoading(false);
-//       setFeedback(null);
-//       setAwaitingResult(false);
-//     };
-
-//     socket.on('new-question', handleNewQuestion);
-//     socket.on('next-question', handleNextQuestion);
-
-//     if (currentQuestion) {
-//       const mathSymbol = getMathSymbol(currentQuestion.symbol);
-//       setQuestion(
-//         `${currentQuestion.input1} ${mathSymbol} ${currentQuestion.input2}`,
-//       );
-//       setCorrectAnswer(String(currentQuestion.answer));
-//       setLoading(false);
-//     }
-
-//     return () => {
-//       socket.off('new-question', handleNewQuestion);
-//     };
-//   }, [socket, currentQuestion]);
-
-//   // Timer
-//   useEffect(() => {
-//     if (typeof timer === 'number') {
-//       totalTimeRef.current = timer;
-//       setMinutes(Math.floor(timer / 60));
-//       setSeconds(timer % 60);
-//     }
-
-//     const interval = setInterval(() => {
-//       if (!isPaused) {
-//         totalTimeRef.current -= 1;
-
-//         const mins = Math.floor(totalTimeRef.current / 60);
-//         const secs = totalTimeRef.current % 60;
-//         setMinutes(mins);
-//         setSeconds(secs);
-
-//         if (totalTimeRef.current <= 10 && totalTimeRef.current > 0) {
-//           Animated.sequence([
-//             Animated.timing(animateWatch, {
-//               toValue: 1.4,
-//               duration: 300,
-//               useNativeDriver: true,
-//             }),
-//             Animated.timing(animateWatch, {
-//               toValue: 1,
-//               duration: 300,
-//               useNativeDriver: true,
-//             }),
-//           ]).start();
-//         }
-
-//         if (totalTimeRef.current <= 0) {
-//           clearInterval(interval);
-
-//           navigation.replace('MultiplayerResultScreen', {
-//             totalScore: scoreRef.current,
-//             correctCount: correctAnswersRef.current,
-//             inCorrectCount: incorrectCountRef.current,
-//             skippedQuestions: skippedCountRef.current,
-//             difficulty,
-//             isWinner: true,
-//           });
-//         }
-//       }
-//     }, 1000);
-
-//     return () => clearInterval(interval);
-//   }, [isPaused]);
-
-//   const handlePress = async value => {
-//     if (loading || awaitingResult) return;
-
-//     const key = value.toLowerCase();
-//     const playerId = await AsyncStorage.getItem('playerId');
-
-//     if (key === 'clear') {
-//       setInput('');
-//       return;
-//     }
-//     if (key === '⌫') {
-//       setInput(prev => prev.slice(0, -1));
-//       return;
-//     }
-//     if (key === 'skip') {
-//       skippedCountRef.current += 1;
-//       setSkippedCount(skippedCountRef.current);
-//       setFeedback('skipped');
-
-//       socketRef.current?.emit('next-question', {userId: user?.id});
-
-//       setTimeout(() => setFeedback(null), 900);
-//       return;
-//     }
-
-//     const newInput = input + value;
-//     setInput(newInput);
-
-//     if (newInput.length >= correctAnswer.length) {
-//       const isCorrect = newInput === correctAnswer;
-//       setFeedback(isCorrect ? 'correct' : 'incorrect');
-
-//       if (isCorrect) {
-//         scoreRef.current += 1;
-//         setScore(scoreRef.current);
-//       }
-
-//       socketRef.current?.emit('submit-answer', {
-//         answer: newInput,
-//         playerId,
-//         userName: user?.username,
-//       });
-//     }
-//   };
-
-//   return (
-//     <SafeAreaView style={[styles.container, {backgroundColor: theme. backgroundGradient[0] ||  '#1E293B' , paddingTop: insets.top}]}>
-//       <StatusBar  backgroundColor={
-//           theme.backgroundGradient ? theme.backgroundGradient[0] : '#0B1220'
-//         }
-//         barStyle="light-content" />
-
-//       {/* TOP BAR */}
-//       <View style={[styles.topBar, {backgroundColor: theme.cardBackground || '#1E293B'}]}>
-//         <TouchableOpacity onPress={() => navigation.goBack()} style={[styles.iconButton, {backgroundColor: theme.card}]}>
-//           <Icon name="chevron-back" size={scaleFont(18)} color={theme.text} />
-//         </TouchableOpacity>
-
-//         {/* TIMER */}
-//         <View style={{flexDirection: 'row', alignItems: 'center'}}>
-//           <Animated.Image
-//             source={require('../Screens/Image/Stopwatch.png')}
-//             style={[
-//               styles.timerIcon,
-//               {
-//                 tintColor:
-//                   minutes * 60 + seconds <= 10 ? 'red' : theme.text,
-//                 transform: [{scale: animateWatch}],
-//               },
-//             ]}
-//           />
-//           <Text style={{color: theme.text, fontSize: scaleFont(15), marginLeft: 6}}>
-//             {`${minutes}:${String(seconds).padStart(2, '0')}`}
-//           </Text>
-//         </View>
-
-//         <View style={{width: width * 0.06}} />
-//       </View>
-
-//       {/* QUESTION */}
-//       <Text style={[styles.question, {color: theme.text}]}>
-//         {loading ? 'Loading...' : question}
-//       </Text>
-
-//       {/* ANSWER BOX */}
-//       <View style={{flexDirection: 'row', justifyContent: 'center', marginBottom: height * 0.04}}>
-//         <View
-//           style={[
-//             styles.answerBox,
-//             {backgroundColor: theme.cardBackground || '#1E293B'},
-//             feedback === 'correct'
-//               ? {borderColor: 'green', borderWidth: 2}
-//               : feedback === 'incorrect'
-//               ? {borderColor: 'red', borderWidth: 2}
-//               : feedback === 'skipped'
-//               ? {borderColor: 'orange', borderWidth: 2}
-//               : {},
-//           ]}>
-//           <Text
-//             style={[
-//               styles.answerText,
-//               {color: theme.text},
-//               feedback === 'correct'
-//                 ? {color: 'green'}
-//                 : feedback === 'incorrect'
-//                 ? {color: 'red'}
-//                 : feedback === 'skipped'
-//                 ? {color: 'orange'}
-//                 : {},
-//             ]}>
-//             {feedback ? feedback.toUpperCase() : input}
-//           </Text>
-//         </View>
-//       </View>
-
-//       {/* STATS */}
-//       <View style={styles.statsRow}>
-//         <Text style={[styles.statText, {color: theme.text}]}>Score: {score}</Text>
-//         <Text style={[styles.statText, {color: theme.text}]}>Correct: {correctAnswers}</Text>
-//         <Text style={[styles.statText, {color: theme.text}]}>Skipped: {skippedCount}</Text>
-//       </View>
-
-//       {/* KEYPAD */}
-//       <View style={styles.keypadContainer}>
-//         {numPad.map((row, rowIndex) => (
-//           <View key={rowIndex} style={styles.keypadRow}>
-//             {row.map((item, index) => {
-//               const isSpecial = item.toLowerCase() === 'clear' || item === '⌫';
-//               const isSkip = item.toLowerCase() === 'skip';
-
-//               return (
-//                 <TouchableOpacity
-//                   key={index}
-//                   onPress={() => handlePress(item)}
-//                   style={[
-//                     styles.keyButton,
-//                     {backgroundColor: theme.card},
-//                     isSpecial ? {} : {},
-//                   ]}>
-//                   {isSkip ? (
-//                     <LinearGradient colors={theme.buttonGradient || ['#FFAD90', '#FF4500']}>
-//                       <View style={{alignItems: 'center', flexDirection: 'row'}}>
-//                         <Text style={[styles.keyText, {color: theme.buttonText}]}>Skip</Text>
-//                         <MaterialIcons name="skip-next" size={25} color={theme.buttonText} />
-//                       </View>
-//                     </LinearGradient>
-//                   ) : !isSpecial ? (
-//                     <LinearGradient  colors={
-//                         theme.buttonGradient || [
-//                           theme.primaryColor || '#595CFF',
-//                           theme.secondaryColor || '#87AEE9',
-//                         ]
-//                       } style={styles.gradientButton}>
-//                       <Text style={[styles.keyText, {color: theme.buttonText}]}>
-//                         {item.toUpperCase()}
-//                       </Text>
-//                     </LinearGradient>
-//                   ) : (
-//                     <Text style={[styles.keyText, {color: theme.text}]}>{item}</Text>
-//                   )}
-//                 </TouchableOpacity>
-//               );
-//             })}
-//           </View>
-//         ))}
-//       </View>
-//     </SafeAreaView>
-//   );
-// };
-
-// export default MultiPlayerGame;
-
-// const styles = StyleSheet.create({
-//   container: {flex: 1},
-//   topBar: {
-//     flexDirection: 'row',
-//     justifyContent: 'space-between',
-//     alignItems: 'center',
-//     paddingHorizontal: width * 0.04,
-//     paddingVertical: height * 0.02,
-//     marginBottom: height * 0.03,
-//     borderBottomEndRadius: 15,
-//     borderBottomStartRadius: 15,
-//   },
-//   iconButton: {
-//     width: width * 0.06,
-//     height: width * 0.06,
-//     borderRadius: 8,
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//   },
-//   timerIcon: {width: 18, height: 18},
-//   question: {
-//     fontSize: scaleFont(22),
-//     textAlign: 'center',
-//     marginTop: height * 0.05,
-//     marginBottom: height * 0.02,
-//     fontWeight: 'bold',
-//   },
-//   answerBox: {
-//     width: width * 0.6,
-//     height: height * 0.06,
-//     borderRadius: 10,
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//     marginBottom: '27%',
-//   },
-//   answerText: {fontSize: scaleFont(18), fontWeight: '600'},
-//   keypadContainer: {width: '100%'},
-//   keypadRow: {
-//     flexDirection: 'row',
-//     justifyContent: 'space-between',
-//     marginBottom: height * 0.02,
-//     paddingHorizontal: width * 0.05,
-//   },
-//   keyButton: {
-//     width: width * 0.2,
-//     height: height * 0.1,
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//     borderRadius: 10,
-//   },
-//   gradientButton: {
-//     width: '100%',
-//     height: '100%',
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//     borderRadius: 10,
-//   },
-//   keyText: {fontSize: scaleFont(18), fontWeight: '600'},
-//   statsRow: {
-//     flexDirection: 'row',
-//     justifyContent: 'space-around',
-//     marginBottom: 12,
-//   },
-//   statText: {fontSize: scaleFont(12), opacity: 0.8},
-// });
-
-//Old code
-import React, {useState, useEffect, useRef} from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -430,25 +9,51 @@ import {
   SafeAreaView,
   StatusBar,
   Animated,
+  AppState,
+  Alert,
+  BackHandler,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/Ionicons';
-import {useNavigation, useRoute} from '@react-navigation/native';
+import {
+  useNavigation,
+  useRoute,
+  useFocusEffect,
+} from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import {useSocket} from '../../Context/Socket';
-import {useSafeAreaInsets} from 'react-native-safe-area-context';
-// If you have SoundManager and theme, you can import like MathInputScreen does.
-// import { initSound, playEffect } from '../Globalfile/SoundManager';
+import Feather from 'react-native-vector-icons/Feather';
+import { useSocket } from '../../Context/Socket';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTheme } from '../Globalfile/ThemeContext';
+import { useSound } from '../../Context/SoundContext';
+import { KEYPAD_LAYOUTS } from '../Globalfile/keyboardLayouts';
+import { initSound, playEffect, stopEffect } from '../Globalfile/SoundManager';
 
 const {width, height} = Dimensions.get('window');
 const scaleFont = size => size * PixelRatio.getFontScale();
 
-const numPad = [
-  ['7', '8', '9', '-'],
-  ['4', '5', '6', '.'],
-  ['1', '2', '3', 'na'],
-  ['Clear', '0', '⌫', 'skip'],
+const REACTIONS = [
+  '👍',
+  '😄',
+  '🤣',
+  '😡',
+  '🔥',
+  '😲',
+  '🫡',
+  '😎',
+  '😴',
+  '😈',
+  '👎',
+  '😞',
+  '😭',
+  '😱',
+  '😓',
+  '👏',
+  '🤕',
+  '🤓',
+  '🙈',
+  '🤡',
 ];
 
 const getMathSymbol = word => {
@@ -462,48 +67,178 @@ const getMathSymbol = word => {
   };
   return symbolMap[word] || word;
 };
+
 const MultiPlayerGame = () => {
+  /* ================= HOOKS & CONTEXT ================= */
   const socket = useSocket();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const route = useRoute();
-  const {currentQuestion, timer, difficulty} = route.params || {};
+  const { theme, keyboardTheme } = useTheme();
+  const { isSoundOn, toggleSound } = useSound();
 
-  // Question & input state (socket-driven)
+  /* ================= PARAMS ================= */
+  const { currentQuestion, timer, difficulty, opponent, myMongoId } =
+    route.params || {};
+
+  console.log('🎮 Game Screen Params:', {
+    myMongoId,
+    opponent,
+    difficulty,
+    timer,
+  });
+
+  const currentLayout = KEYPAD_LAYOUTS[keyboardTheme] || KEYPAD_LAYOUTS.type1;
+
+  /* ================= STATE ================= */
   const [input, setInput] = useState('');
   const [question, setQuestion] = useState('');
   const [correctAnswer, setCorrectAnswer] = useState('');
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
-  const socketRef = useRef(null);
+  const [isReverse, setIsReverse] = useState(false);
+  const [feedback, setFeedback] = useState(null);
+  const [awaitingResult, setAwaitingResult] = useState(false);
+  const [isConnected, setIsConnected] = useState(true);
+  const [gameEnded, setGameEnded] = useState(false);
+  const [questionIndex, setQuestionIndex] = useState(1);
+  const [bonusText, setBonusText] = useState('');
 
-  // Timer (local UI)
-  const totalTimeRef = useRef(timer ?? 60);
+  // Timer State
   const [minutes, setMinutes] = useState(Math.floor((timer ?? 60) / 60));
   const [seconds, setSeconds] = useState((timer ?? 60) % 60);
   const [animateWatch] = useState(new Animated.Value(1));
   const [isThirtySecPhase, setIsThirtySecPhase] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
 
-  // Score & stats (local UI; server remains source-of-truth for correctness)
+  // Local Stats State
+  const [score, setScore] = useState(0);
+  const [opponentScore, setOpponentScore] = useState(0);
+  const [correctAnswers, setCorrectAnswers] = useState(0);
+  const [skippedCount, setSkippedCount] = useState(0);
+  const [answerHistory, setAnswerHistory] = useState([]);
+  const [isReactionPickerOpen, setIsReactionPickerOpen] = useState(false);
+
+  /* ================= REFS ================= */
+  const socketRef = useRef(null);
+  const totalTimeRef = useRef(timer ?? 60);
   const scoreRef = useRef(0);
   const correctAnswersRef = useRef(0);
   const incorrectCountRef = useRef(0);
   const skippedCountRef = useRef(0);
+  const opponentScoreRef = useRef(0);
+  const isSoundOnRef = useRef(isSoundOn);
+  const last10PlayedRef = useRef(false);
+  const appState = useRef(AppState.currentState);
+  const hasNavigatedToResultRef = useRef(false);
 
-  const [score, setScore] = useState(0);
-  const [correctAnswers, setCorrectAnswers] = useState(0);
-  const [skippedCount, setSkippedCount] = useState(0);
+  // MongoDB ID refs
+  const myMongoIdRef = useRef(myMongoId);
+  const opponentMongoIdRef = useRef(opponent?.id);
 
-  // Feedback UI
-  const [feedback, setFeedback] = useState(null); // 'correct' | 'incorrect' | 'skipped' | 'pending' | null
-  const [awaitingResult, setAwaitingResult] = useState(false);
+  /* ================= DIAGNOSTIC LOGGING ================= */
+  useEffect(() => {
+    console.log('=== GAME SCREEN DIAGNOSTIC ===');
+    console.log('1. My MongoDB ID (from params):', myMongoId);
+    console.log('2. Opponent MongoDB ID:', opponent?.id);
+    console.log('3. Opponent Username:', opponent?.username);
+    console.log('4. Difficulty:', difficulty);
+    console.log('5. Timer:', timer);
+    console.log('==============================');
+  }, []);
+
+  // ADD THIS NEW useEffect at the top
+  useEffect(() => {
+    return () => {
+      if (
+        socketRef.current &&
+        socketRef.current.connected &&
+        !hasNavigatedToResultRef.current
+      ) {
+        console.log('🧹 Cleaning up game - emitting game-ended');
+        socketRef.current.emit('game-ended');
+      }
+      stopEffect('ticktock');
+    };
+  }, []);
+  /* ================= EFFECTS: SOUND & APP STATE ================= */
+  useEffect(() => {
+    isSoundOnRef.current = isSoundOn;
+    if (!isSoundOn) {
+      stopEffect('ticktock');
+      stopEffect('timer');
+      last10PlayedRef.current = false;
+    }
+  }, [isSoundOn]);
+
+  useFocusEffect(
+    useCallback(() => {
+      initSound('correct', 'rightanswer.mp3');
+      initSound('incorrect', 'wronganswerr.mp3');
+      initSound('skipped', 'skip.mp3');
+      initSound('timer', 'every30second.wav');
+      initSound('ticktock', 'ticktock.mp3');
+    }, []),
+  );
 
   useEffect(() => {
-    // Load user
+    const sub = AppState.addEventListener('change', state => {
+      if (state !== 'active') {
+        stopEffect('ticktock');
+      } else {
+        if (totalTimeRef.current <= 10 && totalTimeRef.current > 0) {
+          playEffect('ticktock', isSoundOnRef.current);
+        }
+      }
+      appState.current = state;
+    });
+    return () => sub.remove();
+  }, []);
+
+  /* ================= BACK BUTTON HANDLER ================= */
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener(
+      'hardwareBackPress',
+      () => {
+        if (!gameEnded) {
+          Alert.alert(
+            'Leave Game?',
+            'Are you sure you want to leave? You will lose the match.',
+            [
+              { text: 'Cancel', style: 'cancel' },
+              {
+                text: 'Leave',
+                style: 'destructive',
+                onPress: handleGameExit,
+              },
+            ],
+          );
+          return true;
+        }
+        return false;
+      },
+    );
+
+    return () => backHandler.remove();
+  }, [gameEnded]);
+
+  /* ================= EFFECTS: USER & SOCKET ================= */
+  useEffect(() => {
     AsyncStorage.getItem('userData')
       .then(stored => {
-        if (stored) setUser(JSON.parse(stored));
+        if (stored) {
+          const userData = JSON.parse(stored);
+          console.log('✅ User Data Loaded:', {
+            id: userData.id || userData._id,
+            username: userData.username,
+          });
+          setUser(userData);
+
+          if (!myMongoIdRef.current) {
+            myMongoIdRef.current = userData.id || userData._id;
+            console.log('⚠️ Using fallback MongoDB ID:', myMongoIdRef.current);
+          }
+        }
       })
       .catch(console.error);
   }, []);
@@ -511,9 +246,49 @@ const MultiPlayerGame = () => {
   useEffect(() => {
     if (!socket) return;
     socketRef.current = socket;
-    // Handler for incoming new question
+
+    console.log('🔌 Setting up socket listeners...');
+
+    if (opponent?.id) {
+      opponentMongoIdRef.current = opponent.id;
+      console.log('✅ Opponent MongoDB ID stored:', opponent.id);
+    }
+
+    // ✅ CONNECTION STATUS HANDLERS
+    const handleConnect = () => {
+      console.log('🟢 Reconnected to server');
+      setIsConnected(true);
+    };
+
+    const handleDisconnect = reason => {
+      console.log('🔴 Disconnected from server:', reason);
+      setIsConnected(false);
+
+      if (!gameEnded && !hasNavigatedToResultRef.current) {
+        Alert.alert(
+          'Connection Lost',
+          'You have been disconnected from the server.',
+          [
+            {
+              text: 'OK',
+              onPress: () => {
+                stopEffect('ticktock');
+                navigation.replace('BottomTab');
+              },
+            },
+          ],
+        );
+      }
+    };
+
+    const handleConnectError = error => {
+      console.error('❌ Connection error:', error);
+      setIsConnected(false);
+    };
+
+    // --- Socket Listeners ---
     const handleNewQuestion = q => {
-      console.log('📥 Received new-question:', q);
+      console.log('📥 new-question:', q);
       const mathSymbol = getMathSymbol(q.symbol);
       setQuestion(`${q.input1} ${mathSymbol} ${q.input2}`);
       setCorrectAnswer(String(q.answer));
@@ -521,13 +296,12 @@ const MultiPlayerGame = () => {
       setLoading(false);
       setFeedback(null);
       setAwaitingResult(false);
+      setQuestionIndex(prev => prev + 1);
     };
 
-    // Handler for next-question payload
     const handleNextQuestion = data => {
       console.log('📥 next-question:', data);
       const q = data.question;
-      console.log(' Q question:', q);
       const mathSymbol = getMathSymbol(q.symbol);
       setQuestion(`${q.input1} ${mathSymbol} ${q.input2}`);
       setCorrectAnswer(String(q.answer));
@@ -535,122 +309,196 @@ const MultiPlayerGame = () => {
       setLoading(false);
       setFeedback(null);
       setAwaitingResult(false);
-    };
+      setQuestionIndex(prev => prev + 1);
 
-    // Handler: server's answer result (common names)
-    const handleAnswerResult = payload => {
-      // payload shape may vary; handle common fields
-      console.log('📥 answer-result / submit-response:', payload);
+      if (data.gameState && data.gameState.playerScores) {
+        const pScores = data.gameState.playerScores;
+        console.log('📊 Player Scores from server:', pScores);
 
-      // Example expected payloads handled gracefully:
-      // { status: 'correct' } or { correct: true } or { isCorrect: true }
-      const status =
-        payload?.status ||
-        (payload?.correct === true
-          ? 'correct'
-          : payload?.correct === false
-          ? 'incorrect'
-          : null) ||
-        (payload?.isCorrect === true
-          ? 'correct'
-          : payload?.isCorrect === false
-          ? 'incorrect'
-          : null) ||
-        null;
+        if (
+          opponentMongoIdRef.current &&
+          pScores[opponentMongoIdRef.current] !== undefined
+        ) {
+          const opData = pScores[opponentMongoIdRef.current];
+          const opScore = typeof opData === 'object' ? opData.score : opData;
+          console.log('📊 Opponent score update:', opScore);
+          setOpponentScore(opScore);
+          opponentScoreRef.current = opScore;
+        }
 
-      if (status === 'answer') {
-        // update local UI counters (server should be authoritative; this is just UI)
-        scoreRef.current += payload?.points ?? 2; // if server sends points use them, else +2
-        correctAnswersRef.current += 1;
-        setScore(scoreRef.current);
-        setCorrectAnswers(correctAnswersRef.current);
-        setFeedback('correct');
-      } else if (status === 'incorrect') {
-        scoreRef.current -= payload?.penalty ?? 1;
-        incorrectCountRef.current += 1;
-        setScore(scoreRef.current);
-        setFeedback('incorrect');
-      } else if (payload?.skipped) {
-        skippedCountRef.current += 1;
-        setSkippedCount(skippedCountRef.current);
-        setFeedback('skipped');
-      } else {
-        // fallback: if payload has a 'message' or 'result' field
-        if (payload?.result === 'correct') {
-          scoreRef.current += payload?.points ?? 2;
-          correctAnswersRef.current += 1;
-          setScore(scoreRef.current);
-          setCorrectAnswers(correctAnswersRef.current);
-          setFeedback('correct');
-        } else if (payload?.result === 'incorrect') {
-          scoreRef.current -= payload?.penalty ?? 1;
-          incorrectCountRef.current += 1;
-          setScore(scoreRef.current);
-          setFeedback('incorrect');
-        } else {
-          // unknown payload — just clear pending state
-          setFeedback(null);
+        if (
+          myMongoIdRef.current &&
+          pScores[myMongoIdRef.current] !== undefined
+        ) {
+          const myData = pScores[myMongoIdRef.current];
+          const myScore = typeof myData === 'object' ? myData.score : myData;
+          if (myScore !== scoreRef.current) {
+            console.log('📊 My score update:', myScore);
+            scoreRef.current = myScore;
+            setScore(myScore);
+          }
         }
       }
-
-      setAwaitingResult(false);
-
-      // Clear feedback after short delay and let server emit next-question
-      setTimeout(() => {
-        setFeedback(null);
-      }, 1200);
     };
 
-    // Register listeners (preserve existing names)
+    const handleOpponentScoreUpdate = data => {
+      console.log('📊 opponent-score-update:', data);
+
+      if (data.opponentId === opponentMongoIdRef.current) {
+        console.log('✅ Updating opponent score to:', data.score);
+        setOpponentScore(data.score);
+        opponentScoreRef.current = data.score;
+      }
+    };
+
+    const handleGameEnded = data => {
+      console.log('🏁 game-ended:', data);
+
+      if (hasNavigatedToResultRef.current) {
+        console.log('🛑 Already navigated to results, ignoring duplicate');
+        return;
+      }
+
+      hasNavigatedToResultRef.current = true;
+      setGameEnded(true);
+      stopEffect('ticktock');
+
+      // ✅ NO need to emit game-ended here - server already knows
+
+      const attempts = correctAnswersRef.current + incorrectCountRef.current;
+      const acc =
+        attempts > 0
+          ? Math.round((correctAnswersRef.current / attempts) * 100)
+          : 0;
+
+      setTimeout(() => {
+        navigation.replace('MultiplayerResultScreen', {
+          totalScore: scoreRef.current,
+          correctCount: correctAnswersRef.current,
+          inCorrectCount: incorrectCountRef.current,
+          skippedQuestions: skippedCountRef.current,
+          correctPercentage: acc,
+          difficulty,
+          player2Id: opponentMongoIdRef.current || 'unknown',
+          opponentScore: opponentScoreRef.current,
+          durationSeconds: timer,
+          winner: data.winner,
+          players: data.players,
+          gameResults: data.gameResults,
+        });
+      }, 500);
+    };
+
+
+    const handleOpponentDisconnected = data => {
+      console.log('👋 opponent-disconnected:', data);
+
+      if (hasNavigatedToResultRef.current) {
+        console.log('🛑 Already navigated to results, ignoring');
+        return;
+      }
+
+      hasNavigatedToResultRef.current = true;
+      setGameEnded(true);
+      stopEffect('ticktock');
+
+      // ✅ NO need to emit - server already handled cleanup
+
+      Alert.alert(
+        'Opponent Disconnected',
+        'Your opponent has left the game. You win!',
+        [
+          {
+            text: 'OK',
+            onPress: () => {
+              const attempts =
+                correctAnswersRef.current + incorrectCountRef.current;
+              const acc =
+                attempts > 0
+                  ? Math.round((correctAnswersRef.current / attempts) * 100)
+                  : 0;
+
+              navigation.replace('MultiplayerResultScreen', {
+                totalScore: scoreRef.current,
+                correctCount: correctAnswersRef.current,
+                inCorrectCount: incorrectCountRef.current,
+                skippedQuestions: skippedCountRef.current,
+                correctPercentage: acc,
+                difficulty,
+                player2Id: opponentMongoIdRef.current || 'unknown',
+                opponentScore: opponentScoreRef.current,
+                durationSeconds: timer,
+                opponentDisconnected: true,
+                winner: myMongoIdRef.current,
+              });
+            },
+          },
+        ],
+      );
+    };
+    const handleError = data => {
+      console.error('❌ Socket error:', data);
+      Alert.alert('Error', data.message || 'An error occurred');
+    };
+
+    socket.on('connect', handleConnect);
+    socket.on('disconnect', handleDisconnect);
+    socket.on('connect_error', handleConnectError);
     socket.on('new-question', handleNewQuestion);
     socket.on('next-question', handleNextQuestion);
+    socket.on('opponent-score-update', handleOpponentScoreUpdate);
+    socket.on('game-ended', handleGameEnded);
+    socket.on('opponent-disconnected', handleOpponentDisconnected);
+    socket.on('error', handleError);
 
-    // also listen for common result event names without changing emits
-    // socket.on('answer-result', handleAnswerResult);
-    // socket.on('submit-response', handleAnswerResult);
-    // socket.on('answer-status', handleAnswerResult);
-
-    // If initial question passed from lobby, apply it
     if (currentQuestion) {
-      console.log('📥 Initial question from lobby:', currentQuestion);
+      console.log('📝 Setting initial question:', currentQuestion);
       const mathSymbol = getMathSymbol(currentQuestion.symbol);
       setQuestion(
         `${currentQuestion.input1} ${mathSymbol} ${currentQuestion.input2}`,
       );
       setCorrectAnswer(String(currentQuestion.answer));
       setLoading(false);
+      setQuestionIndex(1);
     }
 
     return () => {
+      socket.off('connect', handleConnect);
+      socket.off('disconnect', handleDisconnect);
+      socket.off('connect_error', handleConnectError);
       socket.off('new-question', handleNewQuestion);
-      socket.off('game-winner');
-      // socket.off('next-question', handleNextQuestion);
-      // socket.off('answer-result', handleAnswerResult);
-      // socket.off('submit-response', handleAnswerResult);
-      // socket.off('answer-status', handleAnswerResult);
+      socket.off('next-question', handleNextQuestion);
+      socket.off('opponent-score-update', handleOpponentScoreUpdate);
+      socket.off('game-ended', handleGameEnded);
+      socket.off('opponent-disconnected', handleOpponentDisconnected);
+      socket.off('error', handleError);
     };
-  }, [socket, currentQuestion]);
+  }, [
+    socket,
+    currentQuestion,
+    opponent,
+    difficulty,
+    timer,
+    navigation,
+    gameEnded,
+  ]);
 
-  // Timer behavior (mirrors MathInputScreen UI)
+  /* ================= TIMER LOGIC ================= */
   useEffect(() => {
-    // initialize from route param if provided
-    if (typeof timer === 'number') {
-      totalTimeRef.current = timer;
-      setMinutes(Math.floor(timer / 60));
-      setSeconds(timer % 60);
-    }
+    if (gameEnded) return;
 
     const interval = setInterval(() => {
       if (!isPaused) {
         totalTimeRef.current -= 1;
-        const mins = Math.floor(totalTimeRef.current / 60);
-        const secs = totalTimeRef.current % 60;
-        setMinutes(mins);
-        setSeconds(secs);
+        const remaining = totalTimeRef.current;
+        setMinutes(Math.floor(remaining / 60));
+        setSeconds(remaining % 60);
 
-        // last 10 seconds animation
-        if (totalTimeRef.current <= 10 && totalTimeRef.current > 0) {
-          // playEffect('timer', true); // optional sound
+        if (remaining <= 10 && remaining > 0) {
+          if (!last10PlayedRef.current) {
+            playEffect('ticktock', isSoundOnRef.current);
+            last10PlayedRef.current = true;
+          }
           Animated.sequence([
             Animated.timing(animateWatch, {
               toValue: 1.4,
@@ -665,144 +513,252 @@ const MultiPlayerGame = () => {
           ]).start();
         }
 
-        // every 30 seconds short phase
-        if (totalTimeRef.current % 30 === 0 && totalTimeRef.current !== 0) {
+        if (remaining % 30 === 0 && remaining !== timer && remaining > 0) {
           setIsThirtySecPhase(true);
-          let repeatCount = 0;
-          const animateInterval = setInterval(() => {
-            Animated.sequence([
-              Animated.timing(animateWatch, {
-                toValue: 1.4,
-                duration: 300,
-                useNativeDriver: true,
-              }),
-              Animated.timing(animateWatch, {
-                toValue: 1,
-                duration: 300,
-                useNativeDriver: true,
-              }),
-            ]).start();
-
-            // playEffect('timer', true); // optional
-            repeatCount += 1;
-            if (repeatCount >= 10) {
-              clearInterval(animateInterval);
-              setIsThirtySecPhase(false);
-            }
-          }, 1000);
+          playEffect('timer', isSoundOnRef.current);
+          Animated.sequence([
+            Animated.timing(animateWatch, {
+              toValue: 1.4,
+              duration: 300,
+              useNativeDriver: true,
+            }),
+            Animated.timing(animateWatch, {
+              toValue: 1,
+              duration: 300,
+              useNativeDriver: true,
+            }),
+          ]).start(() => setIsThirtySecPhase(false));
         }
 
-        // local timeout handling — in multiplayer server may handle too
-        if (totalTimeRef.current <= 0) {
+        if (remaining <= 0) {
           clearInterval(interval);
-          // Navigate to WellDone or notify server — here we mimic MathInputScreen behavior
-          const incorrectCount = incorrectCountRef.current;
-          const attempted = correctAnswersRef.current + incorrectCount;
-          const correctPercentage =
-            attempted > 0
-              ? Math.round((correctAnswersRef.current / attempted) * 100)
-              : 0;
-          socket.emit('game-completed', {
-            score: scoreRef.current,
-            correct: scoreRef.current,
-            time: timer,
-          });
-          console.log('completed Score', scoreRef.current);
-          console.log('time', timer);
-          console.log('correct', score);
-          socket.on('game-winner', winner => {
-            console.log('🏆 WINNER RECEIVED:', winner);
-          });
-
-          navigation.replace('MultiplayerResultScreen', {
-            totalScore: scoreRef.current,
-            correctCount: correctAnswersRef.current,
-            inCorrectCount: incorrectCount,
-            skippedQuestions: skippedCountRef.current,
-            correctPercentage,
-            difficulty,
-            isWinner: true,
-            // isWinner: winner?.winnerId === user?.id,
-          });
+          handleTimeUp();
         }
       }
     }, 1000);
 
     return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isPaused]);
+  }, [isPaused, timer, difficulty, navigation, socket, opponent, gameEnded]);
+
+  /* ================= HANDLERS ================= */
+  const handleTimeUp = () => {
+    if (hasNavigatedToResultRef.current || gameEnded) return;
+
+    hasNavigatedToResultRef.current = true;
+    setGameEnded(true);
+    stopEffect('ticktock');
+
+    console.log('⏰ Time up! Final score:', scoreRef.current);
+
+    // ✅ EMIT game-ended to trigger server cleanup
+    if (socketRef.current && socketRef.current.connected) {
+      socketRef.current.emit('game-ended');
+    }
+
+    const attempts = correctAnswersRef.current + incorrectCountRef.current;
+    const acc =
+      attempts > 0
+        ? Math.round((correctAnswersRef.current / attempts) * 100)
+        : 0;
+
+    setTimeout(() => {
+      navigation.replace('MultiplayerResultScreen', {
+        totalScore: scoreRef.current,
+        correctCount: correctAnswersRef.current,
+        inCorrectCount: incorrectCountRef.current,
+        skippedQuestions: skippedCountRef.current,
+        correctPercentage: acc,
+        difficulty,
+        player2Id: opponentMongoIdRef.current || 'unknown',
+        opponentScore: opponentScoreRef.current,
+        durationSeconds: timer,
+      });
+    }, 500);
+  };
+
+  /* ================= REPLACE handleGameExit FUNCTION ================= */
+
+  const handleGameExit = () => {
+    stopEffect('ticktock');
+
+    // ✅ EMIT game-ended to trigger server cleanup
+    if (socketRef.current && socketRef.current.connected) {
+      console.log('🚪 Player exiting - emitting game-ended');
+      socketRef.current.emit('game-ended');
+    }
+
+    hasNavigatedToResultRef.current = true;
+    setGameEnded(true);
+    navigation.replace('BottomTab');
+  };
+
+
+
+  const handleToggleSound = () => {
+    toggleSound();
+    const newVal = !isSoundOn;
+    isSoundOnRef.current = newVal;
+    if (!newVal) {
+      stopEffect('ticktock');
+    } else {
+      if (totalTimeRef.current <= 10 && totalTimeRef.current > 0) {
+        last10PlayedRef.current = false;
+        playEffect('ticktock', true);
+      }
+    }
+  };
+
+  const handleToggleReactions = () => {
+    setIsReactionPickerOpen(prev => !prev);
+  };
+
+  const handleSelectReaction = emoji => {
+    setIsReactionPickerOpen(false);
+    if (socketRef.current && socketRef.current.connected) {
+      socketRef.current.emit('send-reaction', {
+        emoji,
+        from: myMongoIdRef.current,
+        to: opponentMongoIdRef.current,
+      });
+    }
+  };
 
   const handlePress = async value => {
-    if (loading || awaitingResult) return; // don't accept while waiting for server
-
-    const key = value.toLowerCase();
-    const playerId = await AsyncStorage.getItem('playerId');
-
-    if (key === 'clear') {
-      setInput('');
+    if (
+      loading ||
+      awaitingResult ||
+      totalTimeRef.current <= 0 ||
+      feedback ||
+      gameEnded
+    )
       return;
+
+    const key = value.toString().toLowerCase();
+
+    if (key === 'clear' || key === 'clr') return setInput('');
+
+    if (key === '⌫' || key === 'del') {
+      return setInput(prev => prev.slice(0, -1));
     }
-    if (key === '⌫') {
-      setInput(prev => prev.slice(0, -1));
-      return;
+
+    if (key === 'reverse' || key === 'rev') {
+      return setIsReverse(prev => !prev);
     }
+
+    if (key === 'pm') {
+      return setInput(prev => {
+        if (prev.startsWith('-')) return prev.slice(1);
+        return '-' + prev;
+      });
+    }
+
     if (key === 'skip') {
-      // mark skipped locally, emit to server
       skippedCountRef.current += 1;
       setSkippedCount(skippedCountRef.current);
       setFeedback('skipped');
-      socketRef.current?.emit('next-question', {userId: user?.id});
-      setTimeout(() => {
-        setFeedback(null);
-      }, 900);
+      playEffect('skipped', isSoundOnRef.current);
+
+      console.log('⏭️ Skipping question');
+
+      setAnswerHistory(prev => [{isCorrect: null}, ...prev].slice(0, 8));
+
+      socketRef.current?.emit('submit-answer', {
+        answer: null,
+        playerId: myMongoIdRef.current,
+        timeSpent: 0,
+        skipped: true,
+      });
+
+      setTimeout(() => setFeedback(null), 900);
       return;
     }
 
-    // normal numeric/symbol input
-    const newInput = input + value;
+    const newInput = isReverse ? value + input : input + value;
     setInput(newInput);
 
-    // if length meets expected answer length -> emit to server
     if (newInput.length >= correctAnswer.length) {
       const isCorrect = newInput === correctAnswer;
       setFeedback(isCorrect ? 'correct' : 'incorrect');
+      playEffect(isCorrect ? 'correct' : 'incorrect', isSoundOnRef.current);
+
+      setAnswerHistory(prev => [{isCorrect}, ...prev].slice(0, 8));
+
+      if (isCorrect) {
+        setBonusText('+4 Bonus');
+      } else {
+        setBonusText('');
+      }
+
       if (isCorrect) {
         scoreRef.current += 1;
         setScore(scoreRef.current);
-        console.log('SCore1', scoreRef.current);
+        correctAnswersRef.current += 1;
+        setCorrectAnswers(correctAnswersRef.current);
+      } else {
+        incorrectCountRef.current += 1;
       }
-      // setAwaitingResult(true);
-      // setFeedback('pending');
-      socketRef.current?.emit('submit-answer', {
+
+      console.log('📤 Submitting answer:', {
+        playerId: myMongoIdRef.current,
         answer: newInput,
-        // In multiplayer you were sending timeSpent:100 earlier; keep same
-        userName: user?.username,
-        playerId: playerId,
+        isCorrect,
       });
 
-      // keep UI pending until server emits result (listeners above will update feedback/score)
-      // fallback: if server doesn't respond in X ms, clear awaiting state (optional)
+      socketRef.current?.emit('submit-answer', {
+        answer: newInput,
+        playerId: myMongoIdRef.current,
+        timeSpent: 0,
+      });
+
+      setAwaitingResult(true);
       setTimeout(() => {
-        if (awaitingResult) {
-          // give a soft timeout fallback (keeps UX responsive)
-          setAwaitingResult(false);
-          setFeedback(null);
-        }
+        setAwaitingResult(false);
+        if (feedback) setFeedback(null);
+        setBonusText('');
       }, 5000);
     }
   };
 
-  return (
-    <SafeAreaView style={[styles.container, {paddingTop: insets.top}]}>
-      <StatusBar backgroundColor="#0B1220" barStyle="light-content" />
-      <View style={styles.topBar}>
+  const getKeyButtonWidth = () => width * 0.2;
+  const getKeyButtonHeight = () => width * 0.2;
+
+  const Content = () => (
+    <SafeAreaView style={[styles.container, {paddingTop: insets.top + 10}]}>
+      {!isConnected && (
+        <View style={styles.disconnectedBanner}>
+          <Text style={styles.disconnectedText}>⚠️ Disconnected from server</Text>
+        </View>
+      )}
+
+      <View
+        style={[
+          styles.topBar,
+          {backgroundColor: theme.cardBackground || '#1E293B'},
+        ]}>
         <TouchableOpacity
-          onPress={() => navigation.goBack()}
+          onPress={() => {
+            if (!gameEnded) {
+              Alert.alert(
+                'Leave Game?',
+                'Are you sure you want to leave? You will lose the match.',
+                [
+                  {text: 'Cancel', style: 'cancel'},
+                  {
+                    text: 'Leave',
+                    style: 'destructive',
+                    onPress: handleGameExit,
+                  },
+                ],
+              );
+            } else {
+              navigation.goBack();
+            }
+          }}
           style={styles.iconButton}>
-          <Icon name="chevron-back" size={scaleFont(18)} color="#000" />
+          <Icon name="caret-back-outline" size={scaleFont(22)} color="#fff" />
         </TouchableOpacity>
 
-        <View style={{flexDirection: 'row', alignItems: 'center'}}>
+        <View style={styles.timerContainer}>
           <Animated.Image
             source={require('../Screens/Image/Stopwatch.png')}
             style={[
@@ -816,172 +772,490 @@ const MultiPlayerGame = () => {
               },
             ]}
           />
-          <Text style={{color: '#fff', fontSize: scaleFont(15), marginLeft: 6}}>
+          <Text style={styles.timerText}>
             {`${minutes}:${String(seconds).padStart(2, '0')}`}
           </Text>
         </View>
 
-        <View style={{width: width * 0.06}} />
+        <TouchableOpacity onPress={handleToggleSound} style={styles.iconButton1}>
+          <Icon
+            name={isSoundOn ? 'volume-high' : 'volume-mute'}
+            size={20}
+            color="#fff"
+          />
+        </TouchableOpacity>
       </View>
 
-      <Text style={styles.question}>{loading ? 'Loading...' : question}</Text>
+      <View style={styles.playerHeader}>
+        <View style={styles.playerMini}>
+          <View style={styles.avatarCircle}>
+            <Text style={styles.avatarInitial}>
+              {user?.username?.charAt(0).toUpperCase() || 'Y'}
+            </Text>
+          </View>
+          <Text style={styles.playerMiniName}>{user?.username || 'You'}</Text>
+        </View>
 
-      <View
-        style={{
-          flexDirection: 'row',
-          justifyContent: 'center',
-          marginBottom: height * 0.04,
-        }}>
-        <View
-          style={[
-            styles.answerBox,
-            feedback === 'correct'
-              ? {borderColor: 'green', borderWidth: 2}
-              : feedback === 'incorrect'
-              ? {borderColor: 'red', borderWidth: 2}
-              : feedback === 'skipped'
-              ? {borderColor: 'orange', borderWidth: 2}
-              : {},
-          ]}>
-          <Text
-            style={[
-              styles.answerText,
-              feedback === 'correct'
-                ? {color: 'green'}
-                : feedback === 'incorrect'
-                ? {color: 'red'}
-                : feedback === 'skipped'
-                ? {color: 'orange'}
-                : {},
-            ]}>
-            {feedback === 'pending'
-              ? 'Checking...'
-              : feedback === 'correct'
-              ? 'Correct'
-              : feedback === 'incorrect'
-              ? 'Incorrect'
-              : feedback === 'skipped'
-              ? 'Skipped'
-              : input}
+        <Text style={styles.centerScoreText}>
+          {score} - {opponentScore}
+        </Text>
+
+        <View style={styles.playerMini}>
+          <View style={[styles.avatarCircle, {backgroundColor: '#0F766E'}]}>
+            <Text style={styles.avatarInitial}>
+              {opponent?.username?.charAt(0).toUpperCase() || 'O'}
+            </Text>
+          </View>
+          <Text style={styles.playerMiniName}>
+            {opponent?.username || 'Opponent'}
           </Text>
         </View>
       </View>
 
-      {/* Display small stats row */}
-      <View style={styles.statsRow}>
-        <Text style={styles.statText}>Score: {score}</Text>
-        <Text style={styles.statText}>Correct: {correctAnswers}</Text>
-        <Text style={styles.statText}>Skipped: {skippedCount}</Text>
+      <View style={styles.historyRow}>
+        {answerHistory.slice(0, 8).map((item, index) => {
+          const iconName =
+            item.isCorrect === null
+              ? 'close'
+              : item.isCorrect
+              ? 'checkmark'
+              : 'close';
+          const color =
+            item.isCorrect === null
+              ? '#FF6B6B'
+              : item.isCorrect
+              ? '#4CAF50'
+              : '#FF6B6B';
+          return (
+            <View key={index} style={styles.historyIconWrapper}>
+              <Icon name={iconName} size={14} color={color} />
+            </View>
+          );
+        })}
       </View>
 
-      <View style={styles.keypadContainer}>
-        {numPad.map((row, rowIndex) => (
-          <View key={rowIndex} style={styles.keypadRow}>
-            {row.map((item, index) => {
-              const isSpecial = item.toLowerCase() === 'clear' || item === '⌫';
-              const isSkip = item.toLowerCase() === 'skip';
+      <View style={styles.sectionDivider} />
 
-              return (
-                <TouchableOpacity
-                  key={index}
-                  onPress={() => handlePress(item)}
-                  style={[
-                    styles.keyButton,
-                    isSpecial ? styles.specialKey : null,
-                  ]}>
-                  {isSkip ? (
-                    <LinearGradient
-                      colors={['#FFAD90', '#FF4500']}
-                      style={styles.gradientButton}>
-                      <View
-                        style={{alignItems: 'center', flexDirection: 'row'}}>
-                        <Text
-                          style={[styles.keyText, {fontSize: scaleFont(14)}]}>
-                          Skip
-                        </Text>
-                        <MaterialIcons
-                          name="skip-next"
-                          size={25}
-                          color="#fff"
-                        />
-                      </View>
-                    </LinearGradient>
-                  ) : !isSpecial ? (
-                    <LinearGradient
-                      colors={['#595CFF', '#87AEE9']}
-                      style={styles.gradientButton}>
-                      <Text style={styles.keyText}>{item.toUpperCase()}</Text>
-                    </LinearGradient>
-                  ) : (
-                    <Text style={[styles.keyText, {color: '#fff'}]}>
-                      {item}
-                    </Text>
-                  )}
-                </TouchableOpacity>
-              );
-            })}
+      <View style={styles.questionCard}>
+        <View style={styles.questionHeaderRow}>
+          <Text style={styles.questionHeaderLeft}>
+            Q{questionIndex}
+          </Text>
+          <View style={styles.questionHeaderRight}>
+            {bonusText ? (
+              <Text style={styles.bonusText}>{bonusText}</Text>
+            ) : null}
+            <Text style={styles.questionHeaderPts}>Pts</Text>
           </View>
-        ))}
+        </View>
+
+        <View style={styles.questionBox}>
+          <Text style={styles.questionText}>
+            {loading ? 'Question' : question}
+          </Text>
+        </View>
+
+        <View style={styles.answerRow}>
+          <View
+            style={[
+              styles.answerBox,
+              {backgroundColor: theme.cardBackground || '#1E293B'},
+              feedback === 'correct'
+                ? {borderColor: 'green', borderWidth: 2}
+                : feedback === 'incorrect'
+                ? {borderColor: 'red', borderWidth: 2}
+                : feedback === 'skipped'
+                ? {borderColor: 'orange', borderWidth: 2}
+                : {},
+            ]}>
+            <Text
+              style={[
+                styles.answerText,
+                feedback === 'correct'
+                  ? {color: 'green'}
+                  : feedback === 'incorrect'
+                  ? {color: 'red'}
+                  : feedback === 'skipped'
+                  ? {color: 'orange'}
+                  : {color: theme.text || '#fff'},
+              ]}>
+              {input ||
+                (feedback
+                  ? feedback.charAt(0).toUpperCase() + feedback.slice(1)
+                  : '')}
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={styles.speechBubble}
+            onPress={handleToggleReactions}
+            activeOpacity={0.8}>
+            <Icon name="chatbubble-ellipses" size={18} color="#fff" />
+          </TouchableOpacity>
+        </View>
+
+        {isReactionPickerOpen && (
+          <View style={styles.reactionPanel}>
+            {REACTIONS.map((emoji, index) => (
+              <TouchableOpacity
+                key={index}
+                onPress={() => handleSelectReaction(emoji)}
+                style={styles.reactionItem}>
+                <Text style={styles.reactionText}>{emoji}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+
+        <View style={styles.keypadContainer}>
+          {currentLayout.map((row, rowIndex) => (
+            <View key={rowIndex} style={styles.keypadRow}>
+              {row.map((item, index) => {
+                const strItem = item.toString().toLowerCase();
+                const isSpecial = [
+                  'clear',
+                  'clr',
+                  '⌫',
+                  'del',
+                  'ref',
+                  'pm',
+                  'skip',
+                  '.',
+                  'reverse',
+                ].includes(strItem);
+                const isSkip = strItem === 'skip';
+                const isNa = strItem === 'na';
+
+                if (isNa)
+                  return (
+                    <View
+                      key={index}
+                      style={{
+                        width: getKeyButtonWidth(),
+                        height: getKeyButtonHeight(),
+                      }}
+                    />
+                  );
+
+                let content;
+                if (strItem === 'del' || strItem === '⌫') {
+                  content = (
+                    <MaterialIcons name="backspace" size={20} color="#fff" />
+                  );
+                } else if (strItem === 'ref' || strItem === 'reverse') {
+                  content = (
+                    <Feather
+                      name={isReverse ? 'refresh-ccw' : 'refresh-cw'}
+                      size={20}
+                      color="#fff"
+                    />
+                  );
+                } else if (strItem === 'pm') {
+                  content = <Text style={styles.keyText}>+/-</Text>;
+                } else if (strItem === 'clr' || strItem === 'clear') {
+                  content = (
+                    <Text style={[styles.keyText, {fontSize: scaleFont(12)}]}>
+                      C
+                    </Text>
+                  );
+                } else if (isSkip) {
+                  content = (
+                    <Text style={[styles.keyText, {fontSize: scaleFont(12)}]}>
+                      S
+                    </Text>
+                  );
+                } else {
+                  content = (
+                    <Text style={styles.keyText}>{item.toUpperCase()}</Text>
+                  );
+                }
+
+                return (
+                  <TouchableOpacity
+                    key={index}
+                    onPress={() =>
+                      handlePress(strItem === 'ref' ? 'reverse' : item)
+                    }
+                    disabled={gameEnded}
+                    style={[
+                      styles.keyButton,
+                      {
+                        width: getKeyButtonWidth(),
+                        height: getKeyButtonHeight(),
+                      },
+                      isSpecial || strItem === '-' ? styles.specialKey : null,
+                      gameEnded && {opacity: 0.5},
+                    ]}>
+                    {!isSpecial && strItem !== '-' ? (
+                      <LinearGradient
+                        colors={
+                          theme.buttonGradient || [
+                            theme.primaryColor || '#595CFF',
+                            theme.secondaryColor || '#87AEE9',
+                          ]
+                        }
+                        style={styles.gradientButton}>
+                        {content}
+                      </LinearGradient>
+                    ) : (
+                      <View style={styles.specialButtonContent}>{content}</View>
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          ))}
+        </View>
       </View>
     </SafeAreaView>
+  );
+
+  return theme.backgroundGradient ? (
+    <LinearGradient colors={theme.backgroundGradient} style={{ flex: 1 }}>
+      <Content />
+    </LinearGradient>
+  ) : (
+    <View
+      style={{ flex: 1, backgroundColor: theme.backgroundColor || '#0B1220' }}>
+      <Content />
+    </View>
   );
 };
 
 export default MultiPlayerGame;
 
 const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: '#0B1220'},
+  container: {flex: 1},
   topBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#1E293B',
     paddingHorizontal: width * 0.04,
-    paddingVertical: height * 0.02,
-    marginBottom: height * 0.03,
+    paddingVertical: height * 0.015,
     borderBottomEndRadius: 15,
     borderBottomStartRadius: 15,
   },
   iconButton: {
-    width: width * 0.06,
-    height: width * 0.06,
-    backgroundColor: '#fff',
+    width: width * 0.08,
+    height: width * 0.08,
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  timerIcon: {width: 18, height: 18},
-  question: {
-    fontSize: scaleFont(22),
-    color: '#fff',
-    textAlign: 'center',
-    marginTop: height * 0.05,
-    marginBottom: height * 0.02,
-    fontWeight: 'bold',
-  },
-  answerBox: {
-    width: width * 0.6,
-    height: height * 0.06,
-    backgroundColor: '#1E293B',
-    borderRadius: 10,
+  iconButton1: {
+    width: width * 0.08,
+    height: width * 0.08,
+    borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: '27%',
+  },
+  timerContainer: {flexDirection: 'row', alignItems: 'center', gap: 5},
+  timerText: {
+    color: '#fff',
+    fontSize: scaleFont(13),
+    fontWeight: '600',
+    opacity: 0.7,
+  },
+  timerIcon: {width: 18, height: 18},
+  playerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginHorizontal: width * 0.04,
+    marginTop: height * 0.015,
+  },
+  playerInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  playerMini: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  avatarCircle: {
+    width: 34,
+    height: 34,
+    borderRadius: 4,
+    backgroundColor: '#0F172A',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarInitial: {
+    color: '#fff',
+    fontSize: scaleFont(14),
+    fontWeight: '700',
+  },
+  playerTextBlock: {
+    justifyContent: 'center',
+  },
+  playerName: {
+    color: '#0F172A',
+    fontSize: scaleFont(11),
+    fontWeight: '600',
+  },
+  playerNameUnderline: {
+    marginTop: 2,
+    width: 50,
+    height: 2,
+    backgroundColor: '#0F172A',
+  },
+  questionBadge: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#FBBF24',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  questionBadgeText: {
+    color: '#111827',
+    fontSize: scaleFont(11),
+    fontWeight: '700',
+  },
+  historyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: height * 0.01,
+    marginHorizontal: width * 0.06,
+  },
+  centerScoreText: {
+    fontSize: scaleFont(18),
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  playerMiniName: {
+    color: '#FFFFFF',
+    fontSize: scaleFont(11),
+    fontWeight: '600',
+  },
+  historyIconWrapper: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    borderWidth: 1,
+    borderColor: '#fff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginHorizontal: 3,
+  },
+  sectionDivider: {
+    height: 4,
+    backgroundColor: '#0F172A',
+    marginTop: height * 0.015,
+  },
+  questionCard: {
+    flex: 1,
+    marginHorizontal: width * 0.04,
+    marginTop: height * 0.015,
+    marginBottom: height * 0.02,
+    borderWidth: 2,
+    borderColor: '#fff',
+    borderRadius: 6,
+    paddingHorizontal: width * 0.04,
+    paddingVertical: height * 0.015,
+    justifyContent: 'space-between',
+  },
+  questionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: height * 0.01,
+  },
+  questionHeaderLeft: {
+    fontSize: scaleFont(13),
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  questionHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  questionHeaderPts: {
+    fontSize: scaleFont(12),
+    fontWeight: '600',
+    color: '#0F172A',
+  },
+  bonusText: {
+    fontSize: scaleFont(12),
+    fontWeight: '600',
+    color: '#EF4444',
+  },
+  questionBox: {
+    borderWidth: 1,
+    borderColor: '#FFFFFF',
+    paddingVertical: height * 0.01,
+    paddingHorizontal: width * 0.04,
+    alignItems: 'center',
+    marginBottom: height * 0.015,
+  },
+  questionText: {
+    fontSize: scaleFont(18),
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  answerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: height * 0.02,
+  },
+  answerBox: {
+    flex: 1,
+    height: height * 0.06,
+    backgroundColor: '#1E293B',
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  speechBubble: {
+    marginLeft: 10,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: '#0F172A',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   answerText: {fontSize: scaleFont(18), color: '#fff', fontWeight: '600'},
-  keypadContainer: {width: '100%'},
+  keypadContainer: {
+    marginTop: height * 0.01,
+    paddingBottom: height * 0.01,
+  },
+  reactionPanel: {
+    position: 'absolute',
+    right: width * 0.08,
+    top: height * 0.17,
+    backgroundColor: '#0F172A',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#FFFFFF',
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    maxWidth: width * 0.6,
+    zIndex: 20,
+    elevation: 8,
+  },
+  reactionItem: {
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+  },
+  reactionText: {
+    fontSize: scaleFont(18),
+  },
   keypadRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: height * 0.02,
-    paddingHorizontal: width * 0.05,
+    marginBottom: height * 0.015,
   },
   keyButton: {
-    width: width * 0.2,
-    height: height * 0.1,
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 10,
+    borderRadius: width * 0.1,
     backgroundColor: '#1C2433',
   },
   specialKey: {backgroundColor: '#1C2433'},
@@ -990,13 +1264,13 @@ const styles = StyleSheet.create({
     height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 10,
+    borderRadius: width * 0.1,
+  },
+  specialButtonContent: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   keyText: {fontSize: scaleFont(18), color: '#fff', fontWeight: '600'},
-  statsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: 12,
-  },
-  statText: {color: '#fff', fontSize: scaleFont(12), opacity: 0.8},
 });

@@ -12,6 +12,7 @@ import {
   ActivityIndicator,
   RefreshControl,
 } from 'react-native';
+import {Linking, Share, Platform} from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import axios from 'axios';
@@ -296,10 +297,85 @@ const AddUserScreen = () => {
     return () => unsubscribe();
   }, []);
 
+  const handleWhatsAppInvite = async () => {
+    try {
+      const appName = 'Your App Name'; // Replace with your actual app name
+      const appLink = 'https://yourapp.com/download'; // Replace with your actual app link or Play Store/App Store URL
+
+      const message = `🎮 Hey! Join me on ${appName}! It's an awesome app where we can connect and play together. Download it here: ${appLink}`;
+
+      // Method 1: Direct WhatsApp Share (Preferred)
+      const whatsappUrl = `whatsapp://send?text=${encodeURIComponent(message)}`;
+
+      const canOpen = await Linking.canOpenURL(whatsappUrl);
+
+      if (canOpen) {
+        await Linking.openURL(whatsappUrl);
+      } else {
+        // Fallback to native share if WhatsApp is not installed
+        await Share.share({
+          message: message,
+          title: `Join me on ${appName}`,
+        });
+      }
+    } catch (error) {
+      console.log('Error sharing via WhatsApp:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Unable to share. Please try again.',
+      });
+    }
+  };
+const handleSMSInvite = async () => {
+  try {
+    const appName = 'Your App Name';
+    const appLink = 'https://yourapp.com/download';
+    const message = `Hey! Join me on ${appName}! Download: ${appLink}`;
+
+    const smsUrl = Platform.select({
+      ios: `sms:&body=${encodeURIComponent(message)}`,
+      android: `sms:?body=${encodeURIComponent(message)}`,
+    });
+
+    const canOpen = await Linking.canOpenURL(smsUrl);
+
+    if (canOpen) {
+      await Linking.openURL(smsUrl);
+    } else {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'SMS not available on this device.',
+      });
+    }
+  } catch (error) {
+    console.log('Error opening SMS:', error);
+  }
+};
+const handleInviteFriends = async () => {
+  try {
+    const appName = 'Your App Name';
+    const appLink = 'https://yourapp.com/download';
+    const message = `🎮 Hey! Join me on ${appName}! Download: ${appLink}`;
+
+    // Show action sheet to choose between WhatsApp or SMS
+    const shareOptions = {
+      title: 'Invite Friends',
+      message: message,
+      url: appLink, // iOS only
+    };
+
+    await Share.share(shareOptions);
+  } catch (error) {
+    console.log('Error sharing:', error);
+  }
+};
+
   return (
     <LinearGradient
       colors={theme.backgroundGradient || ['#0F172A', '#1E293B']}
-      style={{ flex: 1, }}>
+      style={{flex: 1}}>
       <View style={[styles.container]}>
         <View style={styles.headerRow}>
           <View style={styles.leftHeader}>
@@ -312,7 +388,7 @@ const AddUserScreen = () => {
                 color={theme.text || '#fff'}
               />
             </TouchableOpacity>
-            <Text style={[styles.header, { color: theme.text }]}>Friends</Text>
+            <Text style={[styles.header, {color: theme.text}]}>Friends</Text>
           </View>
 
           <View style={styles.notificationContainer}>
@@ -327,7 +403,7 @@ const AddUserScreen = () => {
             <View
               style={[
                 styles.badge,
-                { backgroundColor: theme.error || '#EF4444' },
+                {backgroundColor: theme.error || '#EF4444'},
               ]}>
               <Text style={styles.badgeText}>{pendingCount || 0}</Text>
             </View>
@@ -344,16 +420,16 @@ const AddUserScreen = () => {
             borderColor: '#94A3B8',
             borderWidth: 1,
             marginHorizontal: -width * 0.05,
-            top: 10
+            top: 10,
           }}
         />
 
         {/* 🔍 Search */}
-        <View style={{ top: 20, flex: 1 }}>
+        <View style={{top: 20, flex: 1}}>
           <View
             style={[
               styles.searchContainer,
-              { backgroundColor: theme.cardBackground || '#1E293B' },
+              {backgroundColor: theme.cardBackground || '#1E293B'},
             ]}>
             <Icon
               name="search"
@@ -363,7 +439,7 @@ const AddUserScreen = () => {
             <TextInput
               placeholder="Search Contacts"
               placeholderTextColor={theme.subText || '#94A3B8'}
-              style={[styles.searchInput, { color: theme.text }]}
+              style={[styles.searchInput, {color: theme.text}]}
               value={searchText}
               onChangeText={handleSearch}
             />
@@ -373,21 +449,23 @@ const AddUserScreen = () => {
             <ActivityIndicator
               size="large"
               color={theme.primary || '#FB923C'}
-              style={{ marginTop: height * 0.05 }}
+              style={{marginTop: height * 0.05}}
             />
           ) : (
             <>
               <View
                 style={[
                   styles.inviteSection,
-                  { backgroundColor: theme.cardBackground || '#1E293B' },
+                  {backgroundColor: theme.cardBackground || '#1E293B'},
                 ]}>
-                <Text style={[styles.sectionTitle, { color: theme.text }]}>
+                <Text style={[styles.sectionTitle, {color: theme.text}]}>
                   Invite & Connect
                 </Text>
 
                 <TouchableOpacity
-                  style={[styles.inviteButton1, { backgroundColor: '#25D366' }]}>
+                  style={[styles.inviteButton1, {backgroundColor: '#25D366'}]}
+                  onPress={handleWhatsAppInvite} // Add this
+                >
                   <FontAwesome
                     name="whatsapp"
                     size={scale(20)}
@@ -402,23 +480,30 @@ const AddUserScreen = () => {
                 <TouchableOpacity
                   style={[
                     styles.inviteButton,
-                    { backgroundColor: theme.cardBackground || '#1E293B' },
+                    {backgroundColor: theme.cardBackground || '#1E293B'},
                   ]}>
                   <View style={styles.fbIconCircle}>
-                    <FontAwesome name="facebook" size={scale(22)} color="#fff" />
+                    <FontAwesome
+                      name="facebook"
+                      size={scale(22)}
+                      color="#fff"
+                    />
                   </View>
-                  <Text style={[styles.inviteText, { color: theme.text }]}>
+                  <Text style={[styles.inviteText, {color: theme.text}]}>
                     Facebook Friends
                   </Text>
                 </TouchableOpacity>
               </View>
 
-              <Text style={[styles.sectionTitle, { color: theme.text }]}>
+              <Text style={[styles.sectionTitle, {color: theme.text}]}>
                 Friends ({filteredUsers.length})
               </Text>
               <ScrollView
                 refreshControl={
-                  <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+                  <RefreshControl
+                    refreshing={refreshing}
+                    onRefresh={onRefresh}
+                  />
                 }
                 showsVerticalScrollIndicator={false}>
                 <FlatList
@@ -426,7 +511,7 @@ const AddUserScreen = () => {
                   keyExtractor={item => item._id}
                   renderItem={renderItem}
                   scrollEnabled={false}
-                  contentContainerStyle={{ paddingBottom: height * 0.1 }}
+                  contentContainerStyle={{paddingBottom: height * 0.1}}
                 />
               </ScrollView>
             </>
@@ -434,7 +519,6 @@ const AddUserScreen = () => {
         </View>
       </View>
     </LinearGradient>
-
   );
 };
 
