@@ -16,44 +16,51 @@ const KeyboardPreview = ({ layout, theme, isSelected }) => {
         <View key={rowIndex} style={styles.previewRow}>
           {row.map((item, index) => {
             const strItem = item.toString().toLowerCase();
-            const isSpecial = ['clear', 'clr', '⌫', 'del', 'ref', 'pm'].includes(strItem);
+            const isSpecial = ['clear', 'clr', '⌫', 'del', 'ref', 'pm', '.'].includes(strItem);
             const isSkip = strItem === 'skip';
             const isNa = strItem === 'na';
 
             if (isNa) return <View key={index} style={styles.previewKeyPlaceholder} />;
 
             let content = null;
-            // Simple visual representation for preview
             if (strItem === 'del' || strItem === '⌫') {
-              content = <MaterialIcons name="backspace" size={14} color="#fff" />;
+              content = <MaterialIcons name="backspace" size={12} color="#fff" />;
             } else if (strItem === 'ref') {
-              content = <MaterialIcons name="refresh" size={14} color="#fff" />;
+              content = <Text style={{ fontSize: 8, color: '#fff', fontWeight: 'bold' }}>Rev</Text>;
             } else if (strItem === 'pm') {
-              content = <Text style={{ fontSize: 8, color: '#fff' }}>+/-</Text>;
+              content = <Text style={{ fontSize: 8, color: '#fff', fontWeight: 'bold' }}>+/-</Text>;
             } else if (strItem === 'clr' || strItem === 'clear') {
-              content = <Text style={{ fontSize: 8, color: '#fff' }}>CLR</Text>;
+              content = <Text style={{ fontSize: 8, color: '#fff', fontWeight: 'bold' }}>CLR</Text>;
             } else if (strItem === 'skip') {
-              content = <Text style={{ fontSize: 8, color: '#fff' }}>SKIP</Text>;
+              content = <Text style={{ fontSize: 8, color: '#fff', fontWeight: 'bold' }}>SKIP</Text>;
             } else {
-              // Render numbers/decimals
-              content = <Text style={{ fontSize: 10, color: '#fff', fontWeight: 'bold' }}>{item}</Text>;
+              content = <Text style={{ fontSize: 14, color: '#fff', fontWeight: 'bold' }}>{item}</Text>;
             }
 
             return (
-              <View
+              <LinearGradient
                 key={index}
+                colors={
+                  (isSpecial || isSkip)
+                    ? ['#334155', '#1E293B'] // Dark gray gradient for special keys
+                    : ['#4F46E5', '#3730A3'] // Blue gradient (default) - will overlap with theme color below if needed
+                }
                 style={[
                   styles.previewKey,
                   {
-                    backgroundColor: (isSpecial || isSkip) ? '#1E293B' : (theme.primary || '#595CFF'),
-                    opacity: (isSpecial || isSkip) ? 0.7 : 0.5,
-                    alignItems: 'center',
-                    justifyContent: 'center'
+                    // Override with Theme Primary if strictly needed, or stick to a nice generic premium look
+                    // For correct preview, let's use the Theme Context color if available, else Gradient
                   }
                 ]}
               >
-                {content}
-              </View>
+                {/* Overlay Theme Color if needed, or just use the gradient above which looks premium */}
+                <View style={[
+                  styles.keyInner,
+                  !(isSpecial || isSkip) && { backgroundColor: theme.primary, opacity: 0.8 }
+                ]}>
+                  {content}
+                </View>
+              </LinearGradient>
             );
           })}
         </View>
@@ -66,8 +73,8 @@ const KeyboardSelector = () => {
   const { keyboardTheme, changeKeyboardTheme, theme } = useTheme();
 
   const options = [
-    { id: 'type1', label: 'Type 1 (Standard)', layout: KEYPAD_LAYOUTS.type1 },
-    { id: 'type2', label: 'Type 2 (Reverse)', layout: KEYPAD_LAYOUTS.type2 },
+    { id: 'type1', label: 'Option 1', layout: KEYPAD_LAYOUTS.type1 },
+    { id: 'type2', label: 'Option 2', layout: KEYPAD_LAYOUTS.type2 },
   ];
 
   return (
@@ -107,54 +114,67 @@ export default KeyboardSelector;
 const styles = StyleSheet.create({
   container: {
     width: '100%',
-    paddingHorizontal: 20,
+    paddingHorizontal: 8, // Little bit of breathing room
     paddingTop: 10,
+    paddingBottom: 50,
+    flexDirection: 'row', // ✅ Side by side
+    justifyContent: 'space-between',
+    alignItems: 'flex-start'
   },
   optionCard: {
-    backgroundColor: '#1E293B',
-    borderRadius: 16,
-    padding: 15,
-    marginBottom: 20,
-    borderWidth: 2,
-    borderColor: 'transparent',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
-    elevation: 6,
+    width: '48%', // ✅ Half width
+    backgroundColor: 'rgba(30, 41, 59, 0.6)',
+    borderRadius: 20,
+    padding: 10,
+    marginBottom: 25,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
   },
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 15,
+    marginBottom: 10,
+    paddingHorizontal: 2
   },
   optionLabel: {
-    fontSize: normalize(16),
+    fontSize: normalize(14),
     fontWeight: '700',
+    letterSpacing: 0.5
   },
   previewContainer: {
     backgroundColor: '#0F172A',
-    borderRadius: 8,
-    padding: 8,
-  },
-  selectedPreview: {
-    // styles for selected state if needed
+    borderRadius: 12,
+    padding: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 3,
   },
   previewRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 4,
+    marginBottom: 5,
   },
   previewKey: {
     flex: 1,
-    height: 20,
+    height: 30, // Smaller key height
     marginHorizontal: 2,
-    borderRadius: 4,
+    borderRadius: 6,
+    overflow: 'hidden',
+  },
+  keyInner: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+    height: '100%'
   },
   previewKeyPlaceholder: {
     flex: 1,
-    height: 20,
-    marginHorizontal: 2,
+    height: 30,
   }
 });

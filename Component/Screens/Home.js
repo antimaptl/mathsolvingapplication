@@ -21,10 +21,11 @@
 // import {
 //   // playBackgroundMusic,
 //   // stopBackgroundMusic,
-//   muteBackgroundMusic,
 //   unmuteBackgroundMusic,
 // } from '../Globalfile/playBackgroundMusic';
 // import { useSound } from '../../Context/SoundContext';
+
+// const { width, height } = Dimensions.get('window');
 
 // const { width, height } = Dimensions.get('window');
 // const scaleFont = (size) => size * PixelRatio.getFontScale();
@@ -209,6 +210,8 @@ import {
   unmuteBackgroundMusic,
 } from '../Globalfile/playBackgroundMusic';
 
+import { useSound } from '../../Context/SoundContext'; // ✅ import context
+
 const { width, height } = Dimensions.get('window');
 const scaleFont = (size) => size * PixelRatio.getFontScale();
 
@@ -216,8 +219,7 @@ const Home = () => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { theme } = useTheme(); // ✅ get theme
-
-  const [isMuted, setIsMuted] = useState(false);
+  const { isSoundOn, toggleSound } = useSound(); // ✅ Use Global Sound
   const socket = useSocket();
 
   // useEffect(() => {
@@ -297,22 +299,25 @@ const Home = () => {
           <TouchableOpacity onPress={() => navigation.navigate('CommingSoon')}>
             <Image source={require('../Screens/Image/funcation.png')} style={styles.gridIcon} />
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => navigation.navigate('ProfileScreen')}>
-            <Image source={require('../Screens/Image/profile.png')} style={styles.gridIcon} />
-          </TouchableOpacity>
+          <View style={{ justifyContent: "flex-end", flexDirection: "row", gap: 15 }}>
+            <TouchableOpacity onPress={() => navigation.navigate('ProfileScreen')}>
+              <Image source={require('../Screens/Image/profile.png')} style={styles.gridIcon} />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => navigation.navigate('CommingSoon')}>
+              <Image source={require('../Screens/Image/setting.png')} style={styles.gridIcon} />
+            </TouchableOpacity>
+          </View>
         </View>
 
         <View style={styles.iconColumn}>
-          <TouchableOpacity onPress={() => navigation.navigate('CommingSoon')}>
-            <Image source={require('../Screens/Image/setting.png')} style={styles.gridIcon} />
-          </TouchableOpacity>
+
 
           {/* 🔊 Sound Toggle */}
-          <TouchableOpacity onPress={() => setIsMuted(prev => !prev)}>
+          {/* <TouchableOpacity onPress={toggleSound}>
             <MaskedView
               maskElement={
                 <Ionicons
-                  name={isMuted ? 'volume-mute' : 'volume-high'}
+                  name={!isSoundOn ? 'volume-mute' : 'volume-high'}
                   size={width * 0.07}
                   color="black"
                   style={{ marginBottom: height * 0.010 }}
@@ -325,7 +330,7 @@ const Home = () => {
                 style={{ width: width * 0.08, height: width * 0.08 }}
               />
             </MaskedView>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </View>
       </View>
 
@@ -387,9 +392,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   iconColumn: {
-    flexDirection: 'column',
+    flexDirection: 'row',
     justifyContent: 'space-between',
     height: height * 0.12,
+    gap: "70%"
   },
   gridIcon: {
     width: width * 0.08,

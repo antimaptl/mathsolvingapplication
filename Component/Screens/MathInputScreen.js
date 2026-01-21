@@ -46,6 +46,8 @@ const getMathSymbol = word =>
   Exponent: '^',
 }[word] || word);
 
+const AnimatedTouchableOpacity = Animated.createAnimatedComponent(TouchableOpacity);
+
 const MathInputScreen = () => {
   const appState = useRef(AppState.currentState);
   const startTimeRef = useRef(null);
@@ -84,6 +86,7 @@ const MathInputScreen = () => {
   const [correctAnswers, setCorrectAnswers] = useState(0);
   const [skippedCount, setSkippedCount] = useState(0);
   const [qmState, setQmState] = useState(parseInt(qm, 10));
+  const revScale = useRef(new Animated.Value(1)).current;
 
   const getKeyButtonWidth = () => {
     // All layouts use standard width now (4 columns primarily)
@@ -165,6 +168,19 @@ const MathInputScreen = () => {
     }, 1000);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    if (isReverse) {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(revScale, { toValue: 1.05, duration: 800, useNativeDriver: true }),
+          Animated.timing(revScale, { toValue: 1, duration: 800, useNativeDriver: true }),
+        ])
+      ).start();
+    } else {
+      revScale.setValue(1);
+    }
+  }, [isReverse]);
 
   useEffect(() => {
     const sub = AppState.addEventListener('change', state => {
@@ -345,11 +361,7 @@ const MathInputScreen = () => {
                 content = <MaterialIcons name="backspace" size={24} color="#fff" />;
               } else if (strItem === 'ref' || strItem === 'reverse') {
                 content = (
-                  <Feather
-                    name={isReverse ? "refresh-ccw" : "refresh-cw"}
-                    size={26}
-                    color="#fff"
-                  />
+                  <Text style={[styles.keyText, { fontSize: scaleFont(16), fontWeight: '800', fontStyle: 'italic' }]}>REV</Text>
                 );
               } else if (strItem === 'pm') {
                 content = <Text style={[styles.keyText, { color: '#fff' }]}>+/-</Text>;
@@ -368,16 +380,55 @@ const MathInputScreen = () => {
               }
 
               return (
-                <TouchableOpacity
+                <AnimatedTouchableOpacity
                   key={index}
                   onPress={() => handlePress(strItem === 'ref' ? 'reverse' : item)}
                   style={[
                     styles.keyButton,
-                    { width: getKeyButtonWidth(), height: getKeyButtonHeight() },
-                    (isSpecial || strItem === '-') ? styles.specialKey : null
-                  ]}>
-                  {!isSpecial && strItem !== '-' ? (
-                    <LinearGradient colors={theme.buttonGradient || [theme.primaryColor || '#595CFF', theme.secondaryColor || '#87AEE9']} style={styles.gradientButton}>
+                    {
+                      width: getKeyButtonWidth(),
+                      height: getKeyButtonHeight(),
+                      borderBottomWidth: 4,
+                      borderBottomColor: 'rgba(0,0,0,0.3)',
+                    },
+                    (isSpecial || strItem === '-') ? styles.specialKey : null,
+                    ((strItem === 'ref' || strItem === 'reverse') && isReverse) && {
+                      borderBottomColor: 'rgba(0,0,0,0.5)',
+                      borderWidth: 0,
+                      borderBottomWidth: 4,
+                      elevation: 10,
+                      shadowColor: theme.primaryColor || '#595CFF',
+                      shadowOffset: { width: 0, height: 4 },
+                      shadowOpacity: 0.5,
+                      shadowRadius: 8,
+                      transform: [{ scale: revScale }],
+                    },
+                  ]}
+                >
+
+                  {/* 🔥 ONLY THIS PART CHANGED */}
+                  {(strItem === 'ref' || strItem === 'reverse') && isReverse ? (
+                    <LinearGradient
+                      colors={
+                        theme.buttonGradient || [
+                          theme.primaryColor || '#595CFF',
+                          theme.secondaryColor || '#87AEE9',
+                        ]
+                      }
+                      style={styles.gradientButton}
+                    >
+                      {content}
+                    </LinearGradient>
+                  ) : !isSpecial && strItem !== '-' ? (
+                    <LinearGradient
+                      colors={
+                        theme.buttonGradient || [
+                          theme.primaryColor || '#595CFF',
+                          theme.secondaryColor || '#87AEE9',
+                        ]
+                      }
+                      style={styles.gradientButton}
+                    >
                       {content}
                     </LinearGradient>
                   ) : (
@@ -385,8 +436,9 @@ const MathInputScreen = () => {
                       {content}
                     </View>
                   )}
-                </TouchableOpacity>
+                </AnimatedTouchableOpacity>
               );
+
             })}
           </View>
         ))}

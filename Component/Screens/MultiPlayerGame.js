@@ -840,11 +840,7 @@ const MultiPlayerGame = () => {
                 );
               } else if (strItem === 'ref' || strItem === 'reverse') {
                 content = (
-                  <Feather
-                    name={isReverse ? 'refresh-ccw' : 'refresh-cw'}
-                    size={26}
-                    color="#fff"
-                  />
+                  <Text style={[styles.keyText, { fontSize: scaleFont(16), fontWeight: '800', fontStyle: 'italic' }]}>REV</Text>
                 );
               } else if (strItem === 'pm') {
                 content = (
@@ -878,9 +874,26 @@ const MultiPlayerGame = () => {
                   disabled={gameEnded}
                   style={[
                     styles.keyButton,
-                    { width: getKeyButtonWidth(), height: getKeyButtonHeight() },
+                    {
+                      width: getKeyButtonWidth(),
+                      height: getKeyButtonHeight(),
+                      borderBottomWidth: 4,
+                      borderBottomColor: 'rgba(0,0,0,0.3)',
+                    },
                     isSpecial || strItem === '-' ? styles.specialKey : null,
                     gameEnded && { opacity: 0.5 },
+                    ((strItem === 'ref' || strItem === 'reverse') && isReverse) && {
+                      backgroundColor: theme.primary || '#FB923C',
+                      borderColor: theme.primary || '#FB923C',
+                      borderBottomColor: 'rgba(0,0,0,0.5)',
+                      borderWidth: 0,
+                      borderBottomWidth: 4,
+                      elevation: 10,
+                      shadowColor: theme.primary || '#FB923C',
+                      shadowOffset: { width: 0, height: 4 },
+                      shadowOpacity: 0.5,
+                      shadowRadius: 8,
+                    }
                   ]}>
                   {!isSpecial && strItem !== '-' ? (
                     <LinearGradient

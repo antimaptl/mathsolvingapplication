@@ -171,7 +171,28 @@ export default function SignUp() {
         },
       );
 
+
       const data = await response.json();
+      // 🛑 Check if OTP was already sent (Handle re-entry case)
+      if (response.status === 400 && data.message && data.message.includes('OTP already sent')) {
+        Toast.show({
+          type: 'info',
+          text1: 'OTP Already Sent',
+          text2: 'Redirecting to verification screen...',
+        });
+
+        navigation.navigate('EmailVerification', {
+          userData: {
+            username,
+            email,
+            password,
+            country,
+            countryFlag,
+            dateOfBirth,
+            gender,
+          },
+        });
+      }
       console.log('Signup Response Data:', data);
 
       // ❌ Backend validation errors

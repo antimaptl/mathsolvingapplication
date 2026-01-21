@@ -29,7 +29,7 @@ const CustomHeader = ({ title, onBack, rightIcon, style, showBack = true }) => {
             {/* Top Row: Back Button -- Title -- Right Icon */}
             <View style={styles.topRow}>
                 {showBack ? (
-                    <TouchableOpacity onPress={handleBack} style={styles.iconButton}>
+                    <TouchableOpacity onPress={handleBack} style={styles.iconButton} hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}>
                         <Icon name="caret-back-outline" size={scaleFont(26)} color="#fff" />
                     </TouchableOpacity>
                 ) : (

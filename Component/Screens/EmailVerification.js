@@ -43,9 +43,9 @@ export default function EmailVerification() {
   // 🔹 Initialize Logic
   useEffect(() => {
     startResendTimer();
-    // Clear any legacy blocks
-    AsyncStorage.removeItem('otp_block_until');
-    AsyncStorage.removeItem('otp_incorrect_attempts');
+    // ❌ REMOVED: Do NOT clear blocks on mount, otherwise security is bypassed
+    // AsyncStorage.removeItem('otp_block_until');
+    // AsyncStorage.removeItem('otp_incorrect_attempts');
   }, []);
 
   // 🔹 Timer Countdown Effect
@@ -77,7 +77,9 @@ export default function EmailVerification() {
   }, [otp]);
 
 
+  /* 🔹 Handlers guarded against loading to prevent edits without disabling native inputs (fixes focus issues) */
   const handleChange = (text, index) => {
+    if (loading) return; // Prevent changes while loading
     const newOtp = [...otp];
     newOtp[index] = text;
     setOtp(newOtp);
@@ -87,6 +89,7 @@ export default function EmailVerification() {
   };
 
   const handleBackspace = (key, index) => {
+    if (loading) return; // Prevent backspace while loading
     if (key === 'Backspace' && otp[index] === '' && index > 0) {
       inputs.current[index - 1]?.focus();
     }
@@ -185,7 +188,12 @@ export default function EmailVerification() {
         }
         setErrorMessage(msg);
         setOtp(['', '', '', '', '', '']);
-        inputs.current[0]?.focus();
+
+        // Slightly delay focus to ensure UI is ready
+        setTimeout(() => {
+          inputs.current[0]?.focus();
+        }, 100);
+
         otpVerifiedRef.current = false;
         setLoading(false);
         return;
@@ -223,22 +231,13 @@ export default function EmailVerification() {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
 
-      <View style={{ paddingTop: insets.top + 30 }}>
-        <View
-          style={{
-            flexDirection: 'row',
-            justifyContent: 'center',
-            alignItems: 'center',
-            width: '100%',
-            marginBottom: normalize(50),
-          }}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}>
-            <Icon name="caret-back-outline" size={normalize(26)} color="white" />
-          </TouchableOpacity>
-          <Text style={styles.title}>Sign - Up</Text>
-        </View>
+      <View style={{ paddingTop: insets.top }}>
+        {/* ✅ Standardized Header */}
+        <CustomHeader
+          title="Sign - Up"
+          onBack={() => navigation.goBack()}
+          style={{ marginBottom: normalize(20) }}
+        />
 
         <View>
           <Text
@@ -255,21 +254,6 @@ export default function EmailVerification() {
         </View>
       </View>
 
-      {/* Error Message */}
-      {errorMessage ? (
-        <Text
-          style={{
-            color: 'red',
-            fontSize: normalize(14),
-            textAlign: 'center',
-            marginBottom: normalize(30),
-            marginTop: normalize(10),
-            paddingHorizontal: normalize(20)
-          }}>
-          {errorMessage}
-        </Text>
-      ) : null}
-
       {/* OTP Inputs */}
       <View style={styles.otpContainer}>
         {otp.map((digit, index) => (
@@ -284,7 +268,6 @@ export default function EmailVerification() {
             onKeyPress={({ nativeEvent }) =>
               handleBackspace(nativeEvent.key, index)
             }
-            editable={!loading}
           />
         ))}
       </View>
@@ -308,6 +291,21 @@ export default function EmailVerification() {
               : `Resend OTP${resendCount > 0 ? ` (Attempt ${resendCount}/3)` : ''}`}
         </Text>
       </TouchableOpacity>
+
+      {/* Error Message moved below Resend button to prevent layout shift */}
+      {errorMessage ? (
+        <Text
+          style={{
+            color: 'red',
+            fontSize: normalize(14),
+            textAlign: 'center',
+            marginBottom: normalize(20),
+            marginTop: normalize(10),
+            paddingHorizontal: normalize(20)
+          }}>
+          {errorMessage}
+        </Text>
+      ) : null}
 
       <Toast />
     </KeyboardAvoidingView>

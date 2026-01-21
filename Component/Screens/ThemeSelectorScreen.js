@@ -81,7 +81,7 @@ const ThemeSelectorScreen = () => {
                   styles.toggleText,
                   selectedTab === 'keyboard' && styles.activeToggleText,
                 ]}>
-                Keyboard
+                Numpad
               </Text>
             </TouchableOpacity>
           </View>
