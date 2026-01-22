@@ -36,7 +36,7 @@ export const Socket = ({children}) => {
     // Create singleton socket instance with explicit reconnect behaviour
     socketRef.current = io(SOCKET_URL, {
       transports: ['websocket'],
-      autoConnect: false, // we will manually control when to connect
+      autoConnect: true, // we will manually control when to connect
       reconnection: true,
       reconnectionAttempts: MAX_RECONNECTION_ATTEMPTS,
       reconnectionDelay: 1000,
