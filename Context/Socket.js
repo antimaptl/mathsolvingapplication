@@ -6,7 +6,7 @@ import React, {
   useState,
   useEffect,
 } from 'react';
-import {AppState} from 'react-native';
+import {AppState, Alert} from 'react-native';
 import {io} from 'socket.io-client';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -140,6 +140,12 @@ export const Socket = ({children}) => {
     socketRef.current.on('connect_error', handleConnectError);
     socketRef.current.on('reconnect_attempt', handleReconnectAttempt);
     socketRef.current.on('reconnect_failed', handleReconnectFailed);
+    
+    // ✅ CHALLENGE LISTENERS
+    // socketRef.current.on('challenge-received', (data) => {
+    //   // Managed in Home.js
+    // });
+    
   }
 
   useEffect(() => {

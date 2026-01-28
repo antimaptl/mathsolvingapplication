@@ -117,6 +117,7 @@ const MultiPlayerGame = () => {
   const [correctAnswers, setCorrectAnswers] = useState(0);
   const [skippedCount, setSkippedCount] = useState(0);
   const [answerHistory, setAnswerHistory] = useState([]);
+  const [opponentEmoji, setOpponentEmoji] = useState(null);
   const [isReactionPickerOpen, setIsReactionPickerOpen] = useState(false);
 
   /* ================= REFS ================= */
@@ -348,6 +349,11 @@ const MultiPlayerGame = () => {
         console.log('✅ Updating opponent score to:', data.score);
         setOpponentScore(data.score);
         opponentScoreRef.current = data.score;
+        
+        if (data.history && Array.isArray(data.history)) {
+            // Check if we have a state for this, if not, just log for verification
+            console.log("Opponent history synced:", data.history);
+        }
       }
     };
 
@@ -441,6 +447,35 @@ const MultiPlayerGame = () => {
       Alert.alert('Error', data.message || 'An error occurred');
     };
 
+    const handleOpponentEmoji = data => {
+      console.log('😄 opponent-emoji-received:', data);
+      if (data.emoji) {
+        setOpponentEmoji(data.emoji);
+        // Clear previous timeout if exists (optional but good)
+        setTimeout(() => setOpponentEmoji(null), 3000);
+      }
+    };
+
+    const handleGracePeriod = data => {
+      console.log('⏳ game-in-grace-period:', data);
+      Alert.alert(
+        'Opponent Disconnected',
+        data.message || 'Waiting for opponent to reconnect...',
+      );
+      // Set a state to show a "Waiting..." banner?
+    };
+
+    const handleOpponentReconnected = data => {
+      console.log('♻️ opponent-reconnected:', data);
+      Alert.alert('Reconnected', data.message || 'Opponent has reconnected!');
+    };
+
+    const handleGracePeriodExpired = data => {
+      console.log('⏰ grace-period-expired:', data);
+      // Treat this like a disconnect win
+      handleOpponentDisconnected(data);
+    };
+
     socket.on('connect', handleConnect);
     socket.on('disconnect', handleDisconnect);
     socket.on('connect_error', handleConnectError);
@@ -449,6 +484,11 @@ const MultiPlayerGame = () => {
     socket.on('opponent-score-update', handleOpponentScoreUpdate);
     socket.on('game-ended', handleGameEnded);
     socket.on('opponent-disconnected', handleOpponentDisconnected);
+    // ✅ NEW LISTENERS
+    socket.on('opponent-emoji-received', handleOpponentEmoji);
+    socket.on('game-in-grace-period', handleGracePeriod);
+    socket.on('grace-period-expired', handleGracePeriodExpired);
+    socket.on('opponent-reconnected', handleOpponentReconnected);
     socket.on('error', handleError);
 
     if (currentQuestion) {
@@ -471,6 +511,11 @@ const MultiPlayerGame = () => {
       socket.off('opponent-score-update', handleOpponentScoreUpdate);
       socket.off('game-ended', handleGameEnded);
       socket.off('opponent-disconnected', handleOpponentDisconnected);
+      // ✅ REMOVE LISTENERS
+      socket.off('opponent-emoji-received', handleOpponentEmoji);
+      socket.off('game-in-grace-period', handleGracePeriod);
+      socket.off('grace-period-expired', handleGracePeriodExpired);
+      socket.off('opponent-reconnected', handleOpponentReconnected);
       socket.off('error', handleError);
     };
   }, [
@@ -805,6 +850,12 @@ const MultiPlayerGame = () => {
             <Text style={styles.avatarInitial}>
               {opponent?.username?.charAt(0).toUpperCase() || 'O'}
             </Text>
+            {/* ✅ OPPONENT EMOJI POPUP */}
+            {opponentEmoji && (
+              <Animated.View style={[styles.emojiPopup, { transform: [{ scale: 1 }] }]}>
+                 <Text style={styles.emojiText}>{opponentEmoji}</Text>
+              </Animated.View>
+            )}
           </View>
           <Text style={styles.playerMiniName}>
             {opponent?.username || 'Opponent'}
@@ -1273,4 +1324,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   keyText: {fontSize: scaleFont(18), color: '#fff', fontWeight: '600'},
+  emojiPopup: {
+    position: 'absolute',
+    top: -40,
+    right: -25,
+    backgroundColor: 'white',
+    padding: 8,
+    borderRadius: 20,
+    zIndex: 9999,
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  emojiText: {
+    fontSize: 24,
+    color: 'black',
+  },
 });

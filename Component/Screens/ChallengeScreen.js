@@ -71,7 +71,7 @@ useEffect(() => {
       }
 
       const response = await fetch(
-        'http://43.204.167.118:3000/api/friend/my-friend-list',
+        'https://mataletics-backend.onrender.com/api/friend/my-friend-list',
         {
           method: 'GET',
           headers: {

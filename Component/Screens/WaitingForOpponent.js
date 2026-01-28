@@ -70,7 +70,15 @@ const WaitingForOpponent = () => {
             currentQuestion: gameData.currentQuestion,
             timer: timer,
             difficulty: diff,
-            opponent: data.opponent,
+            opponent: {
+              ...data.opponent,
+              stats: data.opponent?.stats || {
+                wins: 0,
+                losses: 0,
+                winRate: 0,
+                currentStreak: 0,
+              },
+            },
             myMongoId: myMongoId,
             isChallenge: true,
           });
